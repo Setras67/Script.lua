@@ -1,0 +1,189 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local Settings = {
+    WalkSpeed = 16,
+    JumpHeight = 7.2,
+    ESP = false,
+}
+
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ESP_Folder"
+ESPFolder.Parent = game.CoreGui
+
+local function getHumanoid()
+    local char = player.Character
+    if char then
+        return char:FindFirstChildOfClass("Humanoid")
+    end
+end
+
+-- === ESP ===
+local function createESP(targetPlayer)
+    if targetPlayer == player then return end
+    local char = targetPlayer.Character
+    if not char then return end
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    -- Supprime l'ancien ESP si existant
+    local old = ESPFolder:FindFirstChild(targetPlayer.Name)
+    if old then old:Destroy() end
+
+    local holder = Instance.new("Folder")
+    holder.Name = targetPlayer.Name
+    holder.Parent = ESPFolder
+
+    -- Billboard (nom + vie)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPBillboard"
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 100, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = rootPart
+    billboard.Parent = holder
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextScaled = true
+    nameLabel.Text = targetPlayer.Name
+    nameLabel.Parent = billboard
+
+    local hpLabel = Instance.new("TextLabel")
+    hpLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    hpLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    hpLabel.BackgroundTransparency = 1
+    hpLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    hpLabel.TextStrokeTransparency = 0
+    hpLabel.Font = Enum.Font.Gotham
+    hpLabel.TextScaled = true
+    hpLabel.Text = "HP: ?"
+    hpLabel.Parent = billboard
+
+    -- Mise à jour HP
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hpLabel.Text = "HP: " .. math.floor(hum.Health)
+        hum:GetPropertyChangedSignal("Health"):Connect(function()
+            hpLabel.Text = "HP: " .. math.floor(hum.Health)
+        end)
+    end
+
+    -- Highlight (box autour du personnage)
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.6
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = char
+    highlight.Parent = holder
+end
+
+local function removeESP(targetPlayer)
+    local holder = ESPFolder:FindFirstChild(targetPlayer.Name)
+    if holder then holder:Destroy() end
+end
+
+local function refreshESP()
+    -- Supprime tout
+    for _, v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
+    if not Settings.ESP then return end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            createESP(p)
+        end
+    end
+end
+
+-- Quand un joueur arrive/part
+Players.PlayerAdded:Connect(function(p)
+    if Settings.ESP then
+        p.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            createESP(p)
+        end)
+        createESP(p)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    removeESP(p)
+end)
+
+-- Reconnect ESP quand un perso respawn
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= player then
+        p.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            if Settings.ESP then createESP(p) end
+        end)
+    end
+end
+
+-- Heartbeat WalkSpeed / JumpHeight
+RunService.Heartbeat:Connect(function()
+    local hum = getHumanoid()
+    if hum then
+        hum.WalkSpeed = Settings.WalkSpeed
+        hum.JumpHeight = Settings.JumpHeight
+    end
+end)
+
+-- === UI ===
+local Window = Rayfield:CreateWindow({
+    Name = "Setras hub",
+    LoadingTitle = "Setras Hub",
+    LoadingSubtitle = "by Setras Hub",
+    Theme = "Default",
+})
+
+local Tab = Window:CreateTab("⚡ Speed", 4483362458)
+
+Tab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 500},
+    Increment = 1,
+    Suffix = " studs/s",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        Settings.WalkSpeed = Value
+    end,
+})
+
+Tab:CreateSlider({
+    Name = "Jump Height",
+    Range = {7, 200},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = 7,
+    Flag = "JumpHeight",
+    Callback = function(Value)
+        Settings.JumpHeight = Value
+    end,
+})
+
+Tab:CreateToggle({
+    Name = "Speed Boost x5",
+    CurrentValue = false,
+    Flag = "SpeedBoost",
+    Callback = function(Value)
+        Settings.WalkSpeed = Value and 150 or 16
+        Rayfield:SetValue("WalkSpeed", Settings.WalkSpeed)
+    end,
+})
+
+Tab:CreateButton({
+    Name = "🔄 Reset tout",
+    Callback = function()
+        Settings.WalkSpeed = 16
+        Settings.JumpHeight = 7.2
+        Rayfield:SetValue("WalkSpeed", 16)
+        Rayfield:SetValue("JumpHeight", 7)
+        Rayfield:Notify({
