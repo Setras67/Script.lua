@@ -20,7 +20,6 @@ local function getHumanoid()
     end
 end
 
--- === ESP ===
 local function createESP(targetPlayer)
     if targetPlayer == player then return end
     local char = targetPlayer.Character
@@ -28,7 +27,6 @@ local function createESP(targetPlayer)
     local rootPart = char:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
 
-    -- Supprime l'ancien ESP si existant
     local old = ESPFolder:FindFirstChild(targetPlayer.Name)
     if old then old:Destroy() end
 
@@ -36,7 +34,6 @@ local function createESP(targetPlayer)
     holder.Name = targetPlayer.Name
     holder.Parent = ESPFolder
 
-    -- Billboard (nom + vie)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPBillboard"
     billboard.AlwaysOnTop = true
@@ -66,7 +63,6 @@ local function createESP(targetPlayer)
     hpLabel.Text = "HP: ?"
     hpLabel.Parent = billboard
 
-    -- Mise à jour HP
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
         hpLabel.Text = "HP: " .. math.floor(hum.Health)
@@ -75,7 +71,6 @@ local function createESP(targetPlayer)
         end)
     end
 
-    -- Highlight (box autour du personnage)
     local highlight = Instance.new("Highlight")
     highlight.FillColor = Color3.fromRGB(255, 0, 0)
     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
@@ -91,7 +86,6 @@ local function removeESP(targetPlayer)
 end
 
 local function refreshESP()
-    -- Supprime tout
     for _, v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
     if not Settings.ESP then return end
     for _, p in pairs(Players:GetPlayers()) do
@@ -101,7 +95,6 @@ local function refreshESP()
     end
 end
 
--- Quand un joueur arrive/part
 Players.PlayerAdded:Connect(function(p)
     if Settings.ESP then
         p.CharacterAdded:Connect(function()
@@ -116,7 +109,6 @@ Players.PlayerRemoving:Connect(function(p)
     removeESP(p)
 end)
 
--- Reconnect ESP quand un perso respawn
 for _, p in pairs(Players:GetPlayers()) do
     if p ~= player then
         p.CharacterAdded:Connect(function()
@@ -126,7 +118,6 @@ for _, p in pairs(Players:GetPlayers()) do
     end
 end
 
--- Heartbeat WalkSpeed / JumpHeight
 RunService.Heartbeat:Connect(function()
     local hum = getHumanoid()
     if hum then
@@ -135,7 +126,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- === UI ===
 local Window = Rayfield:CreateWindow({
     Name = "Setras hub",
     LoadingTitle = "Setras Hub",
@@ -187,3 +177,26 @@ Tab:CreateButton({
         Rayfield:SetValue("WalkSpeed", 16)
         Rayfield:SetValue("JumpHeight", 7)
         Rayfield:Notify({
+            Title = "Reset",
+            Content = "Valeurs remises à la normale !",
+            Duration = 3,
+        })
+    end,
+})
+
+local ESPTab = Window:CreateTab("👁️ ESP", 4483362458)
+
+ESPTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Flag = "ESPToggle",
+    Callback = function(Value)
+        Settings.ESP = Value
+        refreshESP()
+        Rayfield:Notify({
+            Title = "ESP",
+            Content = Value and "ESP activé !" or "ESP désactivé.",
+            Duration = 2,
+        })
+    end,
+})
