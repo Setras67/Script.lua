@@ -14,26 +14,26 @@ local Settings = {
 
 -- === ISLAND TELEPORT LOCATIONS ===
 local Islands = {
-    ["Redwake"]         = CFrame.new(563, 50, 1944),
-    ["Ironport"]        = CFrame.new(-2143, 50, 1520),
-    ["Frostmill"]       = CFrame.new(-2700, 50, -800),
-    ["Palo Town"]       = CFrame.new(3000, 50, -400),
-    ["Ravenna"]         = CFrame.new(4200, 50, 1100),
-    ["Fort Talos"]      = CFrame.new(2100, 50, 3200),
-    ["Whispering Cavern"] = CFrame.new(-500, 50, 3800),
-    ["Shell Island"]    = CFrame.new(1200, 50, -1800),
-    ["Cirrus Island"]   = CFrame.new(-800, 50, -3200),
-    ["Stepstones"]      = CFrame.new(300, 50, 600),
+    ["Redwake"]         = CFrame.new(563, 150, 1944),
+    ["Ironport"]        = CFrame.new(-2143, 150, 1520),
+    ["Frostmill"]       = CFrame.new(-2700, 150, -800),
+    ["Palo Town"]       = CFrame.new(3000, 150, -400),
+    ["Ravenna"]         = CFrame.new(4200, 150, 1100),
+    ["Fort Talos"]      = CFrame.new(2100, 150, 3200),
+    ["Whispering Cavern"] = CFrame.new(-500, 150, 3800),
+    ["Shell Island"]    = CFrame.new(1200, 150, -1800),
+    ["Cirrus Island"]   = CFrame.new(-800, 150, -3200),
+    ["Stepstones"]      = CFrame.new(300, 150, 600),
 }
 
 -- === NPC LOCATIONS ===
 local NPCs = {
-    ["Morden (Redwake)"]     = CFrame.new(570, 50, 1960),
-    ["Iris (Redwake)"]       = CFrame.new(555, 50, 1950),
-    ["Calvus (Ravenna)"]     = CFrame.new(4250, 50, 1080),
-    ["Khan (Ironport)"]      = CFrame.new(-2160, 50, 1500),
-    ["Elius (Fort Talos)"]   = CFrame.new(2120, 50, 3220),
-    ["Argos (Whispering)"]   = CFrame.new(-510, 50, 3820),
+    ["Morden (Redwake)"]     = CFrame.new(570, 150, 1960),
+    ["Iris (Redwake)"]       = CFrame.new(555, 150, 1950),
+    ["Calvus (Ravenna)"]     = CFrame.new(4250, 150, 1080),
+    ["Khan (Ironport)"]      = CFrame.new(-2160, 150, 1500),
+    ["Elius (Fort Talos)"]   = CFrame.new(2120, 150, 3220),
+    ["Argos (Whispering)"]   = CFrame.new(-510, 150, 3820),
 }
 
 local function teleportTo(cf)
