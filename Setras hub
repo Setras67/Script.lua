@@ -2,46 +2,70 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local Settings = {
     WalkSpeed = 16,
     ESP = false,
+    IslandESP = false,
     Fly = false,
     Noclip = false,
     FlySpeed = 50,
+    FullBright = false,
+    InfiniteStamina = false,
+    AntiDrown = false,
 }
 
--- === ISLAND TELEPORT LOCATIONS ===
-local Islands = {
-    ["Redwake"]         = CFrame.new(563, 550, 1944),
-    ["Ironport"]        = CFrame.new(-2143, 550, 1520),
-    ["Frostmill"]       = CFrame.new(-2700, 550, -800),
-    ["Palo Town"]       = CFrame.new(3000, 550, -400),
-    ["Ravenna"]         = CFrame.new(4200, 550, 1100),
-    ["Fort Talos"]      = CFrame.new(2100, 550, 3200),
-    ["Whispering Cavern"] = CFrame.new(-500, 550, 3800),
-    ["Shell Island"]    = CFrame.new(1200, 550, -1800),
-    ["Cirrus Island"]   = CFrame.new(-800, 550, -3200),
-    ["Stepstones"]      = CFrame.new(300, 500, 600),
-}
-
--- === NPC LOCATIONS ===
-local NPCs = {
-    ["Morden (Redwake)"]     = CFrame.new(570, 550, 1960),
-    ["Iris (Redwake)"]       = CFrame.new(555, 550, 1950),
-    ["Calvus (Ravenna)"]     = CFrame.new(4250, 550, 1080),
-    ["Khan (Ironport)"]      = CFrame.new(-2160, 550, 1500),
-    ["Elius (Fort Talos)"]   = CFrame.new(2120, 550, 3220),
-    ["Argos (Whispering)"]   = CFrame.new(-510, 550, 3820),
-}
-
-local function teleportTo(cf)
+-- === TELEPORT ===
+local function teleportToIsland(islandName)
     local char = player.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    root.CFrame = cf
+    local Map = workspace:FindFirstChild("Map")
+    if not Map then
+        Rayfield:Notify({ Title = "Error", Content = "Map not found in workspace.", Duration = 3 })
+        return
+    end
+    local island = Map:FindFirstChild(islandName)
+    if not island then
+        Rayfield:Notify({ Title = "Error", Content = islandName .. " not found.", Duration = 3 })
+        return
+    end
+    local center = island:FindFirstChild("Center")
+    if center then
+        root.CFrame = center.CFrame + Vector3.new(0, 275, 0)
+    else
+        root.CFrame = island:GetModelCFrame() + Vector3.new(0, 275, 0)
+    end
+end
+
+local IslandNames = {
+    "Redwake", "Ironport", "Frostmill", "Palo Town",
+    "Ravenna", "Fort Talos", "Shell Island", "Stepstones",
+    "Cirrus Island", "Whispering Cavern", "Sandfall Isle",
+    "Silverhold", "Oblitesco", "Wrath of Alastair",
+    "Mango Isle", "Harvest Island", "Limestone Key",
+    "Sailor's Lodge", "Darkwood", "Nameless Isles",
+}
+
+-- === NPC TELEPORT ===
+local function teleportToNPC(npcName)
+    local char = player.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name:lower():find(npcName:lower()) then
+            local npcRoot = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Root")
+            if npcRoot then
+                root.CFrame = npcRoot.CFrame + Vector3.new(0, 5, 4)
+                return
+            end
+        end
+    end
+    Rayfield:Notify({ Title = "Error", Content = npcName .. " not found nearby.", Duration = 3 })
 end
 
 -- === ESP FOLDER ===
@@ -49,12 +73,16 @@ local ESPFolder = Instance.new("Folder")
 ESPFolder.Name = "ESP_Folder"
 ESPFolder.Parent = game.CoreGui
 
+local IslandESPFolder = Instance.new("Folder")
+IslandESPFolder.Name = "IslandESP_Folder"
+IslandESPFolder.Parent = game.CoreGui
+
 local function getHumanoid()
     local char = player.Character
     if char then return char:FindFirstChildOfClass("Humanoid") end
 end
 
--- === ESP ===
+-- === PLAYER ESP ===
 local function createESP(targetPlayer)
     if targetPlayer == player then return end
     local char = targetPlayer.Character
@@ -72,44 +100,55 @@ local function createESP(targetPlayer)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPBillboard"
     billboard.AlwaysOnTop = true
-    billboard.Size = UDim2.new(0, 100, 0, 40)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Size = UDim2.new(0, 120, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 4, 0)
     billboard.Adornee = rootPart
     billboard.Parent = holder
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    nameLabel.TextStrokeTransparency = 0.5
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextScaled = true
     nameLabel.Text = targetPlayer.Name
-    nameLabel.Parent = billboard
+    nameLabel.Parent = frame
 
     local hpLabel = Instance.new("TextLabel")
     hpLabel.Size = UDim2.new(1, 0, 0.5, 0)
     hpLabel.Position = UDim2.new(0, 0, 0.5, 0)
     hpLabel.BackgroundTransparency = 1
     hpLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    hpLabel.TextStrokeTransparency = 0
+    hpLabel.TextStrokeTransparency = 0.5
     hpLabel.Font = Enum.Font.Gotham
     hpLabel.TextScaled = true
     hpLabel.Text = "HP: ?"
-    hpLabel.Parent = billboard
+    hpLabel.Parent = frame
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
-        hpLabel.Text = "HP: " .. math.floor(hum.Health)
+        hpLabel.Text = "HP: " .. math.floor(hum.Health) .. " / " .. math.floor(hum.MaxHealth)
         hum:GetPropertyChangedSignal("Health"):Connect(function()
-            hpLabel.Text = "HP: " .. math.floor(hum.Health)
+            hpLabel.Text = "HP: " .. math.floor(hum.Health) .. " / " .. math.floor(hum.MaxHealth)
         end)
     end
 
     local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.FillTransparency = 0.6
+    highlight.FillColor = Color3.fromRGB(200, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 80, 80)
+    highlight.FillTransparency = 0.7
     highlight.OutlineTransparency = 0
     highlight.Adornee = char
     highlight.Parent = holder
@@ -128,6 +167,71 @@ local function refreshESP()
     end
 end
 
+-- === ISLAND ESP ===
+local islandESPParts = {}
+
+local function createIslandESP()
+    for _, part in pairs(islandESPParts) do
+        if part and part.Parent then part:Destroy() end
+    end
+    islandESPParts = {}
+
+    local Map = workspace:FindFirstChild("Map")
+    if not Map then return end
+
+    for _, island in pairs(Map:GetChildren()) do
+        local center = island:FindFirstChild("Center")
+        if center then
+            local part = Instance.new("Part")
+            part.Anchored = true
+            part.CanCollide = false
+            part.Transparency = 1
+            part.Size = Vector3.new(1, 1, 1)
+            part.CFrame = center.CFrame
+            part.Parent = workspace
+
+            local bb = Instance.new("BillboardGui")
+            bb.AlwaysOnTop = true
+            bb.Size = UDim2.new(0, 140, 0, 40)
+            bb.StudsOffset = Vector3.new(0, 15, 0)
+            bb.Adornee = part
+            bb.Parent = IslandESPFolder
+
+            local bg = Instance.new("Frame")
+            bg.Size = UDim2.new(1, 0, 1, 0)
+            bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            bg.BackgroundTransparency = 0.4
+            bg.BorderSizePixel = 0
+            bg.Parent = bb
+
+            local uic = Instance.new("UICorner")
+            uic.CornerRadius = UDim.new(0, 6)
+            uic.Parent = bg
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, 0, 1, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.TextColor3 = Color3.fromRGB(255, 210, 50)
+            lbl.TextStrokeTransparency = 0.4
+            lbl.Font = Enum.Font.GothamBold
+            lbl.TextScaled = true
+            lbl.Text = island.Name
+            lbl.Parent = bg
+
+            table.insert(islandESPParts, part)
+        end
+    end
+end
+
+local function removeIslandESP()
+    for _, part in pairs(islandESPParts) do
+        if part and part.Parent then part:Destroy() end
+    end
+    islandESPParts = {}
+    for _, v in pairs(IslandESPFolder:GetChildren()) do v:Destroy() end
+end
+
+-- Player events
 Players.PlayerAdded:Connect(function(p)
     if Settings.ESP then
         p.CharacterAdded:Connect(function()
@@ -152,9 +256,7 @@ for _, p in pairs(Players:GetPlayers()) do
 end
 
 -- === FLY ===
-local flyConnection
-local bodyVelocity
-local bodyGyro
+local flyConnection, bodyVelocity, bodyGyro
 
 local function startFly()
     local char = player.Character
@@ -180,14 +282,12 @@ local function startFly()
         if not Settings.Fly then return end
         local cam = workspace.CurrentCamera
         local moveDir = Vector3.zero
-
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0,1,0) end
         bodyVelocity.Velocity = moveDir.Magnitude > 0 and moveDir.Unit * Settings.FlySpeed or Vector3.zero
         bodyGyro.CFrame = cam.CFrame
     end)
@@ -230,26 +330,58 @@ local function stopNoclip()
     end
 end
 
--- === HEARTBEAT ===
+-- === FULLBRIGHT ===
+local function setFullBright(enabled)
+    local lighting = game:GetService("Lighting")
+    if enabled then
+        lighting.Brightness = 10
+        lighting.ClockTime = 14
+        lighting.FogEnd = 1e6
+        lighting.GlobalShadows = false
+        lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    else
+        lighting.Brightness = 1
+        lighting.ClockTime = 14
+        lighting.FogEnd = 100000
+        lighting.GlobalShadows = true
+        lighting.Ambient = Color3.fromRGB(70, 70, 70)
+    end
+end
+
+-- === HEARTBEAT PRINCIPAL ===
 RunService.Heartbeat:Connect(function()
     local hum = getHumanoid()
     if hum then
         hum.WalkSpeed = Settings.WalkSpeed
+        if Settings.InfiniteStamina then
+            -- Arcane Odyssey stamina is handled server-side but we attempt locally
+            local stamina = player.Character and player.Character:FindFirstChild("Stamina")
+            if stamina then stamina.Value = stamina.MaxValue or 100 end
+        end
+    end
+    if Settings.AntiDrown then
+        local char = player.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.Health = humanoid.MaxHealth end
+        end
     end
 end)
 
--- === UI ===
+-- === UI WINDOW ===
 local Window = Rayfield:CreateWindow({
-    Name = "Setras Hub",
+    Name = "Setras Hub - Arcane Odyssey",
     LoadingTitle = "Setras Hub",
-    LoadingSubtitle = "by Setras",
+    LoadingSubtitle = "Arcane Odyssey Edition",
     Theme = "Default",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
 })
 
--- TAB SPEED
-local SpeedTab = Window:CreateTab("Speed", 4483362458)
+-- =========== TAB: PLAYER ===========
+local PlayerTab = Window:CreateTab("Player", 4483362458)
 
-SpeedTab:CreateSlider({
+PlayerTab:CreateSlider({
     Name = "Walk Speed",
     Range = {16, 500},
     Increment = 1,
@@ -261,7 +393,7 @@ SpeedTab:CreateSlider({
     end,
 })
 
-SpeedTab:CreateToggle({
+PlayerTab:CreateToggle({
     Name = "Speed Boost x5",
     CurrentValue = false,
     Flag = "SpeedBoost",
@@ -271,16 +403,36 @@ SpeedTab:CreateToggle({
     end,
 })
 
-SpeedTab:CreateButton({
+PlayerTab:CreateToggle({
+    Name = "Infinite Stamina",
+    CurrentValue = false,
+    Flag = "InfStamina",
+    Callback = function(Value)
+        Settings.InfiniteStamina = Value
+        Rayfield:Notify({ Title = "Stamina", Content = Value and "Infinite Stamina ON" or "Infinite Stamina OFF", Duration = 2 })
+    end,
+})
+
+PlayerTab:CreateToggle({
+    Name = "Anti Drown",
+    CurrentValue = false,
+    Flag = "AntiDrown",
+    Callback = function(Value)
+        Settings.AntiDrown = Value
+        Rayfield:Notify({ Title = "Anti Drown", Content = Value and "Anti Drown ON" or "Anti Drown OFF", Duration = 2 })
+    end,
+})
+
+PlayerTab:CreateButton({
     Name = "Reset Speed",
     Callback = function()
         Settings.WalkSpeed = 16
         Rayfield:SetValue("WalkSpeed", 16)
-        Rayfield:Notify({ Title = "Reset", Content = "Speed reset to default.", Duration = 3 })
+        Rayfield:Notify({ Title = "Reset", Content = "Speed reset to default.", Duration = 2 })
     end,
 })
 
--- TAB MOVEMENT
+-- =========== TAB: MOVEMENT ===========
 local MoveTab = Window:CreateTab("Movement", 4483362458)
 
 MoveTab:CreateToggle({
@@ -290,7 +442,7 @@ MoveTab:CreateToggle({
     Callback = function(Value)
         Settings.Fly = Value
         if Value then startFly() else stopFly() end
-        Rayfield:Notify({ Title = "Fly", Content = Value and "Fly enabled. (WASD + Space/Shift)" or "Fly disabled.", Duration = 3 })
+        Rayfield:Notify({ Title = "Fly", Content = Value and "Fly ON - WASD + Space / Shift" or "Fly OFF", Duration = 3 })
     end,
 })
 
@@ -313,46 +465,147 @@ MoveTab:CreateToggle({
     Callback = function(Value)
         Settings.Noclip = Value
         if Value then startNoclip() else stopNoclip() end
-        Rayfield:Notify({ Title = "Noclip", Content = Value and "Noclip enabled." or "Noclip disabled.", Duration = 2 })
+        Rayfield:Notify({ Title = "Noclip", Content = Value and "Noclip ON" or "Noclip OFF", Duration = 2 })
     end,
 })
 
--- TAB TELEPORT ISLANDS
-local TpTab = Window:CreateTab("Islands", 4483362458)
+-- =========== TAB: VISUALS ===========
+local VisualTab = Window:CreateTab("Visuals", 4483362458)
 
-for name, cf in pairs(Islands) do
-    TpTab:CreateButton({
-        Name = "Teleport to " .. name,
-        Callback = function()
-            teleportTo(cf)
-            Rayfield:Notify({ Title = "Teleport", Content = "Teleported to " .. name, Duration = 2 })
-        end,
-    })
-end
+VisualTab:CreateToggle({
+    Name = "Fullbright",
+    CurrentValue = false,
+    Flag = "Fullbright",
+    Callback = function(Value)
+        Settings.FullBright = Value
+        setFullBright(Value)
+        Rayfield:Notify({ Title = "Fullbright", Content = Value and "Fullbright ON" or "Fullbright OFF", Duration = 2 })
+    end,
+})
 
--- TAB TELEPORT NPCs
-local NpcTab = Window:CreateTab("NPCs", 4483362458)
-
-for name, cf in pairs(NPCs) do
-    NpcTab:CreateButton({
-        Name = "Teleport to " .. name,
-        Callback = function()
-            teleportTo(cf)
-            Rayfield:Notify({ Title = "Teleport", Content = "Teleported to " .. name, Duration = 2 })
-        end,
-    })
-end
-
--- TAB ESP
-local ESPTab = Window:CreateTab("ESP", 4483362458)
-
-ESPTab:CreateToggle({
+VisualTab:CreateToggle({
     Name = "Player ESP",
     CurrentValue = false,
     Flag = "ESPToggle",
     Callback = function(Value)
         Settings.ESP = Value
         refreshESP()
-        Rayfield:Notify({ Title = "ESP", Content = Value and "ESP enabled." or "ESP disabled.", Duration = 2 })
+        Rayfield:Notify({ Title = "ESP", Content = Value and "Player ESP ON" or "Player ESP OFF", Duration = 2 })
+    end,
+})
+
+VisualTab:CreateToggle({
+    Name = "Island ESP",
+    CurrentValue = false,
+    Flag = "IslandESP",
+    Callback = function(Value)
+        Settings.IslandESP = Value
+        if Value then createIslandESP() else removeIslandESP() end
+        Rayfield:Notify({ Title = "Island ESP", Content = Value and "Island ESP ON" or "Island ESP OFF", Duration = 2 })
+    end,
+})
+
+-- =========== TAB: ISLANDS ===========
+local TpTab = Window:CreateTab("Islands", 4483362458)
+
+TpTab:CreateSection("Sea 1 - Bronze Sea")
+
+local sea1 = {
+    "Redwake", "Ironport", "Frostmill", "Palo Town",
+    "Stepstones", "Shell Island", "Sailor's Lodge", "Mango Isle",
+    "Harvest Island", "Limestone Key", "Darkwood",
+}
+
+for _, name in pairs(sea1) do
+    TpTab:CreateButton({
+        Name = name,
+        Callback = function()
+            teleportToIsland(name)
+            Rayfield:Notify({ Title = "Teleport", Content = "Teleported to " .. name, Duration = 2 })
+        end,
+    })
+end
+
+TpTab:CreateSection("Sea 2 - Nimbus Sea")
+
+local sea2 = {
+    "Ravenna", "Fort Talos", "Whispering Cavern",
+    "Cirrus Island", "Sandfall Isle", "Silverhold",
+    "Oblitesco", "Nameless Isles", "Wrath of Alastair",
+}
+
+for _, name in pairs(sea2) do
+    TpTab:CreateButton({
+        Name = name,
+        Callback = function()
+            teleportToIsland(name)
+            Rayfield:Notify({ Title = "Teleport", Content = "Teleported to " .. name, Duration = 2 })
+        end,
+    })
+end
+
+-- =========== TAB: NPCs ===========
+local NpcTab = Window:CreateTab("NPCs", 4483362458)
+
+NpcTab:CreateSection("Story NPCs")
+
+local StoryNPCs = {
+    "Morden", "Iris", "Calvus", "Khan",
+    "Elius", "Argos", "Shura", "Carina",
+    "Revon", "Merlot",
+}
+
+for _, name in pairs(StoryNPCs) do
+    NpcTab:CreateButton({
+        Name = name,
+        Callback = function()
+            teleportToNPC(name)
+        end,
+    })
+end
+
+NpcTab:CreateSection("Bosses")
+
+local Bosses = {
+    "Executioner", "Akursius", "Trigno", "Torren",
+    "Abyss Watcher", "Verdies",
+}
+
+for _, name in pairs(Bosses) do
+    NpcTab:CreateButton({
+        Name = name,
+        Callback = function()
+            teleportToNPC(name)
+        end,
+    })
+end
+
+-- =========== TAB: MISC ===========
+local MiscTab = Window:CreateTab("Misc", 4483362458)
+
+MiscTab:CreateButton({
+    Name = "Copy My Position",
+    Callback = function()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local pos = char.HumanoidRootPart.Position
+            setclipboard(string.format("CFrame.new(%d, %d, %d)", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z)))
+            Rayfield:Notify({ Title = "Position Copied", Content = string.format("X:%d Y:%d Z:%d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z)), Duration = 4 })
+        end
+    end,
+})
+
+MiscTab:CreateButton({
+    Name = "Rejoin Server",
+    Callback = function()
+        local TeleportService = game:GetService("TeleportService")
+        TeleportService:Teleport(game.PlaceId, player)
+    end,
+})
+
+MiscTab:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        player.Character:FindFirstChildOfClass("Humanoid").Health = 0
     end,
 })
