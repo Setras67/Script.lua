@@ -972,8 +972,8 @@ SettingsTab:AddButton({
 
 SettingsTab:AddSection("Interface")
 
-InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:BuildInterfaceSection(SettingsTab)
+-- InterfaceManager:SetLibrary(Fluent)
+-- InterfaceManager:BuildInterfaceSection(SettingsTab)
 
 SettingsTab:AddSection("Info")
 
