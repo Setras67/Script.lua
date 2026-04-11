@@ -14,10 +14,9 @@ local lighting         = game:GetService("Lighting")
 local player           = Players.LocalPlayer
 
 -- FLUENT UI LOAD (même setup v2 qui marchait)
-local Fluent           = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager      = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-
 -- CONFIG SYSTEM
 local CONFIG_FOLDER = "SetrasHub"
 local CONFIG_EXT    = ".json"
@@ -486,7 +485,7 @@ SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreFlags({"TpPlayer","TpNPC","ConfigSelect"})
-InterfaceManager:BuildInterfaceSection(SettingsTab)
+-- InterfaceManager:BuildInterfaceSection(SettingsTab)
 SettingsTab:AddSection("Info")
 SettingsTab:AddParagraph({Title="Setras Hub v4",Content="Made by Setras | Paradox (Bleach)\nUNC: ~85+ | RCtrl = Toggle UI\nSave as 'default' = auto-load"})
 
