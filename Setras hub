@@ -586,7 +586,7 @@ local Window = Fluent:CreateWindow({
     SubTitle    = "Made by Setras",
     TabWidth    = 155,
     Size        = UDim2.fromOffset(610, 460),
-    Acrylic     = true,
+    Acrylic     = false,
     Theme       = "Amethyst",
     MinimizeKey = Enum.KeyCode.RightControl,
 })
