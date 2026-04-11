@@ -16,7 +16,7 @@ local player            = Players.LocalPlayer
 -- ============================================================
 -- FLUENT UI LOAD
 -- ============================================================
-local Fluent           = loadstring(game:HttpGet("https://raw.githubusercontent.com/jacklebeignet/Fluent-Reborn/refs/heads/main/src/ui.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 -- ============================================================
