@@ -99,9 +99,14 @@ end
 local function fire(name, ...)
     local rem = getRemotes()
     if not rem then return end
+
     local r = rem:FindFirstChild(name)
-    if r and r:IsA("RemoteEvent") then
-        pcall(function() r:FireServer(...) end)
+    if not r then return end
+
+    if r:IsA("RemoteEvent") then
+        pcall(function()
+            r:FireServer(...)
+        end)
     end
 end
 
@@ -124,21 +129,51 @@ end
 local function doM1()
     local rem = getRemotes()
     if not rem or not G.HRP then return end
+
     local r = rem:FindFirstChild("LeftClick")
-    if not r or not r:IsA("RemoteEvent") then return end
+    if not r then return end
+
+    local arm = G.Char and (
+        G.Char:FindFirstChild("Left Arm")
+        or G.Char:FindFirstChild("LeftHand")
+        or G.Char:FindFirstChild("LeftLowerArm")
+        or G.Char:FindFirstChild("LeftUpperArm")
+    )
+    if not arm then return end
+
     local t = os.clock()
+
     pcall(function()
-        r:FireServer(false, G.HRP.CFrame, false, nil, nil,
-            {t, t+0.001}, buildInput(false))
+        r:FireServer(
+            false,
+            G.HRP.CFrame,
+            false,
+            arm,
+            nil,
+            {t, t + 0.001},
+            buildInput(false)
+        )
     end)
 end
 
 local function doCrit()
     local rem = getRemotes()
     if not rem then return end
+
     local r = rem:FindFirstChild("CriticalClick")
-    if not r or not r:IsA("RemoteEvent") then return end
-    pcall(function() r:FireServer(buildInput(true), false) end)
+    if not r then return end
+
+    local arm = G.Char and (
+        G.Char:FindFirstChild("Left Arm")
+        or G.Char:FindFirstChild("LeftHand")
+        or G.Char:FindFirstChild("LeftLowerArm")
+        or G.Char:FindFirstChild("LeftUpperArm")
+    )
+    if not arm then return end
+
+    pcall(function()
+        r:FireServer(buildInput(true), arm)
+    end)
 end
 
 -- ── Anti AFK ─────────────────────────────────────────────────────
