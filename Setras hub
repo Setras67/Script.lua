@@ -480,8 +480,8 @@ local lastMobESP = 0
 local blocking  = false
 
 -- M1 throttle : 0.13s entre chaque coup (évite le lag)
-local M1_COOLDOWN   = 0.13
-local CRIT_COOLDOWN = 0.55
+local M1_COOLDOWN   = 0.55
+local CRIT_COOLDOWN = 0.2
 local DODGE_CD      = 1.6
 
 RunService.Heartbeat:Connect(function(dt)
