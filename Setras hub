@@ -1,7 +1,7 @@
 -- ============================================================
---   SETRAS HUB v4 | Paradox (Bleach Roblox)
---   Made by Setras
---   UNC requis : ~85+  |  RCtrl = Toggle UI
+-- SETRAS HUB | Paradox (Bleach Roblox)
+-- Made by Setras
+-- UNC requis : ~85+
 -- ============================================================
 
 -- SERVICES
@@ -13,488 +13,1033 @@ local TweenService     = game:GetService("TweenService")
 local lighting         = game:GetService("Lighting")
 local player           = Players.LocalPlayer
 
--- FLUENT UI LOAD (même setup v2 qui marchait)
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+-- ============================================================
+-- FLUENT UI
+-- ============================================================
+local Fluent          = loadstring(game:HttpGet("https://raw.githubusercontent.com/jacklebeignet/Fluent-Reborn/refs/heads/main/src/ui.lua"))()
+local SaveManager     = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
--- CONFIG SYSTEM
-local CONFIG_FOLDER = "SetrasHub"
-local CONFIG_EXT    = ".json"
-pcall(function() if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end end)
+
+-- ============================================================
+-- CONFIG SAVE/LOAD (compatible Xeno + Delta)
+-- ============================================================
+local CONFIG_FILE = "SetrasHub_Paradox.json"
 
 local Settings = {
-    KillAura=false, AutoM1=false, AutoCritical=false, KillAuraRange=20,
-    AutoBlock=false, AutoDodge=false, SemiGodMode=false, AutoEquip=false,
-    AutoFarm=false, AutoFarmRange=80,
-    WalkSpeed=16, Fly=false, FlySpeed=100, Noclip=false,
-    PlayerESP=false, MobESP=false, Fullbright=false, AntiAFK=false,
+    AutoM1         = false,
+    AutoCritical   = false,
+    KillAura       = false,
+    KillAuraRange  = 20,
+    AutoBlock      = false,
+    AutoDodge      = false,
+    SemiGodMode    = false,
+    AutoEquip      = false,
+    AutoFarm       = false,
+    AutoFarmRange  = 50,
+    WalkSpeed      = 16,
+    Fly            = false,
+    CFly           = false,
+    FlySpeed       = 100,
+    CFlySpeed      = 50,
+    Noclip         = false,
+    PlayerESP      = false,
+    MobESP         = false,
+    Fullbright     = false,
+    AntiAFK        = false,
 }
 
-local function getConfigList()
-    local list = {}
-    pcall(function()
-        if isfolder(CONFIG_FOLDER) then
-            for _, f in pairs(listfiles(CONFIG_FOLDER)) do
-                local name = f:gsub(CONFIG_FOLDER.."\\",""):gsub(CONFIG_FOLDER.."/",""):gsub(CONFIG_EXT,"")
-                if name ~= "" then table.insert(list, name) end
-            end
+local function saveConfig()
+    if writefile then
+        local ok, err = pcall(function()
+            writefile(CONFIG_FILE, HttpService:JSONEncode(Settings))
+        end)
+        if ok then
+            Fluent:Notify({ Title = "Config", Content = "Saved!", Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Config", Content = "Save failed: " .. tostring(err), Duration = 3 })
         end
-    end)
-    return #list > 0 and list or {"default"}
-end
-
-local function saveConfig(name)
-    name = name or "default"
-    local ok, err = pcall(function()
-        writefile(CONFIG_FOLDER.."/"..name..CONFIG_EXT, HttpService:JSONEncode(Settings))
-    end)
-    Fluent:Notify({ Title=ok and "Saved" or "Error", Content=ok and "'"..name.."'" or tostring(err), Duration=3 })
-end
-
-local function loadConfig(name)
-    name = name or "default"
-    local ok, data = pcall(function()
-        return HttpService:JSONDecode(readfile(CONFIG_FOLDER.."/"..name..CONFIG_EXT))
-    end)
-    if ok and data then
-        for k,v in pairs(data) do if Settings[k]~=nil then Settings[k]=v end end
-        Fluent:Notify({ Title="Loaded", Content="'"..name.."'", Duration=3 })
-        return true
+    else
+        Fluent:Notify({ Title = "Config", Content = "writefile not supported", Duration = 3 })
     end
-    Fluent:Notify({ Title="Error", Content="Cannot load '"..name.."'", Duration=3 })
+end
+
+local function loadConfig()
+    if readfile and isfile and isfile(CONFIG_FILE) then
+        local ok, data = pcall(function()
+            return HttpService:JSONDecode(readfile(CONFIG_FILE))
+        end)
+        if ok and data then
+            for k, v in pairs(data) do
+                if Settings[k] ~= nil then
+                    Settings[k] = v
+                end
+            end
+            Fluent:Notify({ Title = "Config", Content = "Loaded!", Duration = 2 })
+            return true
+        end
+    end
     return false
 end
 
-local function deleteConfig(name)
-    name = name or "default"
-    pcall(function() local p=CONFIG_FOLDER.."/"..name..CONFIG_EXT; if isfile(p) then delfile(p) end end)
-    Fluent:Notify({ Title="Deleted", Content="'"..name.."'", Duration=3 })
+local function autoLoadConfig()
+    if readfile and isfile and isfile(CONFIG_FILE) then
+        local ok, data = pcall(function()
+            return HttpService:JSONDecode(readfile(CONFIG_FILE))
+        end)
+        if ok and data then
+            for k, v in pairs(data) do
+                if Settings[k] ~= nil then Settings[k] = v end
+            end
+        end
+    end
 end
 
--- Auto load default silencieusement
-pcall(function()
-    local path = CONFIG_FOLDER.."/default"..CONFIG_EXT
-    if isfile and isfile(path) then
-        local data = HttpService:JSONDecode(readfile(path))
-        for k,v in pairs(data) do if Settings[k]~=nil then Settings[k]=v end end
-    end
-end)
+autoLoadConfig()
 
+-- ============================================================
 -- UTILITY
+-- ============================================================
 local function getHumanoid()
-    local c=player.Character; return c and c:FindFirstChildOfClass("Humanoid")
+    local c = player.Character
+    return c and c:FindFirstChildOfClass("Humanoid")
 end
+
 local function getRootPart()
-    local c=player.Character; return c and c:FindFirstChild("HumanoidRootPart")
+    local c = player.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
 end
+
 local function isPlayerModel(model)
-    for _,p in pairs(Players:GetPlayers()) do if p.Character==model then return true end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Character == model then return true end
+    end
     return false
 end
+
 local function isHollowMob(name)
-    return name:find("Fishbone") or name:find("Crawler") or name:find("Hollow") or
-           name:find("Menos") or name:find("Adjucar") or name:find("difficulty") or
-           name:find("Vasto") or name:find("VasteLord")
+    return name:find("Fishbone") or name:find("Crawler") or
+           name:find("Hollow") or name:find("Menos") or
+           name:find("Adjucar") or name:find("difficulty")
 end
+
 local function getNearestMob(range)
-    local root=getRootPart(); if not root then return nil end
-    local nearest,best=nil,range
-    for _,obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Humanoid") and obj.Health>0 then
-            local model=obj.Parent
-            if model and model~=player.Character and not isPlayerModel(model) then
-                local r=model:FindFirstChild("HumanoidRootPart")
-                if r then local d=(root.Position-r.Position).Magnitude
-                    if d<best then best=d; nearest=model end
+    local root = getRootPart()
+    if not root then return nil end
+    local nearest, dist = nil, range
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Humanoid") and obj.Health > 0 then
+            local model = obj.Parent
+            if model and not isPlayerModel(model) then
+                local r = model:FindFirstChild("HumanoidRootPart")
+                if r then
+                    local d = (root.Position - r.Position).Magnitude
+                    if d < dist then dist = d; nearest = model end
                 end
             end
         end
     end
     return nearest
 end
+
 local function getNearestHollow(range)
-    local root=getRootPart(); if not root then return nil end
-    local nearest,best=nil,range
-    for _,obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Humanoid") and obj.Health>0 then
-            local model=obj.Parent
+    local root = getRootPart()
+    if not root then return nil end
+    local nearest, dist = nil, range
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Humanoid") and obj.Health > 0 then
+            local model = obj.Parent
             if model and isHollowMob(model.Name) then
-                local r=model:FindFirstChild("HumanoidRootPart")
-                if r then local d=(root.Position-r.Position).Magnitude
-                    if d<best then best=d; nearest=model end
+                local r = model:FindFirstChild("HumanoidRootPart")
+                if r then
+                    local d = (root.Position - r.Position).Magnitude
+                    if d < dist then dist = d; nearest = model end
                 end
             end
         end
     end
     return nearest
 end
+
 local function getCharRemote(name)
-    local c=player.Character; if not c then return nil end
-    local h=c:FindFirstChild("CharacterHandler"); if not h then return nil end
-    local r=h:FindFirstChild("Remotes"); if not r then return nil end
+    local c = player.Character
+    if not c then return nil end
+    local h = c:FindFirstChild("CharacterHandler")
+    if not h then return nil end
+    local r = h:FindFirstChild("Remotes")
+    if not r then return nil end
     return r:FindFirstChild(name)
 end
-local function fireRemote(name,...)
-    local r=getCharRemote(name); if r then pcall(function() r:FireServer(...) end) end
+
+local function fireRemote(name, ...)
+    local r = getCharRemote(name)
+    if r then r:FireServer(...) end
 end
+
 local function buildM1Args(target)
-    local root=getRootPart(); if not root then return nil end
-    local cf=root.CFrame
+    local root = getRootPart()
+    if not root then return nil end
+    local cf = root.CFrame
     if target then
-        local tr=target:FindFirstChild("HumanoidRootPart")
-        if tr then cf=CFrame.lookAt(root.Position,tr.Position) end
+        local tr = target:FindFirstChild("HumanoidRootPart")
+        if tr then cf = CFrame.lookAt(root.Position, tr.Position) end
     end
-    local t=os.clock()*1000
-    return false,cf,false,nil,nil,{t,t+0.001},{LeftShiftKey=false,DKey=false,Left=false,AKey=false}
+    local t = os.clock() * 1000
+    return false, cf, false, nil, nil, {t, t + 0.001}, {LeftShiftKey=false, DKey=false, Left=false, AKey=false}
 end
 
--- WALKSPEED (RenderStepped - plus rapide que Heartbeat)
-local wsConn
-local function applyWalkSpeed()
-    if wsConn then wsConn:Disconnect(); wsConn=nil end
-    if Settings.WalkSpeed==16 then
-        local hum=getHumanoid(); if hum then hum.WalkSpeed=16 end; return
-    end
-    wsConn=RunService.RenderStepped:Connect(function()
-        local hum=getHumanoid(); if hum then hum.WalkSpeed=Settings.WalkSpeed end
+-- ============================================================
+-- WALKSPEED (méthode IY loopspeed)
+-- ============================================================
+local walkspeedConn
+local function startWalkSpeed(speed)
+    if walkspeedConn then walkspeedConn:Disconnect() end
+    walkspeedConn = RunService.Heartbeat:Connect(function()
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = speed end
     end)
 end
 
--- FLY (IY BodyVelocity + Yaw-only gyro = zero roulades)
-local flyConn,flyBV,flyBG
+local function stopWalkSpeed()
+    if walkspeedConn then walkspeedConn:Disconnect() walkspeedConn = nil end
+    local hum = getHumanoid()
+    if hum then hum.WalkSpeed = 16 end
+end
+
+-- ============================================================
+-- FLY (méthode IY BodyVelocity classique)
+-- ============================================================
+local flyConn
+local flyBV, flyBG
+
 local function startFly()
-    local root=getRootPart(); local hum=getHumanoid()
+    local char = player.Character
+    if not char then return end
+    local root = getRootPart()
+    local hum = getHumanoid()
     if not root or not hum then return end
-    hum.PlatformStand=true
-    flyBV=Instance.new("BodyVelocity"); flyBV.Velocity=Vector3.zero
-    flyBV.MaxForce=Vector3.new(9e4,9e4,9e4); flyBV.P=9e4; flyBV.Parent=root
-    flyBG=Instance.new("BodyGyro"); flyBG.MaxTorque=Vector3.new(9e4,9e4,9e4)
-    flyBG.P=9e4; flyBG.D=1e3; flyBG.CFrame=root.CFrame; flyBG.Parent=root
-    flyConn=RunService.RenderStepped:Connect(function()
+
+    hum.PlatformStand = true
+
+    flyBV = Instance.new("BodyVelocity")
+    flyBV.Velocity = Vector3.zero
+    flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    flyBV.P = 1e4
+    flyBV.Parent = root
+
+    flyBG = Instance.new("BodyGyro")
+    flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    flyBG.P = 1e4
+    flyBG.D = 100
+    flyBG.CFrame = root.CFrame
+    flyBG.Parent = root
+
+    flyConn = RunService.RenderStepped:Connect(function()
         if not Settings.Fly then return end
-        local cam=workspace.CurrentCamera; local dir=Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir+=cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir-=cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir-=cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir+=cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir+=Vector3.new(0,1,0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir-=Vector3.new(0,1,0) end
-        flyBV.Velocity=dir.Magnitude>0 and dir.Unit*Settings.FlySpeed or Vector3.zero
-        local _,yaw,_=cam.CFrame:ToEulerAnglesYXZ()
-        flyBG.CFrame=CFrame.fromEulerAnglesYXZ(0,yaw,0)
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir -= Vector3.new(0,1,0) end
+
+        if dir.Magnitude > 0 then
+            flyBV.Velocity = dir.Unit * Settings.FlySpeed
+        else
+            flyBV.Velocity = Vector3.zero
+        end
+
+        -- Gyro suit la caméra uniquement en Yaw pour éviter les roulades
+        local camCF = cam.CFrame
+        local _, ry, _ = camCF:ToEulerAnglesYXZ()
+        flyBG.CFrame = CFrame.fromEulerAnglesYXZ(0, ry, 0)
     end)
 end
+
 local function stopFly()
-    if flyConn then flyConn:Disconnect(); flyConn=nil end
-    if flyBV then flyBV:Destroy(); flyBV=nil end
-    if flyBG then flyBG:Destroy(); flyBG=nil end
-    local hum=getHumanoid(); if hum then hum.PlatformStand=false end
+    if flyConn then flyConn:Disconnect() flyConn = nil end
+    if flyBV then flyBV:Destroy() flyBV = nil end
+    if flyBG then flyBG:Destroy() flyBG = nil end
+    local hum = getHumanoid()
+    if hum then hum.PlatformStand = false end
 end
 
--- NOCLIP
-local noclipConn
-local function startNoclip()
-    noclipConn=RunService.Stepped:Connect(function()
-        if not Settings.Noclip then return end
-        local c=player.Character; if not c then return end
-        for _,p in pairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
+-- ============================================================
+-- CFLY (méthode IY CFrame - permet d'attaquer en volant)
+-- ============================================================
+local cflyConn
+
+local function startCFly()
+    local root = getRootPart()
+    if not root then return end
+
+    cflyConn = RunService.RenderStepped:Connect(function()
+        if not Settings.CFly then return end
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir -= Vector3.new(0,1,0) end
+
+        local r = getRootPart()
+        if r then
+            if dir.Magnitude > 0 then
+                r.CFrame = r.CFrame + dir.Unit * Settings.CFlySpeed * 0.05
+            end
+        end
     end)
 end
+
+local function stopCFly()
+    if cflyConn then cflyConn:Disconnect() cflyConn = nil end
+end
+
+-- ============================================================
+-- NOCLIP
+-- ============================================================
+local noclipConn
+
+local function startNoclip()
+    noclipConn = RunService.Stepped:Connect(function()
+        if not Settings.Noclip then return end
+        local c = player.Character
+        if not c then return end
+        for _, p in pairs(c:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end)
+end
+
 local function stopNoclip()
-    if noclipConn then noclipConn:Disconnect(); noclipConn=nil end
-    local c=player.Character
-    if c then for _,p in pairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=true end end end
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    local c = player.Character
+    if c then
+        for _, p in pairs(c:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = true end
+        end
+    end
 end
 
+-- ============================================================
 -- FULLBRIGHT
-local origLight={Brightness=lighting.Brightness,ClockTime=lighting.ClockTime,FogEnd=lighting.FogEnd,GlobalShadows=lighting.GlobalShadows,Ambient=lighting.Ambient}
+-- ============================================================
+local origLighting = {
+    Brightness    = lighting.Brightness,
+    ClockTime     = lighting.ClockTime,
+    FogEnd        = lighting.FogEnd,
+    GlobalShadows = lighting.GlobalShadows,
+    Ambient       = lighting.Ambient,
+}
+
 local function setFullbright(on)
-    if on then lighting.Brightness=10;lighting.ClockTime=14;lighting.FogEnd=1e9;lighting.GlobalShadows=false;lighting.Ambient=Color3.fromRGB(255,255,255)
-    else lighting.Brightness=origLight.Brightness;lighting.ClockTime=origLight.ClockTime;lighting.FogEnd=origLight.FogEnd;lighting.GlobalShadows=origLight.GlobalShadows;lighting.Ambient=origLight.Ambient end
+    if on then
+        lighting.Brightness    = 10
+        lighting.ClockTime     = 14
+        lighting.FogEnd        = 1e9
+        lighting.GlobalShadows = false
+        lighting.Ambient       = Color3.fromRGB(255, 255, 255)
+    else
+        lighting.Brightness    = origLighting.Brightness
+        lighting.ClockTime     = origLighting.ClockTime
+        lighting.FogEnd        = origLighting.FogEnd
+        lighting.GlobalShadows = origLighting.GlobalShadows
+        lighting.Ambient       = origLighting.Ambient
+    end
 end
 
--- ESP - Highlight pur
-local ESPFolder=Instance.new("Folder"); ESPFolder.Name="SetrasESP"; ESPFolder.Parent=game.CoreGui
-local MobESPFolder=Instance.new("Folder"); MobESPFolder.Name="SetrasMobESP"; MobESPFolder.Parent=game.CoreGui
-local function makeHL(parent,adornee,fill,outline)
-    local hl=Instance.new("Highlight"); hl.FillColor=fill; hl.OutlineColor=outline
-    hl.FillTransparency=0.6; hl.OutlineTransparency=0
-    hl.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop; hl.Adornee=adornee; hl.Parent=parent
+-- ============================================================
+-- ESP - VERSION PROPRE AVEC HIGHLIGHT UNIQUEMENT
+-- ============================================================
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "SetrasESP"
+ESPFolder.Parent = game.CoreGui
+
+local MobESPFolder = Instance.new("Folder")
+MobESPFolder.Name = "SetrasMobESP"
+MobESPFolder.Parent = game.CoreGui
+
+local function makeHighlight(parent, adornee, fillColor, outlineColor)
+    local hl = Instance.new("Highlight")
+    hl.FillColor         = fillColor
+    hl.OutlineColor      = outlineColor
+    hl.FillTransparency  = 0.65
+    hl.OutlineTransparency = 0
+    hl.Adornee           = adornee
+    hl.DepthMode         = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent            = parent
+    return hl
 end
+
+local function makeBillboard(adornee, text, color, yOffset)
+    local bb = Instance.new("BillboardGui")
+    bb.AlwaysOnTop  = true
+    bb.Size         = UDim2.new(0, 100, 0, 30)
+    bb.StudsOffset  = Vector3.new(0, yOffset or 2.5, 0)
+    bb.Adornee      = adornee
+    bb.LightInfluence = 0
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size                 = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3           = color
+    lbl.TextStrokeColor3     = Color3.new(0,0,0)
+    lbl.TextStrokeTransparency = 0.4
+    lbl.Font                 = Enum.Font.GothamBold
+    lbl.TextScaled           = true
+    lbl.Text                 = text
+    lbl.Parent               = bb
+    return bb, lbl
+end
+
 local function createPlayerESP(p)
-    if p==player then return end
-    local char=p.Character; if not char then return end
-    local old=ESPFolder:FindFirstChild(p.Name); if old then old:Destroy() end
-    local f=Instance.new("Folder"); f.Name=p.Name; f.Parent=ESPFolder
-    makeHL(f,char,Color3.fromRGB(200,0,0),Color3.fromRGB(255,60,60))
+    if p == player then return end
+    local char = p.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local old = ESPFolder:FindFirstChild(p.Name)
+    if old then old:Destroy() end
+
+    local holder = Instance.new("Folder")
+    holder.Name   = p.Name
+    holder.Parent = ESPFolder
+
+    makeHighlight(holder, char, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 80, 80))
+
+    local bb, lbl = makeBillboard(root, p.Name, Color3.fromRGB(255, 100, 100), 3.2)
+    bb.Parent = holder
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        lbl.Text = p.Name .. "\n" .. math.floor(hum.Health)
+        hum:GetPropertyChangedSignal("Health"):Connect(function()
+            lbl.Text = p.Name .. "\n" .. math.floor(hum.Health)
+        end)
+    end
 end
+
 local function refreshPlayerESP()
-    for _,v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
+    for _, v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
     if not Settings.PlayerESP then return end
-    for _,p in pairs(Players:GetPlayers()) do createPlayerESP(p) end
+    for _, p in pairs(Players:GetPlayers()) do createPlayerESP(p) end
 end
+
+local mobESPLast = 0
 local function refreshMobESP()
-    for _,v in pairs(MobESPFolder:GetChildren()) do v:Destroy() end
+    for _, v in pairs(MobESPFolder:GetChildren()) do v:Destroy() end
     if not Settings.MobESP then return end
-    local count=0
-    for _,obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Humanoid") and obj.Health>0 then
-            local model=obj.Parent
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Humanoid") and obj.Health > 0 then
+            local model = obj.Parent
             if model and not isPlayerModel(model) then
-                local f=Instance.new("Folder"); f.Name=model.Name..count; f.Parent=MobESPFolder
-                makeHL(f,model,Color3.fromRGB(255,120,0),Color3.fromRGB(255,190,0)); count+=1
+                local root = model:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local holder = Instance.new("Folder")
+                    holder.Name   = model.Name
+                    holder.Parent = MobESPFolder
+                    makeHighlight(holder, model, Color3.fromRGB(255, 140, 0), Color3.fromRGB(255, 200, 0))
+                    local bb, _ = makeBillboard(root, model.Name:gsub("_difficulty%d_.*", ""), Color3.fromRGB(255, 200, 50), 3)
+                    bb.Parent = holder
+                end
             end
         end
     end
 end
+
 Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function() task.wait(0.5); if Settings.PlayerESP then createPlayerESP(p) end end)
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.PlayerESP then createPlayerESP(p) end
+    end)
     if Settings.PlayerESP then createPlayerESP(p) end
 end)
-Players.PlayerRemoving:Connect(function(p) local h=ESPFolder:FindFirstChild(p.Name); if h then h:Destroy() end end)
-for _,p in pairs(Players:GetPlayers()) do
-    p.CharacterAdded:Connect(function() task.wait(0.5); if Settings.PlayerESP then createPlayerESP(p) end end)
+Players.PlayerRemoving:Connect(function(p)
+    local h = ESPFolder:FindFirstChild(p.Name)
+    if h then h:Destroy() end
+end)
+for _, p in pairs(Players:GetPlayers()) do
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Settings.PlayerESP then createPlayerESP(p) end
+    end)
 end
 
--- AUTO EQUIP
-local function checkAndEquip()
-    local c=player.Character; if not c then return end
-    if not c:FindFirstChildOfClass("Tool") then fireRemote("Sheathe") end
-end
+-- ============================================================
+-- MAIN LOOP - Combat optimisé avec throttle
+-- ============================================================
+local lastM1    = 0
+local lastCrit  = 0
+local lastDodge = 0
+local lastFarm  = 0
+local lastMobESP = 0
+local blocking  = false
 
--- COMBAT LOOPS (task.spawn dédiés = zero lag)
-task.spawn(function()
-    while true do task.wait(0.14)
-        if not (Settings.KillAura or Settings.AutoM1) then continue end
-        local target=getNearestMob(Settings.KillAuraRange); if not target then continue end
-        pcall(function()
-            local remote=getCharRemote("LeftClick")
-            if remote then remote:FireServer(buildM1Args(target)) end
-        end)
-    end
-end)
-task.spawn(function()
-    while true do task.wait(0.55)
-        if not Settings.AutoCritical then continue end
-        local target=getNearestMob(Settings.KillAuraRange); if not target then continue end
-        pcall(function()
-            local remote=getCharRemote("CriticalClick")
-            if remote then remote:FireServer({AKey=false,DKey=false,LeftShiftKey=false,Right=false,Left=false,RKey=true},false) end
-        end)
-    end
-end)
-local blockBusy=false
-task.spawn(function()
-    while true do task.wait(0.18)
-        if not Settings.AutoBlock or blockBusy then continue end
-        blockBusy=true
-        pcall(function() fireRemote("Block") end)
-        task.wait(0.15)
-        pcall(function() fireRemote("Unblock") end)
-        blockBusy=false
-    end
-end)
-task.spawn(function()
-    while true do task.wait(1.6)
-        if not Settings.AutoDodge then continue end
-        pcall(function()
-            local c=player.Character; if not c then return end
-            local h=c:FindFirstChild("CharacterHandler"); if not h then return end
-            local r=h:FindFirstChild("Remotes"); if not r then return end
-            local dodge=r:FindFirstChild("Dodge"); if dodge then dodge:FireServer(false) end
-        end)
-    end
-end)
-task.spawn(function()
-    while true do task.wait(0.2)
-        if not Settings.AutoFarm then continue end
-        local target=getNearestHollow(Settings.AutoFarmRange); if not target then continue end
-        local root=getRootPart(); if not root then continue end
-        local tr=target:FindFirstChild("HumanoidRootPart"); if not tr then continue end
-        if (root.Position-tr.Position).Magnitude>10 then
-            local goal=tr.Position+(root.Position-tr.Position).Unit*7+Vector3.new(0,2,0)
-            TweenService:Create(root,TweenInfo.new(0.15,Enum.EasingStyle.Linear),{CFrame=CFrame.new(goal)}):Play()
-        end
-    end
-end)
-task.spawn(function()
-    while true do task.wait(1); if Settings.AutoEquip then pcall(checkAndEquip) end end
-end)
-task.spawn(function()
-    while true do task.wait(5); if Settings.MobESP then pcall(refreshMobESP) end end
-end)
-task.spawn(function()
-    while true do task.wait(60)
-        if Settings.AntiAFK then
-            pcall(function()
-                local v=game:GetService("VirtualInputManager")
-                v:SendKeyEvent(true,"Q",false,game); task.wait(0.1); v:SendKeyEvent(false,"Q",false,game)
-            end)
-        end
-    end
-end)
+-- M1 throttle : 0.13s entre chaque coup (évite le lag)
+local M1_COOLDOWN   = 0.13
+local CRIT_COOLDOWN = 0.55
+local DODGE_CD      = 1.6
 
--- SEMI GOD MODE
-RunService.RenderStepped:Connect(function()
-    if Settings.SemiGodMode then
-        local hum=getHumanoid()
-        if hum and hum.Health<hum.MaxHealth*0.5 and not blockBusy then
-            blockBusy=true
+RunService.Heartbeat:Connect(function(dt)
+    local now = tick()
+
+    -- WalkSpeed via loop
+    if Settings.WalkSpeed ~= 16 then
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = Settings.WalkSpeed end
+    end
+
+    -- Auto Block (léger : fire seulement si pas déjà bloquant)
+    if Settings.AutoBlock and not blocking then
+        blocking = true
+        task.spawn(function()
+            fireRemote("Block")
+            task.wait(0.2)
+            fireRemote("Unblock")
+            task.wait(0.05)
+            blocking = false
+        end)
+    end
+
+    -- Auto Dodge
+    if Settings.AutoDodge and now - lastDodge > DODGE_CD then
+        lastDodge = now
+        task.spawn(function()
+            local c = player.Character
+            if c then
+                local h = c:FindFirstChild("CharacterHandler")
+                if h then
+                    local r = h:FindFirstChild("Remotes")
+                    if r then
+                        local dodge = r:FindFirstChild("Dodge")
+                        if dodge then dodge:FireServer(false) end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Kill Aura + Auto M1 (même boucle, pas de duplication)
+    if (Settings.KillAura or Settings.AutoM1) and now - lastM1 > M1_COOLDOWN then
+        local target = getNearestMob(Settings.KillAuraRange)
+        if target then
+            lastM1 = now
             task.spawn(function()
-                pcall(function() fireRemote("Block") end)
-                task.wait(0.4)
-                pcall(function() fireRemote("Unblock") end)
-                blockBusy=false
+                local remote = getCharRemote("LeftClick")
+                if remote then
+                    remote:FireServer(buildM1Args(target))
+                end
+            end)
+
+            -- Auto Critical intégré dans la même détection
+            if Settings.AutoCritical and now - lastCrit > CRIT_COOLDOWN then
+                lastCrit = now
+                task.spawn(function()
+                    local crit = getCharRemote("CriticalClick")
+                    if crit then
+                        crit:FireServer({
+                            AKey=false, DKey=false,
+                            LeftShiftKey=false, Right=false,
+                            Left=false, RKey=true
+                        }, false)
+                    end
+                end)
+            end
+        end
+    end
+
+    -- Auto Critical seul (si Kill Aura désactivé)
+    if Settings.AutoCritical and not Settings.KillAura and not Settings.AutoM1 and now - lastCrit > CRIT_COOLDOWN then
+        local target = getNearestMob(Settings.KillAuraRange)
+        if target then
+            lastCrit = now
+            task.spawn(function()
+                local crit = getCharRemote("CriticalClick")
+                if crit then
+                    crit:FireServer({
+                        AKey=false, DKey=false,
+                        LeftShiftKey=false, Right=false,
+                        Left=false, RKey=true
+                    }, false)
+                end
             end)
         end
     end
+
+    -- Semi God Mode
+    if Settings.SemiGodMode then
+        local hum = getHumanoid()
+        if hum and hum.Health < hum.MaxHealth * 0.5 and not blocking then
+            blocking = true
+            task.spawn(function()
+                fireRemote("Block")
+                task.wait(0.5)
+                fireRemote("Unblock")
+                blocking = false
+            end)
+        end
+    end
+
+    -- Auto Farm
+    if Settings.AutoFarm and now - lastFarm > 0.25 then
+        lastFarm = now
+        local target = getNearestHollow(Settings.AutoFarmRange)
+        if target then
+            local root = getRootPart()
+            local tr = target:FindFirstChild("HumanoidRootPart")
+            if root and tr then
+                local offset = (root.Position - tr.Position).Magnitude > 8
+                if offset then
+                    local dir = (tr.Position - root.Position).Unit
+                    root.CFrame = CFrame.new(tr.Position - dir * 5 + Vector3.new(0, 2, 0))
+                end
+            end
+        end
+    end
+
+    -- Mob ESP refresh toutes les 4s
+    if Settings.MobESP and now - lastMobESP > 4 then
+        lastMobESP = now
+        task.spawn(refreshMobESP)
+    end
 end)
 
+-- ============================================================
 -- CHARACTER RESPAWN
+-- ============================================================
 player.CharacterAdded:Connect(function()
     task.wait(1.5)
-    applyWalkSpeed()
+    if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
     if Settings.Fly then startFly() end
+    if Settings.CFly then startCFly() end
     if Settings.Noclip then startNoclip() end
-    if Settings.Fullbright then setFullbright(true) end
-    if Settings.AutoEquip then task.wait(0.5); pcall(checkAndEquip) end
+    if Settings.AutoEquip then task.wait(0.5) fireRemote("Sheathe") end
 end)
 
 -- ============================================================
--- UI
+-- UI WINDOW
 -- ============================================================
-local Window=Fluent:CreateWindow({
-    Title="Setras Hub", SubTitle="Made by Setras",
-    TabWidth=155, Size=UDim2.fromOffset(610,460),
-    Acrylic=false, Theme="Amethyst",
-    MinimizeKey=Enum.KeyCode.RightControl,
+local Window = Fluent:CreateWindow({
+    Title       = "Setras Hub",
+    SubTitle    = "Made by Setras",
+    TabWidth    = 155,
+    Size        = UDim2.fromOffset(610, 460),
+    Acrylic     = true,
+    Theme       = "Amethyst",
+    MinimizeKey = Enum.KeyCode.RightControl,
 })
 
--- COMBAT TAB
-local CombatTab=Window:AddTab({Title="Combat",Icon="sword"})
+-- ============================================================
+-- TAB : COMBAT
+-- ============================================================
+local CombatTab = Window:AddTab({ Title = "Combat", Icon = "sword" })
+
 CombatTab:AddSection("Offense")
-CombatTab:AddToggle("KillAura",{Title="Kill Aura",Description="Auto M1 + Critical on nearest enemy",Default=Settings.KillAura,Callback=function(v) Settings.KillAura=v; if v then Settings.AutoM1=true; Settings.AutoCritical=true end end})
-CombatTab:AddToggle("AutoM1",{Title="Auto M1",Description="Auto left click on nearest enemy",Default=Settings.AutoM1,Callback=function(v) Settings.AutoM1=v end})
-CombatTab:AddToggle("AutoCritical",{Title="Auto Critical",Default=Settings.AutoCritical,Callback=function(v) Settings.AutoCritical=v end})
-CombatTab:AddSlider("KillAuraRange",{Title="Aura Range",Min=5,Max=80,Default=Settings.KillAuraRange,Rounding=0,Callback=function(v) Settings.KillAuraRange=v end})
+
+CombatTab:AddToggle("AutoM1", {
+    Title       = "Auto M1",
+    Description = "Auto attacks nearest enemy",
+    Default     = Settings.AutoM1,
+    Callback    = function(v) Settings.AutoM1 = v end,
+})
+
+CombatTab:AddToggle("AutoCritical", {
+    Title       = "Auto Critical",
+    Description = "Auto critical on nearest enemy",
+    Default     = Settings.AutoCritical,
+    Callback    = function(v) Settings.AutoCritical = v end,
+})
+
+CombatTab:AddToggle("KillAura", {
+    Title       = "Kill Aura",
+    Description = "Auto M1 + Critical combined",
+    Default     = Settings.KillAura,
+    Callback    = function(v) Settings.KillAura = v end,
+})
+
+CombatTab:AddSlider("KillAuraRange", {
+    Title    = "Aura Range",
+    Min      = 5,
+    Max      = 80,
+    Default  = Settings.KillAuraRange,
+    Rounding = 0,
+    Callback = function(v) Settings.KillAuraRange = v end,
+})
+
 CombatTab:AddSection("Defense")
-CombatTab:AddToggle("AutoBlock",{Title="Auto Block",Default=Settings.AutoBlock,Callback=function(v) Settings.AutoBlock=v end})
-CombatTab:AddToggle("AutoDodge",{Title="Auto Dodge",Description="Dodges every 1.6s",Default=Settings.AutoDodge,Callback=function(v) Settings.AutoDodge=v end})
-CombatTab:AddToggle("SemiGodMode",{Title="Semi God Mode",Description="Auto blocks when HP < 50%",Default=Settings.SemiGodMode,Callback=function(v) Settings.SemiGodMode=v end})
+
+CombatTab:AddToggle("AutoBlock", {
+    Title       = "Auto Block",
+    Description = "Constantly blocks incoming attacks",
+    Default     = Settings.AutoBlock,
+    Callback    = function(v) Settings.AutoBlock = v end,
+})
+
+CombatTab:AddToggle("AutoDodge", {
+    Title       = "Auto Dodge",
+    Description = "Auto dodge every 1.6s",
+    Default     = Settings.AutoDodge,
+    Callback    = function(v) Settings.AutoDodge = v end,
+})
+
+CombatTab:AddToggle("SemiGodMode", {
+    Title       = "Semi God Mode",
+    Description = "Auto blocks when HP drops below 50%",
+    Default     = Settings.SemiGodMode,
+    Callback    = function(v) Settings.SemiGodMode = v end,
+})
+
 CombatTab:AddSection("Weapon")
-CombatTab:AddToggle("AutoEquip",{Title="Auto Equip Weapon",Description="Equips only if not already equipped",Default=Settings.AutoEquip,Callback=function(v) Settings.AutoEquip=v end})
 
--- AUTO FARM TAB
-local FarmTab=Window:AddTab({Title="Auto Farm",Icon="zap"})
-FarmTab:AddSection("Vasto Lorde Farm")
-FarmTab:AddToggle("AutoFarm",{Title="Auto Farm Vasto Lorde",Description="Teleports to nearest hollow + Kill Aura",Default=Settings.AutoFarm,Callback=function(v) Settings.AutoFarm=v; if v then Settings.KillAura=true; Settings.AutoM1=true; Settings.AutoCritical=true end end})
-FarmTab:AddSlider("AutoFarmRange",{Title="Detection Range",Min=20,Max=500,Default=Settings.AutoFarmRange,Rounding=0,Callback=function(v) Settings.AutoFarmRange=v end})
-FarmTab:AddParagraph({Title="Info",Content="Détecte Fishbone, Crawler et tous les hollows automatiquement."})
+CombatTab:AddToggle("AutoEquip", {
+    Title       = "Auto Equip Weapon",
+    Description = "Keeps weapon drawn at all times",
+    Default     = Settings.AutoEquip,
+    Callback    = function(v)
+        Settings.AutoEquip = v
+        if v then fireRemote("Sheathe") end
+    end,
+})
 
--- MOVEMENT TAB
-local MoveTab=Window:AddTab({Title="Movement",Icon="move"})
+-- ============================================================
+-- TAB : AUTO FARM
+-- ============================================================
+local FarmTab = Window:AddTab({ Title = "Auto Farm", Icon = "zap" })
+
+FarmTab:AddSection("Hollow Farm")
+
+FarmTab:AddToggle("AutoFarm", {
+    Title       = "Auto Farm Hollows",
+    Description = "Teleports to nearest hollow + Kill Aura",
+    Default     = Settings.AutoFarm,
+    Callback    = function(v)
+        Settings.AutoFarm = v
+        if v then Settings.KillAura = true end
+    end,
+})
+
+FarmTab:AddSlider("AutoFarmRange", {
+    Title    = "Farm Detection Range",
+    Min      = 20,
+    Max      = 300,
+    Default  = Settings.AutoFarmRange,
+    Rounding = 0,
+    Callback = function(v) Settings.AutoFarmRange = v end,
+})
+
+-- ============================================================
+-- TAB : MOVEMENT
+-- ============================================================
+local MoveTab = Window:AddTab({ Title = "Movement", Icon = "move" })
+
 MoveTab:AddSection("Walk Speed")
-MoveTab:AddSlider("WalkSpeed",{Title="Walk Speed",Min=16,Max=500,Default=Settings.WalkSpeed,Rounding=0,Callback=function(v) Settings.WalkSpeed=v; applyWalkSpeed() end})
-MoveTab:AddButton({Title="Reset Speed",Callback=function() Settings.WalkSpeed=16; applyWalkSpeed(); Fluent:Notify({Title="Speed",Content="Reset to 16",Duration=2}) end})
-MoveTab:AddSection("Fly")
-MoveTab:AddToggle("Fly",{Title="Fly",Description="WASD + Space/Shift — No rolls",Default=Settings.Fly,Callback=function(v) Settings.Fly=v; if v then startFly() else stopFly() end end})
-MoveTab:AddSlider("FlySpeed",{Title="Fly Speed",Min=10,Max=400,Default=Settings.FlySpeed,Rounding=0,Callback=function(v) Settings.FlySpeed=v end})
+
+MoveTab:AddSlider("WalkSpeed", {
+    Title    = "Walk Speed",
+    Min      = 16,
+    Max      = 500,
+    Default  = Settings.WalkSpeed,
+    Rounding = 0,
+    Callback = function(v)
+        Settings.WalkSpeed = v
+        if v > 16 then
+            startWalkSpeed(v)
+        else
+            stopWalkSpeed()
+        end
+    end,
+})
+
+MoveTab:AddButton({
+    Title    = "Reset Speed",
+    Callback = function()
+        Settings.WalkSpeed = 16
+        stopWalkSpeed()
+        Fluent:Notify({ Title = "Speed", Content = "Reset to 16", Duration = 2 })
+    end,
+})
+
+MoveTab:AddSection("Fly (Standard)")
+
+MoveTab:AddToggle("Fly", {
+    Title       = "Fly",
+    Description = "WASD + Space/Shift",
+    Default     = Settings.Fly,
+    Callback    = function(v)
+        Settings.Fly = v
+        if v then startFly() else stopFly() end
+    end,
+})
+
+MoveTab:AddSlider("FlySpeed", {
+    Title    = "Fly Speed",
+    Min      = 10,
+    Max      = 400,
+    Default  = Settings.FlySpeed,
+    Rounding = 0,
+    Callback = function(v) Settings.FlySpeed = v end,
+})
+
+MoveTab:AddSection("CFly (CFrame - Attaque en vol)")
+
+MoveTab:AddToggle("CFly", {
+    Title       = "CFly",
+    Description = "Permet d'attaquer pendant le vol (bypass anti-cheat)",
+    Default     = Settings.CFly,
+    Callback    = function(v)
+        Settings.CFly = v
+        if v then startCFly() else stopCFly() end
+    end,
+})
+
+MoveTab:AddSlider("CFlySpeed", {
+    Title    = "CFly Speed",
+    Min      = 5,
+    Max      = 200,
+    Default  = Settings.CFlySpeed,
+    Rounding = 0,
+    Callback = function(v) Settings.CFlySpeed = v end,
+})
+
 MoveTab:AddSection("Other")
-MoveTab:AddToggle("Noclip",{Title="Noclip",Default=Settings.Noclip,Callback=function(v) Settings.Noclip=v; if v then startNoclip() else stopNoclip() end end})
 
--- VISUALS TAB
-local VisualTab=Window:AddTab({Title="Visuals",Icon="eye"})
+MoveTab:AddToggle("Noclip", {
+    Title    = "Noclip",
+    Default  = Settings.Noclip,
+    Callback = function(v)
+        Settings.Noclip = v
+        if v then startNoclip() else stopNoclip() end
+    end,
+})
+
+-- ============================================================
+-- TAB : VISUALS
+-- ============================================================
+local VisualTab = Window:AddTab({ Title = "Visuals", Icon = "eye" })
+
 VisualTab:AddSection("ESP")
-VisualTab:AddToggle("PlayerESP",{Title="Player ESP",Description="Red highlight on all players",Default=Settings.PlayerESP,Callback=function(v) Settings.PlayerESP=v; refreshPlayerESP() end})
-VisualTab:AddToggle("MobESP",{Title="Mob ESP",Description="Orange highlight on hollows/mobs",Default=Settings.MobESP,Callback=function(v) Settings.MobESP=v; if v then refreshMobESP() else for _,c in pairs(MobESPFolder:GetChildren()) do c:Destroy() end end end})
+
+VisualTab:AddToggle("PlayerESP", {
+    Title       = "Player ESP",
+    Description = "Highlights + name/HP above players",
+    Default     = Settings.PlayerESP,
+    Callback    = function(v)
+        Settings.PlayerESP = v
+        refreshPlayerESP()
+    end,
+})
+
+VisualTab:AddToggle("MobESP", {
+    Title       = "Mob ESP",
+    Description = "Highlights hollows and mobs",
+    Default     = Settings.MobESP,
+    Callback    = function(v)
+        Settings.MobESP = v
+        if v then refreshMobESP() else
+            for _, c in pairs(MobESPFolder:GetChildren()) do c:Destroy() end
+        end
+    end,
+})
+
 VisualTab:AddSection("World")
-VisualTab:AddToggle("Fullbright",{Title="Fullbright",Default=Settings.Fullbright,Callback=function(v) Settings.Fullbright=v; setFullbright(v) end})
 
--- PLAYER TAB
-local PlayerTab=Window:AddTab({Title="Player",Icon="user"})
+VisualTab:AddToggle("Fullbright", {
+    Title    = "Fullbright",
+    Default  = Settings.Fullbright,
+    Callback = function(v)
+        Settings.Fullbright = v
+        setFullbright(v)
+    end,
+})
+
+-- ============================================================
+-- TAB : PLAYER
+-- ============================================================
+local PlayerTab = Window:AddTab({ Title = "Player", Icon = "user" })
+
 PlayerTab:AddSection("Utility")
-PlayerTab:AddToggle("AntiAFK",{Title="Anti AFK",Default=Settings.AntiAFK,Callback=function(v) Settings.AntiAFK=v end})
+
+PlayerTab:AddToggle("AntiAFK", {
+    Title    = "Anti AFK",
+    Default  = Settings.AntiAFK,
+    Callback = function(v) Settings.AntiAFK = v end,
+})
+
 PlayerTab:AddSection("Actions")
-PlayerTab:AddButton({Title="Copy My Position",Description="Copies X Y Z to clipboard",Callback=function()
-    local root=getRootPart(); if root then
-        local p=root.Position
-        local str=string.format("Vector3.new(%d, %d, %d)",math.floor(p.X),math.floor(p.Y),math.floor(p.Z))
-        pcall(function() setclipboard(str) end)
-        Fluent:Notify({Title="Copied",Content=str,Duration=4})
-    end
-end})
-PlayerTab:AddButton({Title="Reset Character",Callback=function() local hum=getHumanoid(); if hum then hum.Health=0 end end})
-PlayerTab:AddButton({Title="Rejoin Server",Callback=function() game:GetService("TeleportService"):Teleport(game.PlaceId,player) end})
 
--- TELEPORT TAB
-local TpTab=Window:AddTab({Title="Teleport",Icon="map-pin"})
-TpTab:AddSection("Players")
+PlayerTab:AddButton({
+    Title    = "Copy My Position",
+    Description = "Copies X Y Z to clipboard",
+    Callback = function()
+        local root = getRootPart()
+        if root then
+            local p = root.Position
+            local str = string.format("Vector3.new(%d, %d, %d)", math.floor(p.X), math.floor(p.Y), math.floor(p.Z))
+            setclipboard(str)
+            Fluent:Notify({ Title = "Copied", Content = str, Duration = 3 })
+        end
+    end,
+})
+
+PlayerTab:AddButton({
+    Title    = "Reset Character",
+    Callback = function()
+        local hum = getHumanoid()
+        if hum then hum.Health = 0 end
+    end,
+})
+
+PlayerTab:AddButton({
+    Title    = "Rejoin Server",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, player)
+    end,
+})
+
+-- ============================================================
+-- TAB : TELEPORT
+-- ============================================================
+local TpTab = Window:AddTab({ Title = "Teleport", Icon = "map-pin" })
+
+TpTab:AddSection("Teleport to Player")
+
 local function getPlayerNames()
-    local names={}
-    for _,p in pairs(Players:GetPlayers()) do if p~=player then table.insert(names,p.Name) end end
-    return #names>0 and names or {"No players"}
-end
-TpTab:AddDropdown("TpPlayer",{Title="Teleport to Player",Values=getPlayerNames(),Default=getPlayerNames()[1],Callback=function(v)
-    local t=Players:FindFirstChild(v)
-    if t and t.Character then
-        local tr=t.Character:FindFirstChild("HumanoidRootPart"); local root=getRootPart()
-        if tr and root then root.CFrame=tr.CFrame+Vector3.new(0,3,4); Fluent:Notify({Title="Teleport",Content="→ "..v,Duration=2}) end
+    local names = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then table.insert(names, p.Name) end
     end
-end})
-TpTab:AddSection("NPCs")
+    return #names > 0 and names or {"No players"}
+end
+
+TpTab:AddDropdown("TpPlayer", {
+    Title    = "Select Player",
+    Values   = getPlayerNames(),
+    Default  = getPlayerNames()[1],
+    Callback = function(v)
+        local t = Players:FindFirstChild(v)
+        if t and t.Character then
+            local tr = t.Character:FindFirstChild("HumanoidRootPart")
+            local root = getRootPart()
+            if tr and root then
+                root.CFrame = tr.CFrame + Vector3.new(0, 3, 4)
+                Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. v, Duration = 2 })
+            end
+        end
+    end,
+})
+
+TpTab:AddButton({
+    Title    = "Refresh Player List",
+    Callback = function()
+        Fluent:Notify({ Title = "Refresh", Content = "Rejoin to update list", Duration = 2 })
+    end,
+})
+
+TpTab:AddSection("NPC Teleport")
+
 local function getNPCNames()
-    local names={}
-    for _,obj in pairs(workspace:GetDescendants()) do
+    local names = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Humanoid") and not isPlayerModel(obj.Parent) and not isHollowMob(obj.Parent.Name) then
-            local n=obj.Parent.Name; if not table.find(names,n) then table.insert(names,n) end
+            local n = obj.Parent.Name
+            if not table.find(names, n) then table.insert(names, n) end
         end
     end
-    return #names>0 and names or {"No NPCs"}
+    return #names > 0 and names or {"No NPCs found"}
 end
-TpTab:AddDropdown("TpNPC",{Title="Teleport to NPC",Values=getNPCNames(),Default=getNPCNames()[1],Callback=function(v)
-    local root=getRootPart(); if not root then return end
-    for _,obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name==v then
-            local nr=obj:FindFirstChild("HumanoidRootPart")
-            if nr then root.CFrame=nr.CFrame+Vector3.new(0,3,4); Fluent:Notify({Title="Teleport",Content="→ "..v,Duration=2}); return end
+
+TpTab:AddDropdown("TpNPC", {
+    Title    = "Select NPC",
+    Values   = getNPCNames(),
+    Default  = getNPCNames()[1],
+    Callback = function(v)
+        local root = getRootPart()
+        if not root then return end
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == v then
+                local nr = obj:FindFirstChild("HumanoidRootPart")
+                if nr then
+                    root.CFrame = nr.CFrame + Vector3.new(0, 3, 4)
+                    Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. v, Duration = 2 })
+                    return
+                end
+            end
         end
-    end
-end})
+    end,
+})
 
--- SETTINGS TAB
-local SettingsTab=Window:AddTab({Title="Settings",Icon="settings"})
+-- ============================================================
+-- TAB : SETTINGS (Config Save/Load)
+-- ============================================================
+local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
+
 SettingsTab:AddSection("Config")
-local configNameInput="default"
-SettingsTab:AddInput("ConfigName",{Title="Config Name",Default="default",Placeholder="Enter name...",Callback=function(v) configNameInput=v end})
-SettingsTab:AddButton({Title="Save Config",Description="Saves with the name above",Callback=function() saveConfig(configNameInput) end})
-SettingsTab:AddButton({Title="Save as Default",Description="Auto-loads on every join",Callback=function() saveConfig("default") end})
-SettingsTab:AddDropdown("ConfigSelect",{Title="Saved Configs",Values=getConfigList(),Default=getConfigList()[1],Callback=function(v) configNameInput=v end})
-SettingsTab:AddButton({Title="Load Selected",Description="Loads and applies the selected config",Callback=function()
-    if loadConfig(configNameInput) then
-        applyWalkSpeed()
-        if Settings.Fly then startFly() else stopFly() end
-        if Settings.Noclip then startNoclip() else stopNoclip() end
-        if Settings.Fullbright then setFullbright(true) else setFullbright(false) end
-        if Settings.PlayerESP then refreshPlayerESP() end
-        if Settings.MobESP then refreshMobESP() end
-    end
-end})
-SettingsTab:AddButton({Title="Delete Selected",Description="Permanently deletes the config",Callback=function() deleteConfig(configNameInput) end})
-SettingsTab:AddSection("Interface")
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreFlags({"TpPlayer","TpNPC","ConfigSelect"})
--- InterfaceManager:BuildInterfaceSection(SettingsTab)
-SettingsTab:AddSection("Info")
-SettingsTab:AddParagraph({Title="Setras Hub v4",Content="Made by Setras | Paradox (Bleach)\nUNC: ~85+ | RCtrl = Toggle UI\nSave as 'default' = auto-load"})
 
+SettingsTab:AddButton({
+    Title       = "Save Config",
+    Description = "Saves current settings to file",
+    Callback    = saveConfig,
+})
+
+SettingsTab:AddButton({
+    Title       = "Load Config",
+    Description = "Loads settings from file",
+    Callback    = function()
+        if loadConfig() then
+            -- Réappliquer les settings chargés
+            if Settings.Fly then startFly() end
+            if Settings.CFly then startCFly() end
+            if Settings.Noclip then startNoclip() end
+            if Settings.Fullbright then setFullbright(true) end
+            if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
+        end
+    end,
+})
+
+SettingsTab:AddButton({
+    Title       = "Delete Config",
+    Description = "Deletes saved config file",
+    Callback    = function()
+        if delfile and isfile and isfile(CONFIG_FILE) then
+            delfile(CONFIG_FILE)
+            Fluent:Notify({ Title = "Config", Content = "Deleted!", Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Config", Content = "No config found", Duration = 2 })
+        end
+    end,
+})
+
+SettingsTab:AddSection("Info")
+
+SettingsTab:AddParagraph({
+    Title   = "Setras Hub",
+    Content = "Made by Setras\nGame: Paradox (Bleach)\nUNC requis: ~85+\nRCtrl = Toggle UI",
+})
+
+-- Fluent Interface settings (theme switcher)
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:BuildInterfaceSection(SettingsTab)
+
+-- ============================================================
 -- INIT
-applyWalkSpeed()
+-- ============================================================
+-- Appliquer config auto-chargée
+if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
 if Settings.Fly then startFly() end
+if Settings.CFly then startCFly() end
 if Settings.Noclip then startNoclip() end
 if Settings.Fullbright then setFullbright(true) end
 if Settings.PlayerESP then refreshPlayerESP() end
 if Settings.MobESP then refreshMobESP() end
+
 Window:SelectTab(1)
-Fluent:Notify({Title="Setras Hub v4",Content="Loaded! RCtrl to toggle",Duration=4})
+
+Fluent:Notify({
+    Title   = "Setras Hub",
+    Content = "Loaded! RCtrl to toggle",
+    Duration = 4,
+})
