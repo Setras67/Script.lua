@@ -1,7 +1,7 @@
 -- ============================================================
---   SETRAS HUB v5 | Paradox (Bleach Roblox)
---   Made by Setras
---   UNC requis : ~85+  |  RightShift = Toggle UI
+-- SETRAS HUB | Paradox (Bleach Roblox)
+-- Made by Setras
+-- UNC requis : ~85+
 -- ============================================================
 
 -- SERVICES
@@ -14,38 +14,87 @@ local lighting         = game:GetService("Lighting")
 local player           = Players.LocalPlayer
 
 -- ============================================================
--- LINORIA UI (mstudio45 fork - stable, pas de bug CoreGui)
+-- FLUENT UI
 -- ============================================================
-local repo = 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
-local Library     = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-local SaveManager  = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-local Toggles = Library.Toggles
-local Options  = Library.Options
+local Fluent          = loadstring(game:HttpGet("https://raw.githubusercontent.com/jacklebeignet/Fluent-Reborn/refs/heads/main/src/ui.lua"))()
+local SaveManager     = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 -- ============================================================
--- SETTINGS
+-- CONFIG SAVE/LOAD (compatible Xeno + Delta)
 -- ============================================================
+local CONFIG_FILE = "SetrasHub_Paradox.json"
+
 local Settings = {
-    KillAura      = false,
-    AutoM1        = false,
-    AutoCritical  = false,
-    KillAuraRange = 20,
-    AutoBlock     = false,
-    AutoDodge     = false,
-    SemiGodMode   = false,
-    AutoEquip     = false,
-    AutoFarm      = false,
-    AutoFarmRange = 80,
-    WalkSpeed     = 16,
-    Fly           = false,
-    FlySpeed      = 100,
-    Noclip        = false,
-    PlayerESP     = false,
-    MobESP        = false,
-    Fullbright    = false,
-    AntiAFK       = false,
+    AutoM1         = false,
+    AutoCritical   = false,
+    KillAura       = false,
+    KillAuraRange  = 20,
+    AutoBlock      = false,
+    AutoDodge      = false,
+    SemiGodMode    = false,
+    AutoEquip      = false,
+    AutoFarm       = false,
+    AutoFarmRange  = 50,
+    WalkSpeed      = 16,
+    Fly            = false,
+    CFly           = false,
+    FlySpeed       = 100,
+    CFlySpeed      = 50,
+    Noclip         = false,
+    PlayerESP      = false,
+    MobESP         = false,
+    Fullbright     = false,
+    AntiAFK        = false,
 }
+
+local function saveConfig()
+    if writefile then
+        local ok, err = pcall(function()
+            writefile(CONFIG_FILE, HttpService:JSONEncode(Settings))
+        end)
+        if ok then
+            Fluent:Notify({ Title = "Config", Content = "Saved!", Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Config", Content = "Save failed: " .. tostring(err), Duration = 3 })
+        end
+    else
+        Fluent:Notify({ Title = "Config", Content = "writefile not supported", Duration = 3 })
+    end
+end
+
+local function loadConfig()
+    if readfile and isfile and isfile(CONFIG_FILE) then
+        local ok, data = pcall(function()
+            return HttpService:JSONDecode(readfile(CONFIG_FILE))
+        end)
+        if ok and data then
+            for k, v in pairs(data) do
+                if Settings[k] ~= nil then
+                    Settings[k] = v
+                end
+            end
+            Fluent:Notify({ Title = "Config", Content = "Loaded!", Duration = 2 })
+            return true
+        end
+    end
+    return false
+end
+
+local function autoLoadConfig()
+    if readfile and isfile and isfile(CONFIG_FILE) then
+        local ok, data = pcall(function()
+            return HttpService:JSONDecode(readfile(CONFIG_FILE))
+        end)
+        if ok and data then
+            for k, v in pairs(data) do
+                if Settings[k] ~= nil then Settings[k] = v end
+            end
+        end
+    end
+end
+
+autoLoadConfig()
 
 -- ============================================================
 -- UTILITY
@@ -69,23 +118,22 @@ end
 
 local function isHollowMob(name)
     return name:find("Fishbone") or name:find("Crawler") or
-           name:find("Hollow")   or name:find("Menos")   or
-           name:find("Adjucar")  or name:find("difficulty") or
-           name:find("Vasto")    or name:find("VasteLord")
+           name:find("Hollow") or name:find("Menos") or
+           name:find("Adjucar") or name:find("difficulty")
 end
 
 local function getNearestMob(range)
     local root = getRootPart()
     if not root then return nil end
-    local nearest, best = nil, range
+    local nearest, dist = nil, range
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Humanoid") and obj.Health > 0 then
             local model = obj.Parent
-            if model and model ~= player.Character and not isPlayerModel(model) then
+            if model and not isPlayerModel(model) then
                 local r = model:FindFirstChild("HumanoidRootPart")
                 if r then
                     local d = (root.Position - r.Position).Magnitude
-                    if d < best then best = d; nearest = model end
+                    if d < dist then dist = d; nearest = model end
                 end
             end
         end
@@ -96,7 +144,7 @@ end
 local function getNearestHollow(range)
     local root = getRootPart()
     if not root then return nil end
-    local nearest, best = nil, range
+    local nearest, dist = nil, range
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Humanoid") and obj.Health > 0 then
             local model = obj.Parent
@@ -104,7 +152,7 @@ local function getNearestHollow(range)
                 local r = model:FindFirstChild("HumanoidRootPart")
                 if r then
                     local d = (root.Position - r.Position).Magnitude
-                    if d < best then best = d; nearest = model end
+                    if d < dist then dist = d; nearest = model end
                 end
             end
         end
@@ -124,7 +172,7 @@ end
 
 local function fireRemote(name, ...)
     local r = getCharRemote(name)
-    if r then pcall(function() r:FireServer(...) end) end
+    if r then r:FireServer(...) end
 end
 
 local function buildM1Args(target)
@@ -136,49 +184,55 @@ local function buildM1Args(target)
         if tr then cf = CFrame.lookAt(root.Position, tr.Position) end
     end
     local t = os.clock() * 1000
-    return false, cf, false, nil, nil, {t, t + 0.001}, {
-        LeftShiftKey=false, DKey=false, Left=false, AKey=false
-    }
+    return false, cf, false, nil, nil, {t, t + 0.001}, {LeftShiftKey=false, DKey=false, Left=false, AKey=false}
 end
 
 -- ============================================================
--- WALKSPEED (RenderStepped override - écrase reset serveur)
+-- WALKSPEED (méthode IY loopspeed)
 -- ============================================================
-local wsConn
-local function applyWalkSpeed()
-    if wsConn then wsConn:Disconnect(); wsConn = nil end
-    if Settings.WalkSpeed == 16 then
+local walkspeedConn
+local function startWalkSpeed(speed)
+    if walkspeedConn then walkspeedConn:Disconnect() end
+    walkspeedConn = RunService.Heartbeat:Connect(function()
         local hum = getHumanoid()
-        if hum then hum.WalkSpeed = 16 end
-        return
-    end
-    wsConn = RunService.RenderStepped:Connect(function()
-        local hum = getHumanoid()
-        if hum then hum.WalkSpeed = Settings.WalkSpeed end
+        if hum then hum.WalkSpeed = speed end
     end)
 end
 
+local function stopWalkSpeed()
+    if walkspeedConn then walkspeedConn:Disconnect() walkspeedConn = nil end
+    local hum = getHumanoid()
+    if hum then hum.WalkSpeed = 16 end
+end
+
 -- ============================================================
--- FLY (BodyVelocity + Yaw-only gyro = zéro roulades)
+-- FLY (méthode IY BodyVelocity classique)
 -- ============================================================
-local flyConn, flyBV, flyBG
+local flyConn
+local flyBV, flyBG
 
 local function startFly()
+    local char = player.Character
+    if not char then return end
     local root = getRootPart()
-    local hum  = getHumanoid()
+    local hum = getHumanoid()
     if not root or not hum then return end
+
     hum.PlatformStand = true
+
     flyBV = Instance.new("BodyVelocity")
-    flyBV.Velocity  = Vector3.zero
-    flyBV.MaxForce  = Vector3.new(9e4, 9e4, 9e4)
-    flyBV.P         = 9e4
-    flyBV.Parent    = root
+    flyBV.Velocity = Vector3.zero
+    flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    flyBV.P = 1e4
+    flyBV.Parent = root
+
     flyBG = Instance.new("BodyGyro")
-    flyBG.MaxTorque = Vector3.new(9e4, 9e4, 9e4)
-    flyBG.P         = 9e4
-    flyBG.D         = 1e3
-    flyBG.CFrame    = root.CFrame
-    flyBG.Parent    = root
+    flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    flyBG.P = 1e4
+    flyBG.D = 100
+    flyBG.CFrame = root.CFrame
+    flyBG.Parent = root
+
     flyConn = RunService.RenderStepped:Connect(function()
         if not Settings.Fly then return end
         local cam = workspace.CurrentCamera
@@ -187,26 +241,68 @@ local function startFly()
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space)     then dir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir -= Vector3.new(0,1,0) end
-        flyBV.Velocity = dir.Magnitude > 0 and dir.Unit * Settings.FlySpeed or Vector3.zero
-        local _, yaw, _ = cam.CFrame:ToEulerAnglesYXZ()
-        flyBG.CFrame = CFrame.fromEulerAnglesYXZ(0, yaw, 0)
+
+        if dir.Magnitude > 0 then
+            flyBV.Velocity = dir.Unit * Settings.FlySpeed
+        else
+            flyBV.Velocity = Vector3.zero
+        end
+
+        -- Gyro suit la caméra uniquement en Yaw pour éviter les roulades
+        local camCF = cam.CFrame
+        local _, ry, _ = camCF:ToEulerAnglesYXZ()
+        flyBG.CFrame = CFrame.fromEulerAnglesYXZ(0, ry, 0)
     end)
 end
 
 local function stopFly()
-    if flyConn then flyConn:Disconnect(); flyConn = nil end
-    if flyBV   then flyBV:Destroy();   flyBV = nil end
-    if flyBG   then flyBG:Destroy();   flyBG = nil end
+    if flyConn then flyConn:Disconnect() flyConn = nil end
+    if flyBV then flyBV:Destroy() flyBV = nil end
+    if flyBG then flyBG:Destroy() flyBG = nil end
     local hum = getHumanoid()
     if hum then hum.PlatformStand = false end
+end
+
+-- ============================================================
+-- CFLY (méthode IY CFrame - permet d'attaquer en volant)
+-- ============================================================
+local cflyConn
+
+local function startCFly()
+    local root = getRootPart()
+    if not root then return end
+
+    cflyConn = RunService.RenderStepped:Connect(function()
+        if not Settings.CFly then return end
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir -= Vector3.new(0,1,0) end
+
+        local r = getRootPart()
+        if r then
+            if dir.Magnitude > 0 then
+                r.CFrame = r.CFrame + dir.Unit * Settings.CFlySpeed * 0.05
+            end
+        end
+    end)
+end
+
+local function stopCFly()
+    if cflyConn then cflyConn:Disconnect() cflyConn = nil end
 end
 
 -- ============================================================
 -- NOCLIP
 -- ============================================================
 local noclipConn
+
 local function startNoclip()
     noclipConn = RunService.Stepped:Connect(function()
         if not Settings.Noclip then return end
@@ -217,8 +313,9 @@ local function startNoclip()
         end
     end)
 end
+
 local function stopNoclip()
-    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
     local c = player.Character
     if c then
         for _, p in pairs(c:GetDescendants()) do
@@ -230,64 +327,125 @@ end
 -- ============================================================
 -- FULLBRIGHT
 -- ============================================================
-local origLight = {
+local origLighting = {
     Brightness    = lighting.Brightness,
     ClockTime     = lighting.ClockTime,
     FogEnd        = lighting.FogEnd,
     GlobalShadows = lighting.GlobalShadows,
     Ambient       = lighting.Ambient,
 }
+
 local function setFullbright(on)
     if on then
-        lighting.Brightness = 10; lighting.ClockTime = 14
-        lighting.FogEnd = 1e9; lighting.GlobalShadows = false
-        lighting.Ambient = Color3.fromRGB(255,255,255)
+        lighting.Brightness    = 10
+        lighting.ClockTime     = 14
+        lighting.FogEnd        = 1e9
+        lighting.GlobalShadows = false
+        lighting.Ambient       = Color3.fromRGB(255, 255, 255)
     else
-        lighting.Brightness = origLight.Brightness
-        lighting.ClockTime  = origLight.ClockTime
-        lighting.FogEnd     = origLight.FogEnd
-        lighting.GlobalShadows = origLight.GlobalShadows
-        lighting.Ambient    = origLight.Ambient
+        lighting.Brightness    = origLighting.Brightness
+        lighting.ClockTime     = origLighting.ClockTime
+        lighting.FogEnd        = origLighting.FogEnd
+        lighting.GlobalShadows = origLighting.GlobalShadows
+        lighting.Ambient       = origLighting.Ambient
     end
 end
 
 -- ============================================================
--- ESP - Highlight pur
+-- ESP - VERSION PROPRE AVEC HIGHLIGHT UNIQUEMENT
 -- ============================================================
-local ESPFolder    = Instance.new("Folder"); ESPFolder.Name="SetrasESP";    ESPFolder.Parent=game.CoreGui
-local MobESPFolder = Instance.new("Folder"); MobESPFolder.Name="SetrasMobESP"; MobESPFolder.Parent=game.CoreGui
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "SetrasESP"
+ESPFolder.Parent = game.CoreGui
 
-local function makeHL(parent, adornee, fill, outline)
+local MobESPFolder = Instance.new("Folder")
+MobESPFolder.Name = "SetrasMobESP"
+MobESPFolder.Parent = game.CoreGui
+
+local function makeHighlight(parent, adornee, fillColor, outlineColor)
     local hl = Instance.new("Highlight")
-    hl.FillColor=fill; hl.OutlineColor=outline
-    hl.FillTransparency=0.6; hl.OutlineTransparency=0
-    hl.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
-    hl.Adornee=adornee; hl.Parent=parent
+    hl.FillColor         = fillColor
+    hl.OutlineColor      = outlineColor
+    hl.FillTransparency  = 0.65
+    hl.OutlineTransparency = 0
+    hl.Adornee           = adornee
+    hl.DepthMode         = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent            = parent
+    return hl
+end
+
+local function makeBillboard(adornee, text, color, yOffset)
+    local bb = Instance.new("BillboardGui")
+    bb.AlwaysOnTop  = true
+    bb.Size         = UDim2.new(0, 100, 0, 30)
+    bb.StudsOffset  = Vector3.new(0, yOffset or 2.5, 0)
+    bb.Adornee      = adornee
+    bb.LightInfluence = 0
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size                 = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3           = color
+    lbl.TextStrokeColor3     = Color3.new(0,0,0)
+    lbl.TextStrokeTransparency = 0.4
+    lbl.Font                 = Enum.Font.GothamBold
+    lbl.TextScaled           = true
+    lbl.Text                 = text
+    lbl.Parent               = bb
+    return bb, lbl
 end
 
 local function createPlayerESP(p)
     if p == player then return end
-    local char = p.Character; if not char then return end
-    local old = ESPFolder:FindFirstChild(p.Name); if old then old:Destroy() end
-    local f = Instance.new("Folder"); f.Name=p.Name; f.Parent=ESPFolder
-    makeHL(f, char, Color3.fromRGB(200,0,0), Color3.fromRGB(255,60,60))
+    local char = p.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local old = ESPFolder:FindFirstChild(p.Name)
+    if old then old:Destroy() end
+
+    local holder = Instance.new("Folder")
+    holder.Name   = p.Name
+    holder.Parent = ESPFolder
+
+    makeHighlight(holder, char, Color3.fromRGB(220, 50, 50), Color3.fromRGB(255, 80, 80))
+
+    local bb, lbl = makeBillboard(root, p.Name, Color3.fromRGB(255, 100, 100), 3.2)
+    bb.Parent = holder
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        lbl.Text = p.Name .. "\n" .. math.floor(hum.Health)
+        hum:GetPropertyChangedSignal("Health"):Connect(function()
+            lbl.Text = p.Name .. "\n" .. math.floor(hum.Health)
+        end)
+    end
 end
+
 local function refreshPlayerESP()
     for _, v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
     if not Settings.PlayerESP then return end
     for _, p in pairs(Players:GetPlayers()) do createPlayerESP(p) end
 end
+
+local mobESPLast = 0
 local function refreshMobESP()
     for _, v in pairs(MobESPFolder:GetChildren()) do v:Destroy() end
     if not Settings.MobESP then return end
-    local count = 0
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Humanoid") and obj.Health > 0 then
             local model = obj.Parent
             if model and not isPlayerModel(model) then
-                local f = Instance.new("Folder"); f.Name=model.Name..count; f.Parent=MobESPFolder
-                makeHL(f, model, Color3.fromRGB(255,120,0), Color3.fromRGB(255,190,0))
-                count += 1
+                local root = model:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local holder = Instance.new("Folder")
+                    holder.Name   = model.Name
+                    holder.Parent = MobESPFolder
+                    makeHighlight(holder, model, Color3.fromRGB(255, 140, 0), Color3.fromRGB(255, 200, 0))
+                    local bb, _ = makeBillboard(root, model.Name:gsub("_difficulty%d_.*", ""), Color3.fromRGB(255, 200, 50), 3)
+                    bb.Parent = holder
+                end
             end
         end
     end
@@ -295,315 +453,363 @@ end
 
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        task.wait(0.5); if Settings.PlayerESP then createPlayerESP(p) end
+        task.wait(0.5)
+        if Settings.PlayerESP then createPlayerESP(p) end
     end)
     if Settings.PlayerESP then createPlayerESP(p) end
 end)
 Players.PlayerRemoving:Connect(function(p)
-    local h = ESPFolder:FindFirstChild(p.Name); if h then h:Destroy() end
+    local h = ESPFolder:FindFirstChild(p.Name)
+    if h then h:Destroy() end
 end)
 for _, p in pairs(Players:GetPlayers()) do
     p.CharacterAdded:Connect(function()
-        task.wait(0.5); if Settings.PlayerESP then createPlayerESP(p) end
+        task.wait(0.5)
+        if Settings.PlayerESP then createPlayerESP(p) end
     end)
 end
 
 -- ============================================================
--- AUTO EQUIP
+-- MAIN LOOP - Combat optimisé avec throttle
 -- ============================================================
-local function checkAndEquip()
-    local c = player.Character; if not c then return end
-    if not c:FindFirstChildOfClass("Tool") then fireRemote("Sheathe") end
-end
+local lastM1    = 0
+local lastCrit  = 0
+local lastDodge = 0
+local lastFarm  = 0
+local lastMobESP = 0
+local blocking  = false
 
--- ============================================================
--- COMBAT LOOPS (task.spawn dédiés = zéro lag)
--- ============================================================
+-- M1 throttle : 0.13s entre chaque coup (évite le lag)
+local M1_COOLDOWN   = 0.13
+local CRIT_COOLDOWN = 0.55
+local DODGE_CD      = 1.6
 
--- Kill Aura / Auto M1
-task.spawn(function()
-    while true do
-        task.wait(0.14)
-        if not (Settings.KillAura or Settings.AutoM1) then continue end
+RunService.Heartbeat:Connect(function(dt)
+    local now = tick()
+
+    -- WalkSpeed via loop
+    if Settings.WalkSpeed ~= 16 then
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = Settings.WalkSpeed end
+    end
+
+    -- Auto Block (léger : fire seulement si pas déjà bloquant)
+    if Settings.AutoBlock and not blocking then
+        blocking = true
+        task.spawn(function()
+            fireRemote("Block")
+            task.wait(0.2)
+            fireRemote("Unblock")
+            task.wait(0.05)
+            blocking = false
+        end)
+    end
+
+    -- Auto Dodge
+    if Settings.AutoDodge and now - lastDodge > DODGE_CD then
+        lastDodge = now
+        task.spawn(function()
+            local c = player.Character
+            if c then
+                local h = c:FindFirstChild("CharacterHandler")
+                if h then
+                    local r = h:FindFirstChild("Remotes")
+                    if r then
+                        local dodge = r:FindFirstChild("Dodge")
+                        if dodge then dodge:FireServer(false) end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Kill Aura + Auto M1 (même boucle, pas de duplication)
+    if (Settings.KillAura or Settings.AutoM1) and now - lastM1 > M1_COOLDOWN then
         local target = getNearestMob(Settings.KillAuraRange)
-        if not target then continue end
-        pcall(function()
-            local remote = getCharRemote("LeftClick")
-            if remote then remote:FireServer(buildM1Args(target)) end
-        end)
-    end
-end)
+        if target then
+            lastM1 = now
+            task.spawn(function()
+                local remote = getCharRemote("LeftClick")
+                if remote then
+                    remote:FireServer(buildM1Args(target))
+                end
+            end)
 
--- Auto Critical
-task.spawn(function()
-    while true do
-        task.wait(0.55)
-        if not Settings.AutoCritical then continue end
-        local target = getNearestMob(Settings.KillAuraRange)
-        if not target then continue end
-        pcall(function()
-            local r = getCharRemote("CriticalClick")
-            if r then r:FireServer({AKey=false,DKey=false,LeftShiftKey=false,Right=false,Left=false,RKey=true},false) end
-        end)
-    end
-end)
-
--- Auto Block
-local blockBusy = false
-task.spawn(function()
-    while true do
-        task.wait(0.18)
-        if not Settings.AutoBlock or blockBusy then continue end
-        blockBusy = true
-        pcall(function() fireRemote("Block") end)
-        task.wait(0.15)
-        pcall(function() fireRemote("Unblock") end)
-        blockBusy = false
-    end
-end)
-
--- Auto Dodge
-task.spawn(function()
-    while true do
-        task.wait(1.6)
-        if not Settings.AutoDodge then continue end
-        pcall(function()
-            local c=player.Character; if not c then return end
-            local h=c:FindFirstChild("CharacterHandler"); if not h then return end
-            local r=h:FindFirstChild("Remotes"); if not r then return end
-            local d=r:FindFirstChild("Dodge"); if d then d:FireServer(false) end
-        end)
-    end
-end)
-
--- Auto Farm Vasto Lorde
-task.spawn(function()
-    while true do
-        task.wait(0.2)
-        if not Settings.AutoFarm then continue end
-        local target = getNearestHollow(Settings.AutoFarmRange)
-        if not target then continue end
-        local root = getRootPart(); if not root then continue end
-        local tr = target:FindFirstChild("HumanoidRootPart"); if not tr then continue end
-        if (root.Position - tr.Position).Magnitude > 10 then
-            local goal = tr.Position + (root.Position - tr.Position).Unit * 7 + Vector3.new(0,2,0)
-            TweenService:Create(root, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame=CFrame.new(goal)}):Play()
+            -- Auto Critical intégré dans la même détection
+            if Settings.AutoCritical and now - lastCrit > CRIT_COOLDOWN then
+                lastCrit = now
+                task.spawn(function()
+                    local crit = getCharRemote("CriticalClick")
+                    if crit then
+                        crit:FireServer({
+                            AKey=false, DKey=false,
+                            LeftShiftKey=false, Right=false,
+                            Left=false, RKey=true
+                        }, false)
+                    end
+                end)
+            end
         end
     end
-end)
 
--- Auto Equip check
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if Settings.AutoEquip then pcall(checkAndEquip) end
-    end
-end)
-
--- Mob ESP refresh
-task.spawn(function()
-    while true do
-        task.wait(5)
-        if Settings.MobESP then pcall(refreshMobESP) end
-    end
-end)
-
--- Anti AFK
-task.spawn(function()
-    while true do
-        task.wait(60)
-        if not Settings.AntiAFK then continue end
-        pcall(function()
-            local v = game:GetService("VirtualInputManager")
-            v:SendKeyEvent(true,"Q",false,game)
-            task.wait(0.1)
-            v:SendKeyEvent(false,"Q",false,game)
-        end)
-    end
-end)
-
--- Semi God Mode
-RunService.RenderStepped:Connect(function()
-    if Settings.SemiGodMode then
-        local hum = getHumanoid()
-        if hum and hum.Health < hum.MaxHealth * 0.5 and not blockBusy then
-            blockBusy = true
+    -- Auto Critical seul (si Kill Aura désactivé)
+    if Settings.AutoCritical and not Settings.KillAura and not Settings.AutoM1 and now - lastCrit > CRIT_COOLDOWN then
+        local target = getNearestMob(Settings.KillAuraRange)
+        if target then
+            lastCrit = now
             task.spawn(function()
-                pcall(function() fireRemote("Block") end)
-                task.wait(0.4)
-                pcall(function() fireRemote("Unblock") end)
-                blockBusy = false
+                local crit = getCharRemote("CriticalClick")
+                if crit then
+                    crit:FireServer({
+                        AKey=false, DKey=false,
+                        LeftShiftKey=false, Right=false,
+                        Left=false, RKey=true
+                    }, false)
+                end
             end)
         end
     end
+
+    -- Semi God Mode
+    if Settings.SemiGodMode then
+        local hum = getHumanoid()
+        if hum and hum.Health < hum.MaxHealth * 0.5 and not blocking then
+            blocking = true
+            task.spawn(function()
+                fireRemote("Block")
+                task.wait(0.5)
+                fireRemote("Unblock")
+                blocking = false
+            end)
+        end
+    end
+
+    -- Auto Farm
+    if Settings.AutoFarm and now - lastFarm > 0.25 then
+        lastFarm = now
+        local target = getNearestHollow(Settings.AutoFarmRange)
+        if target then
+            local root = getRootPart()
+            local tr = target:FindFirstChild("HumanoidRootPart")
+            if root and tr then
+                local offset = (root.Position - tr.Position).Magnitude > 8
+                if offset then
+                    local dir = (tr.Position - root.Position).Unit
+                    root.CFrame = CFrame.new(tr.Position - dir * 5 + Vector3.new(0, 2, 0))
+                end
+            end
+        end
+    end
+
+    -- Mob ESP refresh toutes les 4s
+    if Settings.MobESP and now - lastMobESP > 4 then
+        lastMobESP = now
+        task.spawn(refreshMobESP)
+    end
 end)
 
+-- ============================================================
 -- CHARACTER RESPAWN
+-- ============================================================
 player.CharacterAdded:Connect(function()
     task.wait(1.5)
-    applyWalkSpeed()
-    if Settings.Fly        then startFly()         end
-    if Settings.Noclip     then startNoclip()      end
-    if Settings.Fullbright then setFullbright(true) end
-    if Settings.AutoEquip  then task.wait(0.5); pcall(checkAndEquip) end
+    if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
+    if Settings.Fly then startFly() end
+    if Settings.CFly then startCFly() end
+    if Settings.Noclip then startNoclip() end
+    if Settings.AutoEquip then task.wait(0.5) fireRemote("Sheathe") end
 end)
 
 -- ============================================================
--- UI - LINORIA
+-- UI WINDOW
 -- ============================================================
-Library.NotifySide = "Right"
-Library.ShowCustomCursor = false
-
-local Window = Library:CreateWindow({
-    Title    = 'Setras Hub | Paradox',
-    Center   = true,
-    AutoShow = true,
-    TabPadding  = 8,
-    MenuFadeTime = 0.2,
+local Window = Fluent:CreateWindow({
+    Title       = "Setras Hub",
+    SubTitle    = "Made by Setras",
+    TabWidth    = 155,
+    Size        = UDim2.fromOffset(610, 460),
+    Acrylic     = true,
+    Theme       = "Amethyst",
+    MinimizeKey = Enum.KeyCode.RightControl,
 })
-
-local Tabs = {
-    Combat   = Window:AddTab('Combat'),
-    Farm     = Window:AddTab('Auto Farm'),
-    Movement = Window:AddTab('Movement'),
-    Visuals  = Window:AddTab('Visuals'),
-    Player   = Window:AddTab('Player'),
-    Teleport = Window:AddTab('Teleport'),
-    Settings = Window:AddTab('Settings'),
-}
 
 -- ============================================================
 -- TAB : COMBAT
 -- ============================================================
-local CombatLeft  = Tabs.Combat:AddLeftGroupbox('Offense')
-local CombatRight = Tabs.Combat:AddRightGroupbox('Defense')
+local CombatTab = Window:AddTab({ Title = "Combat", Icon = "sword" })
 
-CombatLeft:AddToggle('KillAura', {
-    Text    = 'Kill Aura',
-    Default = false,
-    Tooltip = 'Auto M1 + Critical on nearest enemy',
-    Callback = function(v)
-        Settings.KillAura = v
-        if v then Settings.AutoM1=true; Settings.AutoCritical=true end
-    end,
+CombatTab:AddSection("Offense")
+
+CombatTab:AddToggle("AutoM1", {
+    Title       = "Auto M1",
+    Description = "Auto attacks nearest enemy",
+    Default     = Settings.AutoM1,
+    Callback    = function(v) Settings.AutoM1 = v end,
 })
-CombatLeft:AddToggle('AutoM1', {
-    Text     = 'Auto M1',
-    Default  = false,
-    Tooltip  = 'Auto left click on nearest enemy',
-    Callback = function(v) Settings.AutoM1 = v end,
+
+CombatTab:AddToggle("AutoCritical", {
+    Title       = "Auto Critical",
+    Description = "Auto critical on nearest enemy",
+    Default     = Settings.AutoCritical,
+    Callback    = function(v) Settings.AutoCritical = v end,
 })
-CombatLeft:AddToggle('AutoCritical', {
-    Text     = 'Auto Critical',
-    Default  = false,
-    Callback = function(v) Settings.AutoCritical = v end,
+
+CombatTab:AddToggle("KillAura", {
+    Title       = "Kill Aura",
+    Description = "Auto M1 + Critical combined",
+    Default     = Settings.KillAura,
+    Callback    = function(v) Settings.KillAura = v end,
 })
-CombatLeft:AddSlider('KillAuraRange', {
-    Text    = 'Aura Range',
-    Default = 20, Min = 5, Max = 80,
-    Rounding = 0, Compact = false,
+
+CombatTab:AddSlider("KillAuraRange", {
+    Title    = "Aura Range",
+    Min      = 5,
+    Max      = 80,
+    Default  = Settings.KillAuraRange,
+    Rounding = 0,
     Callback = function(v) Settings.KillAuraRange = v end,
 })
-CombatLeft:AddDivider()
-CombatLeft:AddLabel('Weapon')
-CombatLeft:AddToggle('AutoEquip', {
-    Text     = 'Auto Equip Weapon',
-    Default  = false,
-    Tooltip  = 'Equips only if not already equipped',
-    Callback = function(v) Settings.AutoEquip = v end,
+
+CombatTab:AddSection("Defense")
+
+CombatTab:AddToggle("AutoBlock", {
+    Title       = "Auto Block",
+    Description = "Constantly blocks incoming attacks",
+    Default     = Settings.AutoBlock,
+    Callback    = function(v) Settings.AutoBlock = v end,
 })
 
-CombatRight:AddToggle('AutoBlock', {
-    Text     = 'Auto Block',
-    Default  = false,
-    Callback = function(v) Settings.AutoBlock = v end,
+CombatTab:AddToggle("AutoDodge", {
+    Title       = "Auto Dodge",
+    Description = "Auto dodge every 1.6s",
+    Default     = Settings.AutoDodge,
+    Callback    = function(v) Settings.AutoDodge = v end,
 })
-CombatRight:AddToggle('AutoDodge', {
-    Text     = 'Auto Dodge',
-    Default  = false,
-    Tooltip  = 'Dodges every 1.6s',
-    Callback = function(v) Settings.AutoDodge = v end,
+
+CombatTab:AddToggle("SemiGodMode", {
+    Title       = "Semi God Mode",
+    Description = "Auto blocks when HP drops below 50%",
+    Default     = Settings.SemiGodMode,
+    Callback    = function(v) Settings.SemiGodMode = v end,
 })
-CombatRight:AddToggle('SemiGodMode', {
-    Text     = 'Semi God Mode',
-    Default  = false,
-    Tooltip  = 'Auto blocks when HP drops below 50%',
-    Callback = function(v) Settings.SemiGodMode = v end,
+
+CombatTab:AddSection("Weapon")
+
+CombatTab:AddToggle("AutoEquip", {
+    Title       = "Auto Equip Weapon",
+    Description = "Keeps weapon drawn at all times",
+    Default     = Settings.AutoEquip,
+    Callback    = function(v)
+        Settings.AutoEquip = v
+        if v then fireRemote("Sheathe") end
+    end,
 })
 
 -- ============================================================
 -- TAB : AUTO FARM
 -- ============================================================
-local FarmLeft  = Tabs.Farm:AddLeftGroupbox('Vasto Lorde Farm')
-local FarmRight = Tabs.Farm:AddRightGroupbox('Info')
+local FarmTab = Window:AddTab({ Title = "Auto Farm", Icon = "zap" })
 
-FarmLeft:AddToggle('AutoFarm', {
-    Text    = 'Auto Farm Vasto Lorde',
-    Default = false,
-    Tooltip = 'Teleports to nearest hollow + Kill Aura auto',
-    Callback = function(v)
+FarmTab:AddSection("Hollow Farm")
+
+FarmTab:AddToggle("AutoFarm", {
+    Title       = "Auto Farm Hollows",
+    Description = "Teleports to nearest hollow + Kill Aura",
+    Default     = Settings.AutoFarm,
+    Callback    = function(v)
         Settings.AutoFarm = v
-        if v then Settings.KillAura=true; Settings.AutoM1=true; Settings.AutoCritical=true end
+        if v then Settings.KillAura = true end
     end,
 })
-FarmLeft:AddSlider('AutoFarmRange', {
-    Text     = 'Detection Range',
-    Default  = 80, Min = 20, Max = 500,
+
+FarmTab:AddSlider("AutoFarmRange", {
+    Title    = "Farm Detection Range",
+    Min      = 20,
+    Max      = 300,
+    Default  = Settings.AutoFarmRange,
     Rounding = 0,
     Callback = function(v) Settings.AutoFarmRange = v end,
 })
 
-FarmRight:AddLabel('Détecte automatiquement:')
-FarmRight:AddLabel('• Fishbone (petits hollows)')
-FarmRight:AddLabel('• Crawler (hollows moyens)')
-FarmRight:AddLabel('• Tous mobs avec "difficulty"')
-FarmRight:AddDivider()
-FarmRight:AddLabel('Active Kill Aura auto.')
-FarmRight:AddLabel('Fonctionne en monde Hollow.')
-
 -- ============================================================
 -- TAB : MOVEMENT
 -- ============================================================
-local MoveLeft  = Tabs.Movement:AddLeftGroupbox('Speed & Fly')
-local MoveRight = Tabs.Movement:AddRightGroupbox('Other')
+local MoveTab = Window:AddTab({ Title = "Movement", Icon = "move" })
 
-MoveLeft:AddSlider('WalkSpeed', {
-    Text     = 'Walk Speed',
-    Default  = 16, Min = 16, Max = 500,
+MoveTab:AddSection("Walk Speed")
+
+MoveTab:AddSlider("WalkSpeed", {
+    Title    = "Walk Speed",
+    Min      = 16,
+    Max      = 500,
+    Default  = Settings.WalkSpeed,
     Rounding = 0,
     Callback = function(v)
         Settings.WalkSpeed = v
-        applyWalkSpeed()
+        if v > 16 then
+            startWalkSpeed(v)
+        else
+            stopWalkSpeed()
+        end
     end,
 })
-MoveLeft:AddButton({
-    Text = 'Reset Speed',
-    Func = function()
+
+MoveTab:AddButton({
+    Title    = "Reset Speed",
+    Callback = function()
         Settings.WalkSpeed = 16
-        applyWalkSpeed()
-        Library:Notify({ Title='Speed', Content='Reset to 16', Duration=2 })
+        stopWalkSpeed()
+        Fluent:Notify({ Title = "Speed", Content = "Reset to 16", Duration = 2 })
     end,
 })
-MoveLeft:AddDivider()
-MoveLeft:AddToggle('Fly', {
-    Text    = 'Fly',
-    Default = false,
-    Tooltip = 'WASD + Space/Shift — No rolls',
-    Callback = function(v)
+
+MoveTab:AddSection("Fly (Standard)")
+
+MoveTab:AddToggle("Fly", {
+    Title       = "Fly",
+    Description = "WASD + Space/Shift",
+    Default     = Settings.Fly,
+    Callback    = function(v)
         Settings.Fly = v
         if v then startFly() else stopFly() end
     end,
 })
-MoveLeft:AddSlider('FlySpeed', {
-    Text     = 'Fly Speed',
-    Default  = 100, Min = 10, Max = 400,
+
+MoveTab:AddSlider("FlySpeed", {
+    Title    = "Fly Speed",
+    Min      = 10,
+    Max      = 400,
+    Default  = Settings.FlySpeed,
     Rounding = 0,
     Callback = function(v) Settings.FlySpeed = v end,
 })
 
-MoveRight:AddToggle('Noclip', {
-    Text     = 'Noclip',
-    Default  = false,
+MoveTab:AddSection("CFly (CFrame - Attaque en vol)")
+
+MoveTab:AddToggle("CFly", {
+    Title       = "CFly",
+    Description = "Permet d'attaquer pendant le vol (bypass anti-cheat)",
+    Default     = Settings.CFly,
+    Callback    = function(v)
+        Settings.CFly = v
+        if v then startCFly() else stopCFly() end
+    end,
+})
+
+MoveTab:AddSlider("CFlySpeed", {
+    Title    = "CFly Speed",
+    Min      = 5,
+    Max      = 200,
+    Default  = Settings.CFlySpeed,
+    Rounding = 0,
+    Callback = function(v) Settings.CFlySpeed = v end,
+})
+
+MoveTab:AddSection("Other")
+
+MoveTab:AddToggle("Noclip", {
+    Title    = "Noclip",
+    Default  = Settings.Noclip,
     Callback = function(v)
         Settings.Noclip = v
         if v then startNoclip() else stopNoclip() end
@@ -613,32 +819,37 @@ MoveRight:AddToggle('Noclip', {
 -- ============================================================
 -- TAB : VISUALS
 -- ============================================================
-local VisLeft  = Tabs.Visuals:AddLeftGroupbox('ESP')
-local VisRight = Tabs.Visuals:AddRightGroupbox('World')
+local VisualTab = Window:AddTab({ Title = "Visuals", Icon = "eye" })
 
-VisLeft:AddToggle('PlayerESP', {
-    Text     = 'Player ESP',
-    Default  = false,
-    Tooltip  = 'Red highlight on all players',
-    Callback = function(v)
+VisualTab:AddSection("ESP")
+
+VisualTab:AddToggle("PlayerESP", {
+    Title       = "Player ESP",
+    Description = "Highlights + name/HP above players",
+    Default     = Settings.PlayerESP,
+    Callback    = function(v)
         Settings.PlayerESP = v
         refreshPlayerESP()
     end,
 })
-VisLeft:AddToggle('MobESP', {
-    Text     = 'Mob ESP',
-    Default  = false,
-    Tooltip  = 'Orange highlight on hollows/mobs',
-    Callback = function(v)
+
+VisualTab:AddToggle("MobESP", {
+    Title       = "Mob ESP",
+    Description = "Highlights hollows and mobs",
+    Default     = Settings.MobESP,
+    Callback    = function(v)
         Settings.MobESP = v
-        if v then refreshMobESP()
-        else for _, c in pairs(MobESPFolder:GetChildren()) do c:Destroy() end end
+        if v then refreshMobESP() else
+            for _, c in pairs(MobESPFolder:GetChildren()) do c:Destroy() end
+        end
     end,
 })
 
-VisRight:AddToggle('Fullbright', {
-    Text     = 'Fullbright',
-    Default  = false,
+VisualTab:AddSection("World")
+
+VisualTab:AddToggle("Fullbright", {
+    Title    = "Fullbright",
+    Default  = Settings.Fullbright,
     Callback = function(v)
         Settings.Fullbright = v
         setFullbright(v)
@@ -648,38 +859,43 @@ VisRight:AddToggle('Fullbright', {
 -- ============================================================
 -- TAB : PLAYER
 -- ============================================================
-local PlayerLeft  = Tabs.Player:AddLeftGroupbox('Utility')
-local PlayerRight = Tabs.Player:AddRightGroupbox('Actions')
+local PlayerTab = Window:AddTab({ Title = "Player", Icon = "user" })
 
-PlayerLeft:AddToggle('AntiAFK', {
-    Text     = 'Anti AFK',
-    Default  = false,
+PlayerTab:AddSection("Utility")
+
+PlayerTab:AddToggle("AntiAFK", {
+    Title    = "Anti AFK",
+    Default  = Settings.AntiAFK,
     Callback = function(v) Settings.AntiAFK = v end,
 })
 
-PlayerRight:AddButton({
-    Text    = 'Copy Position',
-    Tooltip = 'Copies X Y Z to clipboard',
-    Func    = function()
+PlayerTab:AddSection("Actions")
+
+PlayerTab:AddButton({
+    Title    = "Copy My Position",
+    Description = "Copies X Y Z to clipboard",
+    Callback = function()
         local root = getRootPart()
         if root then
             local p = root.Position
             local str = string.format("Vector3.new(%d, %d, %d)", math.floor(p.X), math.floor(p.Y), math.floor(p.Z))
-            pcall(function() setclipboard(str) end)
-            Library:Notify({ Title='Copied', Content=str, Duration=4 })
+            setclipboard(str)
+            Fluent:Notify({ Title = "Copied", Content = str, Duration = 3 })
         end
     end,
 })
-PlayerRight:AddButton({
-    Text = 'Reset Character',
-    Func = function()
+
+PlayerTab:AddButton({
+    Title    = "Reset Character",
+    Callback = function()
         local hum = getHumanoid()
         if hum then hum.Health = 0 end
     end,
 })
-PlayerRight:AddButton({
-    Text = 'Rejoin Server',
-    Func = function()
+
+PlayerTab:AddButton({
+    Title    = "Rejoin Server",
+    Callback = function()
         game:GetService("TeleportService"):Teleport(game.PlaceId, player)
     end,
 })
@@ -687,8 +903,9 @@ PlayerRight:AddButton({
 -- ============================================================
 -- TAB : TELEPORT
 -- ============================================================
-local TpLeft  = Tabs.Teleport:AddLeftGroupbox('Players')
-local TpRight = Tabs.Teleport:AddRightGroupbox('NPCs')
+local TpTab = Window:AddTab({ Title = "Teleport", Icon = "map-pin" })
+
+TpTab:AddSection("Teleport to Player")
 
 local function getPlayerNames()
     local names = {}
@@ -698,6 +915,32 @@ local function getPlayerNames()
     return #names > 0 and names or {"No players"}
 end
 
+TpTab:AddDropdown("TpPlayer", {
+    Title    = "Select Player",
+    Values   = getPlayerNames(),
+    Default  = getPlayerNames()[1],
+    Callback = function(v)
+        local t = Players:FindFirstChild(v)
+        if t and t.Character then
+            local tr = t.Character:FindFirstChild("HumanoidRootPart")
+            local root = getRootPart()
+            if tr and root then
+                root.CFrame = tr.CFrame + Vector3.new(0, 3, 4)
+                Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. v, Duration = 2 })
+            end
+        end
+    end,
+})
+
+TpTab:AddButton({
+    Title    = "Refresh Player List",
+    Callback = function()
+        Fluent:Notify({ Title = "Refresh", Content = "Rejoin to update list", Duration = 2 })
+    end,
+})
+
+TpTab:AddSection("NPC Teleport")
+
 local function getNPCNames()
     local names = {}
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -706,48 +949,22 @@ local function getNPCNames()
             if not table.find(names, n) then table.insert(names, n) end
         end
     end
-    return #names > 0 and names or {"No NPCs"}
+    return #names > 0 and names or {"No NPCs found"}
 end
 
-TpLeft:AddDropdown('TpPlayerDD', {
-    Text   = 'Select Player',
-    Values = getPlayerNames(),
-    Default = getPlayerNames()[1],
-    Callback = function(v) end,
-})
-TpLeft:AddButton({
-    Text = 'Teleport to Player',
-    Func = function()
-        local v = Options.TpPlayerDD.Value
-        local t = Players:FindFirstChild(v)
-        if t and t.Character then
-            local tr = t.Character:FindFirstChild("HumanoidRootPart")
-            local root = getRootPart()
-            if tr and root then
-                root.CFrame = tr.CFrame + Vector3.new(0,3,4)
-                Library:Notify({ Title='Teleport', Content='→ '..v, Duration=2 })
-            end
-        end
-    end,
-})
-
-TpRight:AddDropdown('TpNPCDD', {
-    Text    = 'Select NPC',
-    Values  = getNPCNames(),
-    Default = getNPCNames()[1],
-    Callback = function(v) end,
-})
-TpRight:AddButton({
-    Text = 'Teleport to NPC',
-    Func = function()
-        local v = Options.TpNPCDD.Value
-        local root = getRootPart(); if not root then return end
+TpTab:AddDropdown("TpNPC", {
+    Title    = "Select NPC",
+    Values   = getNPCNames(),
+    Default  = getNPCNames()[1],
+    Callback = function(v)
+        local root = getRootPart()
+        if not root then return end
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj.Name == v then
                 local nr = obj:FindFirstChild("HumanoidRootPart")
                 if nr then
-                    root.CFrame = nr.CFrame + Vector3.new(0,3,4)
-                    Library:Notify({ Title='Teleport', Content='→ '..v, Duration=2 })
+                    root.CFrame = nr.CFrame + Vector3.new(0, 3, 4)
+                    Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. v, Duration = 2 })
                     return
                 end
             end
@@ -756,46 +973,73 @@ TpRight:AddButton({
 })
 
 -- ============================================================
--- TAB : SETTINGS
+-- TAB : SETTINGS (Config Save/Load)
 -- ============================================================
-local SetLeft  = Tabs.Settings:AddLeftGroupbox('Config')
-local SetRight = Tabs.Settings:AddRightGroupbox('Credits')
+local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
--- ThemeManager et SaveManager natifs Linoria
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:SetFolder('SetrasHub')
-SaveManager:SetSubFolder('Paradox')
+SettingsTab:AddSection("Config")
 
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:BuildConfigSection(SetLeft)
+SettingsTab:AddButton({
+    Title       = "Save Config",
+    Description = "Saves current settings to file",
+    Callback    = saveConfig,
+})
 
-SetRight:AddLabel('Setras Hub v5')
-SetRight:AddLabel('Made by Setras')
-SetRight:AddDivider()
-SetRight:AddLabel('Game: Paradox (Bleach)')
-SetRight:AddLabel('UNC requis: ~85+')
-SetRight:AddLabel('RightShift = Toggle UI')
-SetRight:AddDivider()
-SetRight:AddLabel('Credits:')
-SetRight:AddLabel('• LinoriaLib by mstudio45')
-SetRight:AddLabel('• Methodes IY (fly/speed)')
-SetRight:AddLabel('• SimpleSpy (remotes)')
+SettingsTab:AddButton({
+    Title       = "Load Config",
+    Description = "Loads settings from file",
+    Callback    = function()
+        if loadConfig() then
+            -- Réappliquer les settings chargés
+            if Settings.Fly then startFly() end
+            if Settings.CFly then startCFly() end
+            if Settings.Noclip then startNoclip() end
+            if Settings.Fullbright then setFullbright(true) end
+            if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
+        end
+    end,
+})
+
+SettingsTab:AddButton({
+    Title       = "Delete Config",
+    Description = "Deletes saved config file",
+    Callback    = function()
+        if delfile and isfile and isfile(CONFIG_FILE) then
+            delfile(CONFIG_FILE)
+            Fluent:Notify({ Title = "Config", Content = "Deleted!", Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Config", Content = "No config found", Duration = 2 })
+        end
+    end,
+})
+
+SettingsTab:AddSection("Info")
+
+SettingsTab:AddParagraph({
+    Title   = "Setras Hub",
+    Content = "Made by Setras\nGame: Paradox (Bleach)\nUNC requis: ~85+\nRCtrl = Toggle UI",
+})
+
+-- Fluent Interface settings (theme switcher)
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:BuildInterfaceSection(SettingsTab)
 
 -- ============================================================
--- INIT - Appliquer settings
+-- INIT
 -- ============================================================
-SaveManager:LoadAutoloadConfig()
-
-applyWalkSpeed()
-if Settings.Fly        then startFly()         end
-if Settings.Noclip     then startNoclip()      end
+-- Appliquer config auto-chargée
+if Settings.WalkSpeed ~= 16 then startWalkSpeed(Settings.WalkSpeed) end
+if Settings.Fly then startFly() end
+if Settings.CFly then startCFly() end
+if Settings.Noclip then startNoclip() end
 if Settings.Fullbright then setFullbright(true) end
-if Settings.PlayerESP  then refreshPlayerESP() end
-if Settings.MobESP     then refreshMobESP()    end
+if Settings.PlayerESP then refreshPlayerESP() end
+if Settings.MobESP then refreshMobESP() end
 
-Library:Notify({
-    Title    = 'Setras Hub v5',
-    Content  = 'Loaded! RightShift to toggle',
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title   = "Setras Hub",
+    Content = "Loaded! RCtrl to toggle",
     Duration = 4,
 })
