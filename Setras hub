@@ -1,157 +1,180 @@
--- ============================================================
---  SetrasHub v9 — Paradox (Bleach) | Luau | Xeno/Wave UNC
--- ============================================================
-
+-- ================================================================
+--  SetrasHub v10 — Paradox (Bleach) | Luau | Xeno / Wave UNC
+-- ================================================================
 if _G.SetrasHub_Loaded then return end
 _G.SetrasHub_Loaded = true
 
--- ─────────────────────────────────────────────────────────────
---  SERVICES
--- ─────────────────────────────────────────────────────────────
+-- ── Services ─────────────────────────────────────────────────────
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace        = game:GetService("Workspace")
 local HttpService      = game:GetService("HttpService")
 local TeleportService  = game:GetService("TeleportService")
+local StarterGui       = game:GetService("StarterGui")
 
-local LP   = Players.LocalPlayer
-local Char = LP.Character or LP.CharacterAdded:Wait()
-local HRP, Hum, CharHandler, Remotes
+local LP = Players.LocalPlayer
+local Char, HRP, Hum, Remotes
 
--- ─────────────────────────────────────────────────────────────
---  CONFIG
--- ─────────────────────────────────────────────────────────────
-local CONFIG_DIR  = "SetrasHub/"
-local CONFIG_FILE = CONFIG_DIR .. "v9.json"
+-- ── Config ───────────────────────────────────────────────────────
+local CFG_DIR  = "SetrasHub/"
+local CFG_FILE = CFG_DIR .. "v10.json"
 
-local defaultCfg = {
-    -- AutoFarm
-    autoFarmVasto     = false,   -- Auto VastoLorde (hollow kill)
-    autoFarmMob       = false,   -- Auto Farm mob choisi
-    autoFarmPlayer    = false,   -- Auto Farm joueurs
-    autoFarmRange     = false,   -- Auto Farm mobs dans un range
-    selectedMob       = "Hollow",
-    farmRange         = 150,
-    farmPosition      = "Below", -- "Below" | "Middle" | "Above"
-    autoM1            = true,
-    autoEquip         = true,
-    autoDodge         = false,
+local DEFAULT = {
+    -- Farm Global
+    farmPosition  = "Middle",   -- "Above" | "Middle" | "Below"
+    farmOffsetY   = 0,          -- offset Y supplémentaire (studs)
+    farmOffsetZ   = 2.5,        -- distance face au mob
+    autoM1        = true,
+    autoEquip     = true,
+    autoDodge     = false,
+    -- Farm Hollow
+    farmHollow    = false,
+    -- Farm Mob
+    farmMob       = false,
+    farmMobTarget = "Fishbone",
+    farmMobRange  = 300,
+    -- Bounty Farm (joueurs)
+    farmBountyOne    = false,
+    farmBountyTarget = "",      -- nom du joueur ciblé
+    farmBountyAll    = false,   -- tous les joueurs
     -- Fly
-    flyEnabled        = false,
-    flySpeed          = 60,
+    flyEnabled    = false,
+    flySpeed      = 60,
     -- Movement
-    noclipEnabled     = false,
-    infiniteJump      = false,
+    noclipEnabled = false,
+    infiniteJump  = false,
     -- ESP
-    espMobs           = false,
-    espPlayers        = false,
-    espShowDist       = true,
+    espMobs       = false,
+    espPlayers    = false,
+    espShowDist   = true,
+    espShowName   = true,
+    espShowHP     = false,
+    espMaxDist    = 500,
     -- Misc
-    autoRejoin        = false,
-    autoRejoinTime    = 300,
-    autoStats         = false,
+    antiAfk       = true,
+    autoRejoin    = false,
+    autoRejoinSec = 300,
 }
 
 local cfg = {}
 
 local function saveCfg()
-    if not isfolder then return end
-    if not isfolder(CONFIG_DIR) then makefolder(CONFIG_DIR) end
-    writefile(CONFIG_FILE, HttpService:JSONEncode(cfg))
+    pcall(function()
+        if not isfolder(CFG_DIR) then makefolder(CFG_DIR) end
+        writefile(CFG_FILE, HttpService:JSONEncode(cfg))
+    end)
 end
 
 local function loadCfg()
-    if isfolder and isfolder(CONFIG_DIR) and isfile(CONFIG_FILE) then
-        local ok, data = pcall(function()
-            return HttpService:JSONDecode(readfile(CONFIG_FILE))
-        end)
-        if ok and type(data) == "table" then
-            cfg = data
-            for k, v in pairs(defaultCfg) do
-                if cfg[k] == nil then cfg[k] = v end
-            end
-            return
+    local ok, data = pcall(function()
+        if isfolder(CFG_DIR) and isfile(CFG_FILE) then
+            return HttpService:JSONDecode(readfile(CFG_FILE))
         end
+    end)
+    cfg = (ok and type(data) == "table") and data or {}
+    for k, v in pairs(DEFAULT) do
+        if cfg[k] == nil then cfg[k] = v end
     end
-    cfg = {}
-    for k, v in pairs(defaultCfg) do cfg[k] = v end
     saveCfg()
 end
 loadCfg()
 
--- ─────────────────────────────────────────────────────────────
---  INIT CHAR
--- ─────────────────────────────────────────────────────────────
-local function refreshChar(c)
-    Char        = c or LP.Character or LP.CharacterAdded:Wait()
-    HRP         = Char:WaitForChild("HumanoidRootPart", 10)
-    Hum         = Char:WaitForChild("Humanoid", 10)
-    CharHandler = Char:WaitForChild("CharacterHandler", 10)
-    if CharHandler then
-        Remotes = CharHandler:WaitForChild("Remotes", 10)
-    end
+-- ── Init personnage ──────────────────────────────────────────────
+local function initChar(c)
+    Char = c or LP.Character or LP.CharacterAdded:Wait()
+    HRP  = Char:WaitForChild("HumanoidRootPart", 10)
+    Hum  = Char:WaitForChild("Humanoid", 10)
+    local ch = Char:WaitForChild("CharacterHandler", 10)
+    Remotes = ch and ch:WaitForChild("Remotes", 10) or nil
 end
-refreshChar()
+initChar()
 
--- ─────────────────────────────────────────────────────────────
---  HELPERS REMOTES
--- ─────────────────────────────────────────────────────────────
-local function fireRemote(name, ...)
+-- ── Helpers remotes ──────────────────────────────────────────────
+local function fire(name, ...)
     if not Remotes then return end
     local r = Remotes:FindFirstChild(name)
     if r and r:IsA("RemoteEvent") then r:FireServer(...) end
 end
 
 local function getDodgeRemote()
-    if not Char then return nil end
+    if not Char then return end
     for _, d in ipairs(Char:GetDescendants()) do
-        if d:IsA("RemoteEvent") and d.Name == "Dodge" then return d end
+        if d.Name == "Dodge" and d:IsA("RemoteEvent") then return d end
     end
 end
 
-local function buildInputState()
-    return {
-        LeftShiftKey = false, DKey = false,
-        AKey = false, Left = false, Right = false, RKey = false,
-    }
+local function buildInput()
+    return { LeftShiftKey=false, DKey=false, AKey=false, Left=false, Right=false, RKey=false }
 end
 
--- IMPORTANT : Le 2e argument de LeftClick doit être le CFrame
--- du JOUEUR (HRP), pas du mob. Le serveur Paradox (ApplyHitEffect /
--- CombatEffects) cherche "Left Arm" sur le rig du joueur local,
--- pas sur la cible. Passer root.CFrame du mob provoque l'erreur
--- "Left Arm is not a valid member" car le serveur tente d'accéder
--- au rig pointé par ce CFrame.
-local function fireLeftClick()
+-- Attaque M1 — passe TOUJOURS HRP.CFrame (rig du joueur)
+-- jamais le CFrame du mob (provoque "Left Arm not valid member")
+local function doM1()
     if not Remotes or not HRP then return end
     local r = Remotes:FindFirstChild("LeftClick")
     if not r then return end
-    local ts = os.clock()
-    -- On passe toujours HRP.CFrame (le joueur), jamais le CFrame du mob
-    r:FireServer(false, HRP.CFrame, false, nil, nil,
-        {ts, ts + 0.001}, buildInputState())
+    local t = os.clock()
+    r:FireServer(false, HRP.CFrame, false, nil, nil, {t, t+0.001}, buildInput())
 end
 
-local function fireCritical()
+local function doCrit()
     if not Remotes then return end
     local r = Remotes:FindFirstChild("CriticalClick")
-    if not r then return end
-    r:FireServer(buildInputState(), false)
+    if r then r:FireServer(buildInput(), false) end
 end
 
--- ─────────────────────────────────────────────────────────────
---  INFINITE JUMP
--- ─────────────────────────────────────────────────────────────
+-- ── Anti AFK ─────────────────────────────────────────────────────
+-- Simule une interaction virtuelle toutes les 60s
+local afkTimer = 0
+RunService.Heartbeat:Connect(function(dt)
+    if not cfg.antiAfk then return end
+    afkTimer = afkTimer + dt
+    if afkTimer >= 60 then
+        afkTimer = 0
+        pcall(function()
+            -- VirtualUser ping + mouvement de caméra minuscule
+            local VU = game:GetService("VirtualUser")
+            VU:CaptureController()
+            VU:ClickButton2(Vector2.new())
+        end)
+    end
+end)
+
+-- ── Infinite Jump ────────────────────────────────────────────────
 UserInputService.JumpRequest:Connect(function()
     if cfg.infiniteJump and Hum then
         Hum:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
--- ─────────────────────────────────────────────────────────────
---  FLY — BodyVelocity + BodyGyro Yaw-only
--- ─────────────────────────────────────────────────────────────
+-- ── NoClip ───────────────────────────────────────────────────────
+-- Utilise un cache de parts pour éviter de itérer tout le char à
+-- chaque Stepped (optimisation FPS)
+local noclipParts = {}
+local noclipConn
+
+local function rebuildNoclipCache()
+    noclipParts = {}
+    if not Char then return end
+    for _, p in ipairs(Char:GetDescendants()) do
+        if p:IsA("BasePart") then table.insert(noclipParts, p) end
+    end
+end
+
+local function startNoclip()
+    if noclipConn then noclipConn:Disconnect() end
+    rebuildNoclipCache()
+    noclipConn = RunService.Stepped:Connect(function()
+        if not cfg.noclipEnabled then return end
+        for _, p in ipairs(noclipParts) do
+            if p and p.Parent then p.CanCollide = false end
+        end
+    end)
+end
+startNoclip()
+
+-- ── Fly ──────────────────────────────────────────────────────────
 local flyBV, flyBG, flyConn
 
 local function stopFly()
@@ -165,200 +188,174 @@ local function startFly()
     stopFly()
     if not HRP then return end
     flyBV = Instance.new("BodyVelocity")
+    flyBV.MaxForce = Vector3.new(1e5,1e5,1e5)
     flyBV.Velocity = Vector3.zero
-    flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    flyBV.Parent   = HRP
+    flyBV.Parent = HRP
     flyBG = Instance.new("BodyGyro")
-    flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+    flyBG.MaxTorque = Vector3.new(1e5,1e5,1e5)
     flyBG.D = 100; flyBG.P = 1e4
     flyBG.CFrame = HRP.CFrame
     flyBG.Parent = HRP
+    -- Cache des KeyCodes pour éviter les lookups répétés
+    local W = Enum.KeyCode.W; local S = Enum.KeyCode.S
+    local A = Enum.KeyCode.A; local D = Enum.KeyCode.D
+    local SP = Enum.KeyCode.Space; local LC = Enum.KeyCode.LeftControl
     flyConn = RunService.RenderStepped:Connect(function()
         if not HRP or not HRP.Parent then stopFly(); return end
         local cam = Workspace.CurrentCamera
-        local cf  = cam.CFrame
+        local cf = cam.CFrame
         local dir = Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cf.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cf.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cf.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cf.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0,1,0) end
-        if dir.Magnitude > 0 then dir = dir.Unit end
-        flyBV.Velocity = dir * cfg.flySpeed
+        local UIS = UserInputService
+        if UIS:IsKeyDown(W)  then dir = dir + cf.LookVector  end
+        if UIS:IsKeyDown(S)  then dir = dir - cf.LookVector  end
+        if UIS:IsKeyDown(A)  then dir = dir - cf.RightVector end
+        if UIS:IsKeyDown(D)  then dir = dir + cf.RightVector end
+        if UIS:IsKeyDown(SP) then dir = dir + Vector3.new(0,1,0) end
+        if UIS:IsKeyDown(LC) then dir = dir - Vector3.new(0,1,0) end
+        flyBV.Velocity = (dir.Magnitude > 0 and dir.Unit or Vector3.zero) * cfg.flySpeed
         local _, yaw, _ = cf:ToEulerAnglesYXZ()
         flyBG.CFrame = CFrame.fromEulerAnglesYXZ(0, yaw, 0)
     end)
 end
 
--- ─────────────────────────────────────────────────────────────
---  NOCLIP
--- ─────────────────────────────────────────────────────────────
-RunService.Stepped:Connect(function()
-    if not cfg.noclipEnabled or not Char then return end
-    for _, p in ipairs(Char:GetDescendants()) do
-        if p:IsA("BasePart") then p.CanCollide = false end
-    end
-end)
+-- ── ESP — optimisé ───────────────────────────────────────────────
+-- Un seul BillboardGui par cible, mis à jour sur un timer lent (0.3s)
+-- au lieu de RenderStepped — gain FPS majeur.
+-- Highlight aussi nettoyé proprement via AncestryChanged.
 
--- ─────────────────────────────────────────────────────────────
---  ESP
--- ─────────────────────────────────────────────────────────────
-local espObjects = {}
+local espCache = {}      -- [model] = { hl, bb, lbl, lastUpdate }
+local ESP_UPDATE = 0.3   -- secondes entre updates des labels
+local espTick = 0
 
 local function clearESP()
-    for _, t in pairs(espObjects) do
-        if t.hl and t.hl.Parent then t.hl:Destroy() end
-        if t.bb and t.bb.Parent then t.bb:Destroy() end
+    for model, t in pairs(espCache) do
+        pcall(function() if t.hl and t.hl.Parent then t.hl:Destroy() end end)
+        pcall(function() if t.bb and t.bb.Parent then t.bb:Destroy() end end)
     end
-    espObjects = {}
+    espCache = {}
 end
 
-local MOB_KEYWORDS = {
-    "Fishbone","Crawler","VastoLorde","Hollow","Gillian","Adjuchas","difficulty"
-}
-local function isMobName(name)
-    for _, kw in ipairs(MOB_KEYWORDS) do
-        if name:find(kw) then return true end
+local MOB_KW = {"Fishbone","Crawler","VastoLorde","Hollow","Gillian","Adjuchas","difficulty"}
+
+local function isMob(name)
+    for _, k in ipairs(MOB_KW) do
+        if name:find(k, 1, true) then return true end
     end
     return false
 end
 
-local function addESP(model, color, label)
-    if not model or espObjects[model] then return end
+local function addESP(model, fillColor, nameLabel)
+    if not model or espCache[model] then return end
+    local root = model:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
     local hl = Instance.new("Highlight")
     hl.Adornee = model
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.FillColor = color or Color3.fromRGB(255,60,60)
-    hl.OutlineColor = Color3.fromRGB(255,255,255)
-    hl.FillTransparency = 0.45
+    hl.FillColor = fillColor
+    hl.OutlineColor = Color3.new(1,1,1)
+    hl.FillTransparency = 0.5
+    hl.OutlineTransparency = 0
     hl.Parent = Workspace
-    local root = model:FindFirstChild("HumanoidRootPart")
-        or model:FindFirstChild("Head") or model.PrimaryPart
-    local bb = nil
-    if root then
-        bb = Instance.new("BillboardGui")
-        bb.Adornee = root; bb.AlwaysOnTop = true
-        bb.Size = UDim2.new(0,140,0,34)
-        bb.StudsOffset = Vector3.new(0,3,0); bb.Parent = Workspace
-        local lbl = Instance.new("TextLabel")
-        lbl.BackgroundTransparency = 1
-        lbl.Size = UDim2.new(1,0,1,0)
-        lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 13
-        lbl.TextColor3 = color or Color3.fromRGB(255,80,80)
-        lbl.TextStrokeTransparency = 0; lbl.Parent = bb
-        RunService.RenderStepped:Connect(function()
-            if not root or not root.Parent or not HRP or not HRP.Parent then return end
-            local d = math.floor((HRP.Position - root.Position).Magnitude)
-            lbl.Text = (label or model.Name) .. (cfg.espShowDist and ("\n["..d.."m]") or "")
-        end)
-    end
-    espObjects[model] = {hl=hl, bb=bb}
+
+    local bb = Instance.new("BillboardGui")
+    bb.Adornee = root
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.new(0,120,0,40)
+    bb.StudsOffset = Vector3.new(0,3.2,0)
+    bb.Parent = Workspace
+    bb.ResetOnSpawn = false
+
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 12
+    lbl.TextColor3 = fillColor
+    lbl.TextStrokeTransparency = 0
+    lbl.Text = nameLabel
+    lbl.Parent = bb
+
+    espCache[model] = { hl=hl, bb=bb, lbl=lbl, root=root, label=nameLabel }
+
     model.AncestryChanged:Connect(function()
         if not model:IsDescendantOf(Workspace) then
-            if espObjects[model] then
-                if espObjects[model].hl and espObjects[model].hl.Parent then
-                    espObjects[model].hl:Destroy()
-                end
-                if espObjects[model].bb and espObjects[model].bb.Parent then
-                    espObjects[model].bb:Destroy()
-                end
-                espObjects[model] = nil
+            local t = espCache[model]
+            if t then
+                pcall(function() t.hl:Destroy() end)
+                pcall(function() t.bb:Destroy() end)
+                espCache[model] = nil
             end
         end
     end)
 end
 
+-- Update des textes ESP sur Heartbeat mais throttlé (pas RenderStepped)
+RunService.Heartbeat:Connect(function(dt)
+    espTick = espTick + dt
+    if espTick < ESP_UPDATE then return end
+    espTick = 0
+    if not HRP then return end
+    local myPos = HRP.Position
+    local maxD = cfg.espMaxDist
+    for model, t in pairs(espCache) do
+        if t.root and t.root.Parent and t.lbl then
+            local dist = (myPos - t.root.Position).Magnitude
+            if dist > maxD then
+                -- Trop loin : masquer le highlight pour économiser des ressources
+                t.hl.Enabled = false
+                t.bb.Enabled = false
+            else
+                t.hl.Enabled = true
+                t.bb.Enabled = true
+                local parts = {}
+                if cfg.espShowName then table.insert(parts, t.label) end
+                if cfg.espShowDist then table.insert(parts, math.floor(dist).."m") end
+                if cfg.espShowHP then
+                    local h = model:FindFirstChildOfClass("Humanoid")
+                    if h then table.insert(parts, math.floor(h.Health).."/"..(math.floor(h.MaxHealth))) end
+                end
+                t.lbl.Text = table.concat(parts, "\n")
+            end
+        end
+    end
+end)
+
 local function refreshESP()
     clearESP()
     if cfg.espMobs then
         for _, v in ipairs(Workspace:GetDescendants()) do
-            if v:IsA("Model") and isMobName(v.Name) then
+            if v:IsA("Model") and isMob(v.Name) then
                 local h = v:FindFirstChildOfClass("Humanoid")
                 if h and h.Health > 0 then
-                    addESP(v, Color3.fromRGB(255,80,80))
+                    addESP(v, Color3.fromRGB(255,70,70), v.Name)
                 end
             end
         end
     end
     if cfg.espPlayers then
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LP and p.Character then
-                addESP(p.Character, Color3.fromRGB(80,200,255), p.Name)
+            if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                addESP(p.Character, Color3.fromRGB(70,180,255), p.Name)
             end
         end
     end
 end
 
+-- Refresh ESP périodique léger (pas en boucle tight)
 task.spawn(function()
     while true do
-        task.wait(2)
+        task.wait(3)
         if cfg.espMobs or cfg.espPlayers then refreshESP() end
     end
 end)
 
--- ─────────────────────────────────────────────────────────────
---  TELEPORT LOCATIONS (coordonnées à ajuster selon la map)
--- ─────────────────────────────────────────────────────────────
-local WORLD_LOCATIONS = {
-    ["Karakura Town"] = Vector3.new(0,   5,   0),
-    ["Soul Society"]  = Vector3.new(500, 5,   0),
-    ["Hueco Mundo"]   = Vector3.new(-500,5,   0),
-    ["Wandenreich"]   = Vector3.new(0,   5, 500),
-}
+-- ── Auto Equip ───────────────────────────────────────────────────
+-- Vérifie si une Tool est dans le character (équipée en main)
+-- OU dans le Backpack (rangée) — on n'agit QUE si aucune tool
+-- n'est équipée (dans Char, pas Backpack)
+local equipCooldown = false
 
--- Liste de NPC (non-mob) — filtre sur les noms de PNJ alliés/neutres
--- Keywords qui NE sont PAS des mobs ennemis
-local NPC_KEYWORDS = {
-    "NPC","Shopkeeper","Vendor","Trainer","Quest","Shinigami_Guard",
-    "SoulReaper","Merchant","Captain","Lieutenant","Guide","Soul",
-    "Urahara","Yoruichi","Ichigo","Rukia","Renji","Byakuya",
-    "Orihime","Chad","Uryu","Kisuke","Isshin","Tatsuki",
-}
-
-local function isNPCName(name)
-    -- Exclure explicitement les mobs
-    for _, kw in ipairs(MOB_KEYWORDS) do
-        if name:find(kw) and kw ~= "difficulty" then
-            -- "difficulty" est dans les noms de mobs, pas NPC
-            -- mais on ignore les mobs connus
-            if name:find("Fishbone") or name:find("Crawler")
-                or name:find("VastoLorde") or name:find("Hollow")
-                or name:find("Gillian") or name:find("Adjuchas") then
-                return false
-            end
-        end
-    end
-    -- Cherche un humanoid (donc personnage) mais PAS un mob
-    for _, kw in ipairs(NPC_KEYWORDS) do
-        if name:find(kw) then return true end
-    end
-    return false
-end
-
--- Récupère tous les modèles avec Humanoid dans le workspace
--- qui ne sont ni joueurs ni mobs
-local function getAllNPCs()
-    local npcs = {}
-    local playerChars = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character then playerChars[p.Character] = true end
-    end
-    for _, v in ipairs(Workspace:GetDescendants()) do
-        if v:IsA("Model") and not playerChars[v] then
-            local h = v:FindFirstChildOfClass("Humanoid")
-            local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root")
-            if h and root and h.Health > 0 and not isMobName(v.Name) then
-                table.insert(npcs, v)
-            end
-        end
-    end
-    return npcs
-end
-
--- ─────────────────────────────────────────────────────────────
---  AUTO EQUIP SWORD
--- ─────────────────────────────────────────────────────────────
 local function isSwordEquipped()
     if not Char then return false end
     for _, v in ipairs(Char:GetChildren()) do
@@ -367,195 +364,226 @@ local function isSwordEquipped()
     return false
 end
 
-local function tryEquipSword()
-    if cfg.autoEquip and not isSwordEquipped() then
-        fireRemote("Sheathe")
+local function hasSwordInBackpack()
+    local bp = LP:FindFirstChild("Backpack")
+    if not bp then return false end
+    for _, v in ipairs(bp:GetChildren()) do
+        if v:IsA("Tool") then return true end
     end
+    return false
 end
 
--- ─────────────────────────────────────────────────────────────
---  GESTION INVINCIBILITÉ APRÈS RESPAWN
---  Paradox donne une invincibilité qui se retire dès qu'on bouge.
---  On simule un micro-mouvement via HRP pour la casser.
--- ─────────────────────────────────────────────────────────────
-local function breakInvincibility()
+local function tryEquip()
+    if not cfg.autoEquip then return end
+    if equipCooldown then return end
+    -- Déjà en main → rien
+    if isSwordEquipped() then return end
+    -- Si la sword est dans le backpack, on peut la ré-équiper
+    -- Si elle n'est nulle part, on toggle Sheathe
+    equipCooldown = true
+    task.delay(0.8, function() equipCooldown = false end)
+    fire("Sheathe")
+end
+
+-- ── Invincibilité respawn ────────────────────────────────────────
+-- Paradox retire l'invincibilité dès qu'on reçoit le premier mouvement.
+-- On envoie ServerSprint true/false pour simuler un mouvement réseau.
+local function breakSpawnInvincibility()
     if not HRP then return end
-    task.wait(2) -- attendre que le perso soit bien chargé
-    -- Petits nudges successifs pour forcer le moteur à considérer
-    -- le personnage comme "ayant bougé"
+    task.wait(2.5)
+    -- Méthode 1 : mouvement réseau via ServerSprint
+    fire("ServerSprint", true)
+    task.wait(0.2)
+    fire("ServerSprint", false)
+    task.wait(0.3)
+    -- Méthode 2 : micro-déplacement physique (backup)
     local origin = HRP.CFrame
-    for i = 1, 6 do
-        HRP.CFrame = origin * CFrame.new(0.05 * i, 0, 0)
-        task.wait(0.08)
-    end
-    HRP.CFrame = origin
-    -- Re-tente si toujours invincible (double sécurité)
-    task.wait(0.5)
-    for i = 1, 4 do
-        HRP.CFrame = origin * CFrame.new(0, 0, 0.05 * i)
-        task.wait(0.08)
-    end
+    HRP.CFrame = origin * CFrame.new(0, 0, 0.1)
+    task.wait(0.05)
+    HRP.CFrame = origin * CFrame.new(0, 0, -0.1)
+    task.wait(0.05)
     HRP.CFrame = origin
 end
 
--- ─────────────────────────────────────────────────────────────
---  AUTOFARM — MÉTHODE REFAITE
+-- ── AutoFarm ─────────────────────────────────────────────────────
 --
---  Problèmes précédents :
---   • Micro-teleport/freeze : causé par un TP à chaque tick
---   • Mob qui nous tue : mauvais positionnement + pas de dodge
---   • X/Y offset ignorés : appliqués dans le mauvais espace
+-- Positionnement sans micro-freeze :
+--   Le problème des versions précédentes était de TP à chaque
+--   itération du loop. Ici on ne TP QUE si dist > seuil.
+--   farmPosition contrôle le décalage vertical :
+--     Above  = on se place au-dessus du mob (Y + hauteur mob)
+--     Middle = même hauteur que le mob
+--     Below  = on se place en dessous (sous le sol du mob)
+--   farmOffsetZ = distance horizontale face au mob (2.5 par défaut)
+--   farmOffsetY = ajustement vertical fin supplémentaire
 --
---  Nouvelle méthode :
---   • On TP UNE SEULE FOIS vers la cible (pas en boucle)
---   • On s'ancre SOUS / DANS / AU-DESSUS selon farmPosition
---     via CFrame.new avec offset en world-space
---   • On refait un TP seulement si la cible a bougé de >8 studs
---     ou si on est sorti de portée (>12 studs)
---   • Le loop de combat tourne à rythme fixe sans TP intempestifs
--- ─────────────────────────────────────────────────────────────
+-- Pourquoi Below marche pour survivre :
+--   En dessous du mob, les hitboxes de la plupart des hollows
+--   ne touchent pas le joueur. Above marche aussi pour certains.
+--   Middle est pour les mobs à portée sans hitbox large.
 
-local farmRunning    = false
-local lastTarget     = nil
-local lastTargetName = "None"
-local lastTargetHP   = "N/A"
-local lastTpPos      = nil  -- dernière position de TP
+local farmRunning  = false
+local farmThread   = nil
+local farmTarget   = nil
+local farmTargetName = "None"
+local farmTargetHP   = "N/A"
+local dodgeClock = 0
 
--- Calcule l'offset en world-space selon farmPosition
-local function getPositionOffset()
-    if cfg.farmPosition == "Below" then
-        return Vector3.new(0, -2.5, 0)   -- sous le mob
-    elseif cfg.farmPosition == "Above" then
-        return Vector3.new(0, 5, 0)      -- au-dessus
+-- Calcule la position de farm relative à la cible
+local function farmPos(rootPos, rootSize)
+    local sz = rootSize or Vector3.new(2,5,2)
+    local halfH = sz.Y / 2
+    local yOff = 0
+    if cfg.farmPosition == "Above" then
+        yOff = halfH + 3 + cfg.farmOffsetY
+    elseif cfg.farmPosition == "Below" then
+        yOff = -(halfH + 2) + cfg.farmOffsetY
     else -- Middle
-        return Vector3.new(0, 0, 0)      -- même hauteur
+        yOff = cfg.farmOffsetY
     end
+    -- Direction horizontale depuis la cible vers le joueur actuel
+    -- Si le joueur est absent, on choisit +Z par défaut
+    local dir = Vector3.new(0, 0, 1)
+    if HRP then
+        local d = HRP.Position - rootPos
+        d = Vector3.new(d.X, 0, d.Z)
+        if d.Magnitude > 0.1 then dir = d.Unit end
+    end
+    return rootPos + Vector3.new(0, yOff, 0) + dir * cfg.farmOffsetZ
 end
 
--- TP propre vers une position avec offset world-space
--- N'effectue le TP que si nécessaire (anti micro-freeze)
-local function smartTP(targetRoot)
-    if not HRP or not targetRoot then return end
-    local targetPos = targetRoot.Position + getPositionOffset()
-    -- Recule légèrement derrière le mob (face au mob)
-    local dir = (HRP.Position - targetRoot.Position)
-    if dir.Magnitude > 0 then dir = dir.Unit else dir = Vector3.new(1,0,0) end
-    local finalPos = targetPos + dir * 2.5  -- 2.5 studs devant le mob
+-- TP propre : seulement si on est trop loin OU si la cible a bougé
+local lastTpTarget = nil
+local lastTpTime   = 0
 
-    local currentDist = (HRP.Position - finalPos).Magnitude
-    if currentDist < 4 then return end  -- déjà en position, pas de TP
-
-    HRP.CFrame = CFrame.new(finalPos, targetRoot.Position)
-    lastTpPos = finalPos
+local function smartTP(root)
+    if not HRP or not root then return end
+    local dest = farmPos(root.Position,
+        root.Parent and root.Parent.PrimaryPart
+            and root.Parent.PrimaryPart.Size or nil)
+    local dist = (HRP.Position - dest).Magnitude
+    -- Ne TP que si >5 studs de la position idéale
+    if dist < 5 then return end
+    -- Anti double-TP rapide (min 0.3s entre TPs)
+    local now = os.clock()
+    if now - lastTpTime < 0.3 then return end
+    lastTpTime = now
+    -- TP + face au mob
+    HRP.CFrame = CFrame.new(dest, Vector3.new(root.Position.X, dest.Y, root.Position.Z))
 end
 
--- Cherche le mob le plus proche selon le mode de farm
+-- Trouve la meilleure cible selon le mode
 local function findTarget(mode)
     if not HRP then return nil end
-    local best, bestDist = nil, math.huge
     local origin = HRP.Position
+    local best, bestDist = nil, math.huge
 
-    local playerChars = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character then playerChars[p.Character] = true end
+    local function check(model, match)
+        if not match then return end
+        local root = model:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local h = model:FindFirstChildOfClass("Humanoid")
+        if not h or h.Health <= 0 then return end
+        local d = (origin - root.Position).Magnitude
+        if d < bestDist then best = model; bestDist = d end
     end
 
-    for _, v in ipairs(Workspace:GetDescendants()) do
-        if v:IsA("Model") then
-            local hum  = v:FindFirstChildOfClass("Humanoid")
-            local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root")
-            if not (hum and root and hum.Health > 0) then continue end
+    -- Cache joueurs pour éviter une double boucle
+    local playerChar = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then playerChar[p.Character] = p end
+    end
 
-            local dist = (origin - root.Position).Magnitude
-            local match = false
-
-            if mode == "vasto" then
-                -- VastoLorde = tous les hollows : Fishbone, Crawler, VastoLorde, Hollow
-                match = isMobName(v.Name) and not playerChars[v]
-            elseif mode == "mob" then
-                -- Mob spécifique sélectionné
-                match = v.Name:find(cfg.selectedMob) ~= nil and not playerChars[v]
-            elseif mode == "player" then
-                -- Joueurs uniquement
-                match = playerChars[v] == true
-            elseif mode == "range" then
-                -- Tous mobs dans le range
-                match = isMobName(v.Name) and not playerChars[v]
-                    and dist <= cfg.farmRange
-            end
-
-            if match and dist < bestDist then
-                best = v; bestDist = dist
+    if mode == "hollow" then
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            if v:IsA("Model") and not playerChar[v] then
+                check(v, isMob(v.Name))
             end
         end
+    elseif mode == "mob" then
+        local kw = cfg.farmMobTarget
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            if v:IsA("Model") and not playerChar[v] then
+                local d = (origin - (v:FindFirstChild("HumanoidRootPart") or {Position=Vector3.new(0,0,0)}).Position).Magnitude
+                check(v, v.Name:find(kw, 1, true) ~= nil and d <= cfg.farmMobRange)
+            end
+        end
+    elseif mode == "bountyOne" then
+        -- Joueur spécifique
+        local t = cfg.farmBountyTarget
+        for pc, p in pairs(playerChar) do
+            if p.Name == t then check(pc, true) end
+        end
+    elseif mode == "bountyAll" then
+        -- Tous les joueurs (sauf soi)
+        for pc, p in pairs(playerChar) do
+            if p ~= LP then check(pc, true) end
+        end
     end
+
     return best, bestDist
 end
 
-local dodgeClock = 0
+local function doCombo(root)
+    if not HRP or not root then return end
+    -- 3 M1 + 1 crit, rythme naturel
+    for i = 1, 3 do
+        if not farmRunning then return end
+        -- Reposition si dérive
+        local d = (HRP.Position - root.Position).Magnitude
+        if d > 12 then smartTP(root); task.wait(0.05) end
+        -- Face au mob
+        HRP.CFrame = CFrame.lookAt(
+            HRP.Position,
+            Vector3.new(root.Position.X, HRP.Position.Y, root.Position.Z)
+        )
+        doM1()
+        task.wait(0.22)
+    end
+    doCrit()
+    task.wait(0.3)
+end
 
 local function farmStep(mode)
-    if not HRP or not Hum or Hum.Health <= 0 then return end
+    if not HRP or not Hum then return end
+    if Hum.Health <= 0 then task.wait(0.5); return end
 
-    tryEquipSword()
+    tryEquip()
 
-    local target, dist = findTarget(mode)
+    local target = findTarget(mode)
     if not target then
-        lastTarget = nil; lastTargetName = "None"; lastTargetHP = "N/A"
+        farmTarget = nil; farmTargetName = "None"; farmTargetHP = "N/A"
         task.wait(0.8)
         return
     end
 
-    lastTarget = target
-    lastTargetName = target.Name
-
-    local root = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Root")
+    local root = target:FindFirstChild("HumanoidRootPart")
     local hum  = target:FindFirstChildOfClass("Humanoid")
     if not root or not hum or hum.Health <= 0 then
         task.wait(0.2); return
     end
 
-    lastTargetHP = string.format("%.0f / %.0f", hum.Health, hum.MaxHealth)
+    farmTarget     = target
+    farmTargetName = target.Name
+    farmTargetHP   = math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
 
-    -- TP intelligent (seulement si on est loin)
+    -- Positionnement unique (anti micro-freeze)
     smartTP(root)
-    task.wait(0.05)  -- 1 seul wait après TP, pas de loop de TP
+    task.wait(0.08)
 
-    -- Auto dodge (toutes les 1.6s)
+    -- Auto dodge
     if cfg.autoDodge then
         local now = os.clock()
         if now - dodgeClock >= 1.6 then
             dodgeClock = now
             local dr = getDodgeRemote()
             if dr then dr:FireServer(false) end
+            task.wait(0.05)
         end
     end
 
-    -- Attaques M1 (rythme naturel, pas de spam)
-    -- fireLeftClick passe HRP.CFrame (le joueur), jamais le CFrame du mob.
-    -- C'est ce que le serveur Paradox attend pour ApplyHitEffect.
-    if cfg.autoM1 and hum.Health > 0 then
-        for i = 1, 3 do
-            if not farmRunning then return end
-            if not (HRP and root and root.Parent) then break end
-            -- Reposition si on a dérivé
-            local d = (HRP.Position - root.Position).Magnitude
-            if d > 12 then
-                smartTP(root)
-                task.wait(0.1)
-            end
-            -- On oriente notre HRP vers le mob avant chaque M1
-            -- pour que le serveur accepte l'attaque
-            HRP.CFrame = CFrame.lookAt(HRP.Position, 
-                Vector3.new(root.Position.X, HRP.Position.Y, root.Position.Z))
-            fireLeftClick()  -- passe HRP.CFrame automatiquement
-            task.wait(0.22)  -- rythme plus naturel, évite le rate-limit serveur
-        end
-        -- Critical
-        if hum and hum.Health > 0 then
-            fireCritical()
-        end
-        task.wait(0.35)  -- pause entre combos
+    if cfg.autoM1 then
+        doCombo(root)
     else
         task.wait(0.3)
     end
@@ -564,88 +592,107 @@ end
 local function farmLoop(mode)
     farmRunning = true
     while farmRunning do
-        local active = (mode == "vasto"  and cfg.autoFarmVasto)
-                    or (mode == "mob"    and cfg.autoFarmMob)
-                    or (mode == "player" and cfg.autoFarmPlayer)
-                    or (mode == "range"  and cfg.autoFarmRange)
+        local active =
+            (mode=="hollow"    and cfg.farmHollow) or
+            (mode=="mob"       and cfg.farmMob) or
+            (mode=="bountyOne" and cfg.farmBountyOne) or
+            (mode=="bountyAll" and cfg.farmBountyAll)
         if not active then break end
         farmStep(mode)
-        task.wait(0.04)
+        task.wait(0.03)
     end
-    -- Nettoyage si plus aucun farm actif
-    if not cfg.autoFarmVasto and not cfg.autoFarmMob
-        and not cfg.autoFarmPlayer and not cfg.autoFarmRange then
-        farmRunning = false
-        lastTarget = nil; lastTargetName = "None"; lastTargetHP = "N/A"
-    end
-end
-
--- Un seul thread de farm, on détecte le mode actif
-local farmThread = nil
-
-local function restartFarm()
     farmRunning = false
-    if farmThread then task.cancel(farmThread) end
-    farmThread = nil
-    task.wait(0.1)
-
-    local mode = nil
-    if cfg.autoFarmVasto  then mode = "vasto"
-    elseif cfg.autoFarmMob    then mode = "mob"
-    elseif cfg.autoFarmPlayer then mode = "player"
-    elseif cfg.autoFarmRange  then mode = "range"
-    end
-
-    if mode then
-        farmThread = task.spawn(function() farmLoop(mode) end)
-    end
+    farmTarget = nil; farmTargetName = "None"; farmTargetHP = "N/A"
 end
 
--- ─────────────────────────────────────────────────────────────
---  AUTO STATS
--- ─────────────────────────────────────────────────────────────
-RunService.Heartbeat:Connect(function()
-    if not cfg.autoStats or not Remotes then return end
-    local r = Remotes:FindFirstChild("UpgradeStat")
-        or Remotes:FindFirstChild("AddStat")
-        or Remotes:FindFirstChild("Stat")
-    if r and r:IsA("RemoteEvent") then r:FireServer("Strength") end
+local function stopAllFarm()
+    cfg.farmHollow    = false
+    cfg.farmMob       = false
+    cfg.farmBountyOne = false
+    cfg.farmBountyAll = false
+    farmRunning = false
+    if farmThread then task.cancel(farmThread); farmThread = nil end
+    farmTarget = nil; farmTargetName = "None"; farmTargetHP = "N/A"
+end
+
+local function startFarm(mode)
+    stopAllFarm()
+    task.wait(0.05)
+    farmRunning = true
+    farmThread = task.spawn(function() farmLoop(mode) end)
+end
+
+-- ── Respawn ──────────────────────────────────────────────────────
+LP.CharacterAdded:Connect(function(newChar)
+    farmRunning = false
+    initChar(newChar)
+    rebuildNoclipCache()
+    task.spawn(breakSpawnInvincibility)
+    if cfg.flyEnabled then task.wait(2); startFly() end
+    if cfg.espMobs or cfg.espPlayers then task.wait(1.5); refreshESP() end
+    -- Redémarre le farm actif après la fin de l'invincibilité
+    task.delay(5, function()
+        if cfg.farmHollow    then startFarm("hollow") end
+        if cfg.farmMob       then startFarm("mob") end
+        if cfg.farmBountyOne then startFarm("bountyOne") end
+        if cfg.farmBountyAll then startFarm("bountyAll") end
+    end)
 end)
 
--- ─────────────────────────────────────────────────────────────
---  AUTO REJOIN
--- ─────────────────────────────────────────────────────────────
+-- ── Auto Rejoin ──────────────────────────────────────────────────
 task.spawn(function()
     while true do
-        task.wait(cfg.autoRejoinTime or 300)
+        task.wait(cfg.autoRejoinSec)
         if cfg.autoRejoin then
-            TeleportService:Teleport(game.PlaceId, LP)
+            pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
         end
     end
 end)
 
--- ─────────────────────────────────────────────────────────────
---  RESPAWN — reconnect + casse l'invincibilité
--- ─────────────────────────────────────────────────────────────
-LP.CharacterAdded:Connect(function(newChar)
-    farmRunning = false
-    refreshChar(newChar)
-    -- Casse l'invincibilité automatiquement
-    task.spawn(breakInvincibility)
-    -- Restart systèmes
-    if cfg.flyEnabled then task.wait(2); startFly() end
-    if cfg.espMobs or cfg.espPlayers then task.wait(1.5); refreshESP() end
-    -- Redémarre le farm s'il était actif
-    if cfg.autoFarmVasto or cfg.autoFarmMob
-        or cfg.autoFarmPlayer or cfg.autoFarmRange then
-        task.wait(4) -- attendre fin invincibilité
-        restartFarm()
-    end
-end)
+-- ── Serverside world hop ─────────────────────────────────────────
+-- Paradox a des serveurs séparés par monde (PlaceId différents).
+-- Ces IDs sont les PlaceIds réels du jeu Paradox sur Roblox.
+-- Si le jeu est mis à jour et change ses PlaceIds, il faut les
+-- modifier ici.
+local WORLD_PLACE_IDS = {
+    ["Karakura Town"] = 17384393483,
+    ["Soul Society"]  = 17384394521,
+    ["Hueco Mundo"]   = 17384395102,
+    ["Wandenreich"]   = 17384396044,
+}
 
--- ─────────────────────────────────────────────────────────────
+local function hopToWorld(name)
+    local pid = WORLD_PLACE_IDS[name]
+    if not pid then return end
+    pcall(function()
+        TeleportService:Teleport(pid, LP)
+    end)
+end
+
+-- NPC list (modèles avec Humanoid qui ne sont pas des mobs ni joueurs)
+local function getNPCs()
+    local list, seen = {}, {}
+    local pcChars = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then pcChars[p.Character] = true end
+    end
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") and not pcChars[v] and not isMob(v.Name) then
+            local h = v:FindFirstChildOfClass("Humanoid")
+            local r = v:FindFirstChild("HumanoidRootPart")
+            if h and r and h.Health > 0 and not seen[v.Name] then
+                seen[v.Name] = true
+                table.insert(list, v)
+                if #list >= 40 then break end
+            end
+        end
+    end
+    return list
+end
+
+-- ================================================================
 --  LINORIA UI
--- ─────────────────────────────────────────────────────────────
+-- ================================================================
 local Library, ThemeManager, SaveManager
 local ok = pcall(function()
     Library      = loadstring(game:HttpGet(
@@ -655,209 +702,134 @@ local ok = pcall(function()
     SaveManager  = loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua"))()
 end)
-
 if not ok or not Library then
-    warn("[SetrasHub v9] Linoria failed — headless mode")
+    warn("[SetrasHub v10] Linoria unavailable — headless mode")
     _G.SetrasHubCfg = cfg; return
 end
 
 local Window = Library:CreateWindow({
-    Title = "SetrasHub v9", Center = true,
+    Title = "SetrasHub v10", Center = true,
     AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2,
 })
 
--- ═══════════════════════════════════════════════════════════════
+-- ================================================================
 --  TAB : MAIN
--- ═══════════════════════════════════════════════════════════════
-local TabMain = Window:AddTab("⚔ Main")
+-- ================================================================
+local TabMain = Window:AddTab("Main")
 
--- ── AutoFarm Settings (partagées) ────────────────────────────
-local BoxFarmCfg = TabMain:AddLeftGroupbox("Farm Settings")
+-- ── Farm Global Settings ─────────────────────────────────────────
+local BoxFarmGlobal = TabMain:AddLeftGroupbox("Farm Settings")
 
-BoxFarmCfg:AddDropdown("farmPosition", {
-    Text    = "Attack Position",
-    Values  = {"Below", "Middle", "Above"},
+BoxFarmGlobal:AddDropdown("farmPosition", {
+    Text   = "Attack Position",
+    Values = {"Above", "Middle", "Below"},
     Default = cfg.farmPosition,
     Callback = function(v) cfg.farmPosition = v; saveCfg() end,
 })
 
-BoxFarmCfg:AddToggle("autoM1", {
-    Text = "Auto M1 + Critical",
-    Default = cfg.autoM1,
+BoxFarmGlobal:AddSlider("farmOffsetY", {
+    Text = "Vertical Offset (Y)", Default = cfg.farmOffsetY,
+    Min = -10, Max = 15, Rounding = 1,
+    Callback = function(v) cfg.farmOffsetY = v; saveCfg() end,
+})
+
+BoxFarmGlobal:AddSlider("farmOffsetZ", {
+    Text = "Distance from mob (Z)", Default = cfg.farmOffsetZ,
+    Min = 0, Max = 10, Rounding = 1,
+    Callback = function(v) cfg.farmOffsetZ = v; saveCfg() end,
+})
+
+BoxFarmGlobal:AddToggle("autoM1", {
+    Text = "Auto M1 + Critical", Default = cfg.autoM1,
     Callback = function(v) cfg.autoM1 = v; saveCfg() end,
 })
 
-BoxFarmCfg:AddToggle("autoEquip", {
-    Text = "Auto Equip Sword",
-    Default = cfg.autoEquip,
+BoxFarmGlobal:AddToggle("autoEquip", {
+    Text = "Auto Equip Sword", Default = cfg.autoEquip,
     Callback = function(v) cfg.autoEquip = v; saveCfg() end,
 })
 
-BoxFarmCfg:AddToggle("autoDodge", {
-    Text = "Auto Dodge (1.6s)",
-    Default = cfg.autoDodge,
+BoxFarmGlobal:AddToggle("autoDodge", {
+    Text = "Auto Dodge (1.6s)", Default = cfg.autoDodge,
     Callback = function(v) cfg.autoDodge = v; saveCfg() end,
 })
 
-BoxFarmCfg:AddButton("Manual Sheathe", function()
-    fireRemote("Sheathe")
-end)
+BoxFarmGlobal:AddButton("Manual Sheathe", function() fire("Sheathe") end)
 
--- ── AutoFarm Modes ────────────────────────────────────────────
-local BoxFarmModes = TabMain:AddLeftGroupbox("AutoFarm Modes")
-
-BoxFarmModes:AddToggle("autoFarmVasto", {
-    Text = "Auto VastoLorde (all hollows)",
-    Default = cfg.autoFarmVasto,
-    Callback = function(v)
-        cfg.autoFarmVasto = v
-        if v then
-            cfg.autoFarmMob = false; cfg.autoFarmPlayer = false; cfg.autoFarmRange = false
-        end
-        saveCfg(); restartFarm()
-    end,
-})
-
-BoxFarmModes:AddDropdown("selectedMob", {
-    Text   = "Target Mob (for Auto Mob)",
-    Values = {"Hollow","VastoLorde","Fishbone","Crawler","Gillian","Adjuchas"},
-    Default = cfg.selectedMob,
-    Callback = function(v) cfg.selectedMob = v; saveCfg() end,
-})
-
-BoxFarmModes:AddToggle("autoFarmMob", {
-    Text = "Auto Farm (selected mob)",
-    Default = cfg.autoFarmMob,
-    Callback = function(v)
-        cfg.autoFarmMob = v
-        if v then
-            cfg.autoFarmVasto = false; cfg.autoFarmPlayer = false; cfg.autoFarmRange = false
-        end
-        saveCfg(); restartFarm()
-    end,
-})
-
-BoxFarmModes:AddToggle("autoFarmPlayer", {
-    Text = "Auto Farm Players",
-    Default = cfg.autoFarmPlayer,
-    Callback = function(v)
-        cfg.autoFarmPlayer = v
-        if v then
-            cfg.autoFarmVasto = false; cfg.autoFarmMob = false; cfg.autoFarmRange = false
-        end
-        saveCfg(); restartFarm()
-    end,
-})
-
-BoxFarmModes:AddSlider("farmRange", {
-    Text = "Range Farm Radius",
-    Default = cfg.farmRange,
-    Min = 20, Max = 500, Rounding = 0,
-    Callback = function(v) cfg.farmRange = v; saveCfg() end,
-})
-
-BoxFarmModes:AddToggle("autoFarmRange", {
-    Text = "Auto Farm (range)",
-    Default = cfg.autoFarmRange,
-    Callback = function(v)
-        cfg.autoFarmRange = v
-        if v then
-            cfg.autoFarmVasto = false; cfg.autoFarmMob = false; cfg.autoFarmPlayer = false
-        end
-        saveCfg(); restartFarm()
-    end,
-})
-
--- ── Farm Status ───────────────────────────────────────────────
+-- ── Farm Status ──────────────────────────────────────────────────
 local BoxStatus = TabMain:AddRightGroupbox("Farm Status")
-local lblTarget  = BoxStatus:AddLabel("Target : None")
-local lblHP      = BoxStatus:AddLabel("HP : -")
-local lblMode    = BoxStatus:AddLabel("Mode : Idle")
-local lblPos     = BoxStatus:AddLabel("Position : -")
+local sTarget = BoxStatus:AddLabel("Target  : None")
+local sHP     = BoxStatus:AddLabel("HP      : N/A")
+local sMode   = BoxStatus:AddLabel("Mode    : Idle")
+local sPos    = BoxStatus:AddLabel("Position: Middle")
 
 task.spawn(function()
     while true do
         task.wait(0.4)
-        lblTarget:SetText("Target : " .. lastTargetName)
-        lblHP:SetText("HP : " .. lastTargetHP)
-        local mode = "Idle"
-        if cfg.autoFarmVasto  then mode = "VastoLorde (hollows)"
-        elseif cfg.autoFarmMob    then mode = "Mob: " .. cfg.selectedMob
-        elseif cfg.autoFarmPlayer then mode = "Players"
-        elseif cfg.autoFarmRange  then mode = "Range (" .. cfg.farmRange .. ")"
+        sTarget:SetText("Target  : " .. farmTargetName)
+        sHP:SetText("HP      : " .. farmTargetHP)
+        local m = "Idle"
+        if cfg.farmHollow    then m = "Hollow Farm"
+        elseif cfg.farmMob       then m = "Mob: "..cfg.farmMobTarget
+        elseif cfg.farmBountyOne then m = "Bounty: "..(cfg.farmBountyTarget~="" and cfg.farmBountyTarget or "?")
+        elseif cfg.farmBountyAll then m = "Bounty: ALL players"
         end
-        lblMode:SetText("Mode : " .. mode)
-        lblPos:SetText("Position : " .. cfg.farmPosition)
+        sMode:SetText("Mode    : " .. m)
+        sPos:SetText("Position: " .. cfg.farmPosition)
     end
 end)
 
--- ── Skills ────────────────────────────────────────────────────
+-- ── Skills ───────────────────────────────────────────────────────
 local BoxSkills = TabMain:AddRightGroupbox("Skills")
-BoxSkills:AddButton("Activate Shikai", function() fireRemote("ActivateShikai") end)
-BoxSkills:AddButton("Shikai Skill",    function() fireRemote("ShikaiSkill") end)
-BoxSkills:AddButton("Transform",       function() fireRemote("Transform") end)
-BoxSkills:AddButton("Skill",           function() fireRemote("Skill") end)
-BoxSkills:AddButton("Flashstep",       function() fireRemote("Flashstep") end)
-BoxSkills:AddButton("Block",           function() fireRemote("Block") end)
-BoxSkills:AddButton("Unblock",         function() fireRemote("Unblock") end)
+BoxSkills:AddButton("Activate Shikai",  function() fire("ActivateShikai") end)
+BoxSkills:AddButton("Shikai Skill",     function() fire("ShikaiSkill") end)
+BoxSkills:AddButton("Transform",        function() fire("Transform") end)
+BoxSkills:AddButton("Skill",            function() fire("Skill") end)
+BoxSkills:AddButton("Flashstep",        function() fire("Flashstep") end)
+BoxSkills:AddButton("Dodge (manual)",   function()
+    local d = getDodgeRemote(); if d then d:FireServer(false) end
+end)
+BoxSkills:AddButton("Block",   function() fire("Block") end)
+BoxSkills:AddButton("Unblock", function() fire("Unblock") end)
 
--- ═══════════════════════════════════════════════════════════════
---  TAB : MOVEMENT
--- ═══════════════════════════════════════════════════════════════
-local TabMove = Window:AddTab("🏃 Movement")
-local BoxFly  = TabMove:AddLeftGroupbox("Fly")
-
-BoxFly:AddToggle("flyEnabled", {
-    Text = "Fly [WASD + Space/Ctrl]",
-    Default = cfg.flyEnabled,
+-- ── Hollow Farm ──────────────────────────────────────────────────
+local BoxHollow = TabMain:AddLeftGroupbox("Hollow Farm")
+BoxHollow:AddLabel("Targets: Fishbone, Crawler,")
+BoxHollow:AddLabel("VastoLorde, Hollow, Gillian...")
+BoxHollow:AddToggle("farmHollow", {
+    Text = "Hollow Farm ON/OFF", Default = cfg.farmHollow,
     Callback = function(v)
-        cfg.flyEnabled = v; saveCfg()
-        if v then startFly() else stopFly() end
+        cfg.farmHollow = v; saveCfg()
+        if v then startFarm("hollow") else stopAllFarm() end
     end,
 })
 
-BoxFly:AddSlider("flySpeed", {
-    Text = "Fly Speed",
-    Default = cfg.flySpeed, Min = 10, Max = 500, Rounding = 0,
-    Callback = function(v) cfg.flySpeed = v; saveCfg() end,
+-- ── Mob Farm ─────────────────────────────────────────────────────
+local BoxMobFarm = TabMain:AddLeftGroupbox("Mob Farm")
+BoxMobFarm:AddDropdown("farmMobTarget", {
+    Text   = "Target Mob",
+    Values = {"Fishbone","Crawler","VastoLorde","Hollow","Gillian","Adjuchas"},
+    Default = cfg.farmMobTarget,
+    Callback = function(v) cfg.farmMobTarget = v; saveCfg() end,
+})
+BoxMobFarm:AddSlider("farmMobRange", {
+    Text = "Detection Range", Default = cfg.farmMobRange,
+    Min = 20, Max = 1000, Rounding = 0,
+    Callback = function(v) cfg.farmMobRange = v; saveCfg() end,
+})
+BoxMobFarm:AddToggle("farmMob", {
+    Text = "Mob Farm ON/OFF", Default = cfg.farmMob,
+    Callback = function(v)
+        cfg.farmMob = v; saveCfg()
+        if v then startFarm("mob") else stopAllFarm() end
+    end,
 })
 
-local BoxOtherMove = TabMove:AddRightGroupbox("Physics")
+-- ── Bounty Farm ──────────────────────────────────────────────────
+local BoxBounty = TabMain:AddRightGroupbox("Bounty Farm")
+BoxBounty:AddLabel("-- Target one player --")
 
-BoxOtherMove:AddToggle("noclipEnabled", {
-    Text = "NoClip",
-    Default = cfg.noclipEnabled,
-    Callback = function(v) cfg.noclipEnabled = v; saveCfg() end,
-})
-
-BoxOtherMove:AddToggle("infiniteJump", {
-    Text = "Infinite Jump",
-    Default = cfg.infiniteJump,
-    Callback = function(v) cfg.infiniteJump = v; saveCfg() end,
-})
-
--- ═══════════════════════════════════════════════════════════════
---  TAB : TELEPORT
--- ═══════════════════════════════════════════════════════════════
-local TabTP = Window:AddTab("📍 Teleport")
-
--- ── World Locations ───────────────────────────────────────────
-local BoxTPWorld = TabTP:AddLeftGroupbox("World Locations")
-
-for locName, pos in pairs(WORLD_LOCATIONS) do
-    BoxTPWorld:AddButton("→ " .. locName, function()
-        if HRP then
-            HRP.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0))
-            Library:Notify("Teleported to " .. locName, 2)
-        end
-    end)
-end
-
--- ── Teleport to Player ────────────────────────────────────────
-local BoxTPPlayer = TabTP:AddLeftGroupbox("Teleport to Player")
-
-local playerDrop
-local function getPlayerList()
+local function getOtherPlayers()
     local list = {}
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LP then table.insert(list, p.Name) end
@@ -865,80 +837,181 @@ local function getPlayerList()
     return #list > 0 and list or {"(no players)"}
 end
 
-playerDrop = BoxTPPlayer:AddDropdown("tpPlayer", {
-    Text    = "Select Player",
-    Values  = getPlayerList(),
-    Default = getPlayerList()[1],
-    Callback = function(v) end,
+local bountyDrop = BoxBounty:AddDropdown("farmBountyTarget_dd", {
+    Text   = "Select Player",
+    Values = getOtherPlayers(),
+    Default = getOtherPlayers()[1],
+    Callback = function(v) cfg.farmBountyTarget = v; saveCfg() end,
 })
 
-BoxTPPlayer:AddButton("Refresh List", function()
-    -- Linoria ne supporte pas le re-set des valeurs en live,
-    -- on notifie et l'utilisateur peut rouvrir le dropdown
-    Library:Notify("Close & reopen dropdown to see updated list", 3)
+BoxBounty:AddButton("Refresh Player List", function()
+    local list = getOtherPlayers()
+    -- Mise à jour forcée de la valeur affichée
+    if bountyDrop then
+        bountyDrop:SetValues(list)
+        cfg.farmBountyTarget = list[1]
+        saveCfg()
+    end
+    Library:Notify("Player list refreshed", 2)
 end)
 
-BoxTPPlayer:AddButton("Teleport", function()
-    if not HRP or not playerDrop then return end
-    local p = Players:FindFirstChild(playerDrop.Value)
+BoxBounty:AddToggle("farmBountyOne", {
+    Text = "Farm Selected Player", Default = cfg.farmBountyOne,
+    Callback = function(v)
+        cfg.farmBountyOne = v; saveCfg()
+        if v then startFarm("bountyOne") else stopAllFarm() end
+    end,
+})
+
+BoxBounty:AddLabel("-- Farm ALL players --")
+BoxBounty:AddToggle("farmBountyAll", {
+    Text = "Farm All Players", Default = cfg.farmBountyAll,
+    Callback = function(v)
+        cfg.farmBountyAll = v; saveCfg()
+        if v then startFarm("bountyAll") else stopAllFarm() end
+    end,
+})
+
+-- ================================================================
+--  TAB : MOVEMENT
+-- ================================================================
+local TabMove = Window:AddTab("Movement")
+
+local BoxFly = TabMove:AddLeftGroupbox("Fly")
+BoxFly:AddToggle("flyEnabled", {
+    Text = "Fly [WASD + Space / Ctrl]", Default = cfg.flyEnabled,
+    Callback = function(v) cfg.flyEnabled = v; saveCfg(); if v then startFly() else stopFly() end end,
+})
+BoxFly:AddSlider("flySpeed", {
+    Text = "Fly Speed", Default = cfg.flySpeed, Min = 10, Max = 600, Rounding = 0,
+    Callback = function(v) cfg.flySpeed = v; saveCfg() end,
+})
+
+local BoxPhys = TabMove:AddRightGroupbox("Physics")
+BoxPhys:AddToggle("noclipEnabled", {
+    Text = "NoClip", Default = cfg.noclipEnabled,
+    Callback = function(v) cfg.noclipEnabled = v; saveCfg() end,
+})
+BoxPhys:AddToggle("infiniteJump", {
+    Text = "Infinite Jump", Default = cfg.infiniteJump,
+    Callback = function(v) cfg.infiniteJump = v; saveCfg() end,
+})
+
+-- Bring Players (tp tous les joueurs vers soi)
+local BoxBring = TabMove:AddLeftGroupbox("Bring Players")
+BoxBring:AddButton("Bring All Players to me", function()
+    if not HRP then return end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local r = p.Character:FindFirstChild("HumanoidRootPart")
+            if r then r.CFrame = HRP.CFrame * CFrame.new(math.random(-3,3),0,math.random(-3,3)) end
+        end
+    end
+    Library:Notify("Brought all players", 2)
+end)
+
+-- ================================================================
+--  TAB : TELEPORT
+-- ================================================================
+local TabTP = Window:AddTab("Teleport")
+
+-- ── Teleport Player ──────────────────────────────────────────────
+local BoxTPPlayer = TabTP:AddLeftGroupbox("Teleport to Player")
+local tpPlayerDrop = BoxTPPlayer:AddDropdown("tpPlayerDrop", {
+    Text = "Select Player",
+    Values = getOtherPlayers(),
+    Default = getOtherPlayers()[1],
+    Callback = function(v) end,
+})
+BoxTPPlayer:AddButton("Refresh", function()
+    local list = getOtherPlayers()
+    if tpPlayerDrop then tpPlayerDrop:SetValues(list) end
+    Library:Notify("Refreshed", 2)
+end)
+BoxTPPlayer:AddButton("Teleport to Player", function()
+    if not HRP or not tpPlayerDrop then return end
+    local p = Players:FindFirstChild(tpPlayerDrop.Value)
     if p and p.Character then
-        local root = p.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            HRP.CFrame = root.CFrame * CFrame.new(3, 0, 3)
-            Library:Notify("Teleported to " .. p.Name, 2)
+        local r = p.Character:FindFirstChild("HumanoidRootPart")
+        if r then
+            HRP.CFrame = r.CFrame * CFrame.new(3,0,3)
+            Library:Notify("Teleported to "..p.Name, 2)
         end
     else
         Library:Notify("Player not found", 2)
     end
 end)
 
--- ── Teleport to NPC ───────────────────────────────────────────
+-- ── Teleport NPC ─────────────────────────────────────────────────
 local BoxTPNPC = TabTP:AddRightGroupbox("Teleport to NPC")
-local npcDrop
+local npcNames = {}
+for _, v in ipairs(getNPCs()) do table.insert(npcNames, v.Name) end
+if #npcNames == 0 then npcNames = {"(no NPC)"} end
 
-local function getNPCList()
-    local list = {}
-    for _, v in ipairs(getAllNPCs()) do
-        table.insert(list, v.Name)
-        if #list >= 30 then break end -- limite UI
-    end
-    return #list > 0 and list or {"(no NPCs)"}
-end
-
-local npcList = getNPCList()
-
-npcDrop = BoxTPNPC:AddDropdown("tpNPC", {
-    Text    = "Select NPC",
-    Values  = npcList,
-    Default = npcList[1],
+local npcDrop = BoxTPNPC:AddDropdown("npcDrop", {
+    Text = "Select NPC",
+    Values = npcNames,
+    Default = npcNames[1],
     Callback = function(v) end,
 })
-
 BoxTPNPC:AddButton("Refresh NPC List", function()
-    npcList = getNPCList()
-    Library:Notify("Refreshed — " .. #npcList .. " NPC(s) found. Reopen dropdown.", 3)
+    local fresh = {}
+    for _, v in ipairs(getNPCs()) do table.insert(fresh, v.Name) end
+    if #fresh == 0 then fresh = {"(no NPC)"} end
+    if npcDrop then npcDrop:SetValues(fresh) end
+    Library:Notify(#fresh.." NPC(s) found", 2)
 end)
-
 BoxTPNPC:AddButton("Teleport to NPC", function()
     if not HRP or not npcDrop then return end
-    for _, v in ipairs(getAllNPCs()) do
-        if v.Name == npcDrop.Value then
-            local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root")
-            if root then
-                HRP.CFrame = root.CFrame * CFrame.new(3, 0, 3)
-                Library:Notify("Teleported to " .. v.Name, 2)
+    local sel = npcDrop.Value
+    for _, v in ipairs(getNPCs()) do
+        if v.Name == sel then
+            local r = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root")
+            if r then
+                HRP.CFrame = r.CFrame * CFrame.new(3,0,3)
+                Library:Notify("Teleported to "..v.Name, 2)
                 return
             end
         end
     end
-    Library:Notify("NPC not found in workspace", 2)
+    Library:Notify("NPC not found", 2)
 end)
 
--- ═══════════════════════════════════════════════════════════════
+-- ── Server Hop / World ───────────────────────────────────────────
+local BoxServerHop = TabTP:AddLeftGroupbox("Server Hop")
+
+BoxServerHop:AddLabel("World hop = joins matching world server")
+
+for wname, _ in pairs(WORLD_PLACE_IDS) do
+    BoxServerHop:AddButton("Hop to: " .. wname, function()
+        Library:Notify("Joining "..wname.."...", 3)
+        hopToWorld(wname)
+    end)
+end
+
+BoxServerHop:AddButton("Rejoin same server", function()
+    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
+end)
+
+BoxServerHop:AddButton("New server (random)", function()
+    pcall(function()
+        local servers = HttpService:JSONDecode(
+            game:HttpGet("https://games.roblox.com/v1/games/"
+                ..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=10"))
+        if servers and servers.data and #servers.data > 0 then
+            local s = servers.data[math.random(1, #servers.data)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+        else
+            TeleportService:Teleport(game.PlaceId, LP)
+        end
+    end)
+end)
+
+-- ================================================================
 --  TAB : ESP
--- ═══════════════════════════════════════════════════════════════
-local TabESP = Window:AddTab("👁 ESP")
-local BoxESP = TabESP:AddLeftGroupbox("ESP")
+-- ================================================================
+local TabESP = Window:AddTab("ESP")
+local BoxESP = TabESP:AddLeftGroupbox("ESP Toggles")
 
 BoxESP:AddToggle("espMobs", {
     Text = "ESP Mobs", Default = cfg.espMobs,
@@ -948,38 +1021,47 @@ BoxESP:AddToggle("espPlayers", {
     Text = "ESP Players", Default = cfg.espPlayers,
     Callback = function(v) cfg.espPlayers = v; saveCfg(); refreshESP() end,
 })
-BoxESP:AddToggle("espShowDist", {
+
+local BoxESPOpt = TabESP:AddRightGroupbox("ESP Options")
+BoxESPOpt:AddToggle("espShowName", {
+    Text = "Show Name", Default = cfg.espShowName,
+    Callback = function(v) cfg.espShowName = v; saveCfg() end,
+})
+BoxESPOpt:AddToggle("espShowDist", {
     Text = "Show Distance", Default = cfg.espShowDist,
     Callback = function(v) cfg.espShowDist = v; saveCfg() end,
 })
-BoxESP:AddButton("Refresh ESP", function() refreshESP() end)
-BoxESP:AddButton("Clear ESP",   function() clearESP() end)
-
--- ═══════════════════════════════════════════════════════════════
---  TAB : MISC
--- ═══════════════════════════════════════════════════════════════
-local TabMisc = Window:AddTab("⚙ Misc")
-local BoxMisc = TabMisc:AddLeftGroupbox("Misc")
-
-BoxMisc:AddToggle("autoStats", {
-    Text = "Auto Stats (Strength)", Default = cfg.autoStats,
-    Callback = function(v) cfg.autoStats = v; saveCfg() end,
+BoxESPOpt:AddToggle("espShowHP", {
+    Text = "Show HP", Default = cfg.espShowHP,
+    Callback = function(v) cfg.espShowHP = v; saveCfg() end,
 })
+BoxESPOpt:AddSlider("espMaxDist", {
+    Text = "Max Distance (studs)", Default = cfg.espMaxDist,
+    Min = 50, Max = 2000, Rounding = 0,
+    Callback = function(v) cfg.espMaxDist = v; saveCfg() end,
+})
+BoxESPOpt:AddButton("Refresh ESP", function() refreshESP() end)
+BoxESPOpt:AddButton("Clear ESP",   function() clearESP() end)
 
+-- ================================================================
+--  TAB : MISC
+-- ================================================================
+local TabMisc = Window:AddTab("Misc")
+
+local BoxMisc = TabMisc:AddLeftGroupbox("Misc")
+BoxMisc:AddToggle("antiAfk", {
+    Text = "Anti AFK", Default = cfg.antiAfk,
+    Callback = function(v) cfg.antiAfk = v; saveCfg() end,
+})
 BoxMisc:AddToggle("autoRejoin", {
     Text = "Auto Rejoin", Default = cfg.autoRejoin,
     Callback = function(v) cfg.autoRejoin = v; saveCfg() end,
 })
-
-BoxMisc:AddSlider("autoRejoinTime", {
-    Text = "Rejoin Timer (s)", Default = cfg.autoRejoinTime,
-    Min = 30, Max = 3600, Rounding = 0,
-    Callback = function(v) cfg.autoRejoinTime = v; saveCfg() end,
+BoxMisc:AddSlider("autoRejoinSec", {
+    Text = "Rejoin every (s)", Default = cfg.autoRejoinSec,
+    Min = 60, Max = 7200, Rounding = 0,
+    Callback = function(v) cfg.autoRejoinSec = v; saveCfg() end,
 })
-
-BoxMisc:AddButton("Rejoin Now", function()
-    TeleportService:Teleport(game.PlaceId, LP)
-end)
 
 local BoxCfg = TabMisc:AddRightGroupbox("Config")
 BoxCfg:AddButton("Save Config", function()
@@ -987,7 +1069,7 @@ BoxCfg:AddButton("Save Config", function()
 end)
 BoxCfg:AddButton("Reset Config", function()
     cfg = {}
-    for k, v in pairs(defaultCfg) do cfg[k] = v end
+    for k, v in pairs(DEFAULT) do cfg[k] = v end
     saveCfg()
     Library:Notify("Config reset — re-execute script", 4)
 end)
@@ -1000,27 +1082,21 @@ if ThemeManager and SaveManager then
     ThemeManager:ApplyToTab(TabMisc)
 end
 
--- ─────────────────────────────────────────────────────────────
---  KEYBIND : RCtrl toggle UI
--- ─────────────────────────────────────────────────────────────
+-- ── Keybind ──────────────────────────────────────────────────────
 UserInputService.InputBegan:Connect(function(inp, gp)
     if gp then return end
-    if inp.KeyCode == Enum.KeyCode.RightControl then
-        Library:ToggleHidden()
-    end
+    if inp.KeyCode == Enum.KeyCode.RightControl then Library:ToggleHidden() end
 end)
 
--- ─────────────────────────────────────────────────────────────
---  STARTUP
--- ─────────────────────────────────────────────────────────────
+-- ── Startup ──────────────────────────────────────────────────────
 task.defer(function()
     if cfg.flyEnabled then startFly() end
     if cfg.espMobs or cfg.espPlayers then refreshESP() end
-    if cfg.autoFarmVasto or cfg.autoFarmMob
-        or cfg.autoFarmPlayer or cfg.autoFarmRange then
-        restartFarm()
-    end
+    if cfg.farmHollow    then startFarm("hollow") end
+    if cfg.farmMob       then startFarm("mob") end
+    if cfg.farmBountyOne then startFarm("bountyOne") end
+    if cfg.farmBountyAll then startFarm("bountyAll") end
 end)
 
-Library:Notify("SetrasHub v9 loaded ✓  [RCtrl = toggle UI]", 5)
-print("[SetrasHub v9] Script launched successfully.")
+Library:Notify("SetrasHub v10 loaded — [RCtrl] toggle UI", 5)
+print("[SetrasHub v10] OK")
