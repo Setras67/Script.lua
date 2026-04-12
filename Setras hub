@@ -36,11 +36,9 @@ local Settings = {
     AutoEquip      = false,
     AutoFarm       = false,
     AutoFarmRange  = 50,
-    WalkSpeed      = 16,
     Fly            = false,
     CFly           = false,
     FlySpeed       = 100,
-    CFlySpeed      = 50,
     Noclip         = false,
     PlayerESP      = false,
     MobESP         = false,
@@ -186,25 +184,6 @@ local function buildM1Args(target)
     local t = os.clock() * 1000
     return false, cf, false, nil, nil, {t, t + 0.001}, {LeftShiftKey=false, DKey=false, Left=false, AKey=false}
 end
-
--- ============================================================
--- WALKSPEED (méthode IY loopspeed)
--- ============================================================
-local walkspeedConn
-local function startWalkSpeed(speed)
-    if walkspeedConn then walkspeedConn:Disconnect() end
-    walkspeedConn = RunService.Heartbeat:Connect(function()
-        local hum = getHumanoid()
-        if hum then hum.WalkSpeed = speed end
-    end)
-end
-
-local function stopWalkSpeed()
-    if walkspeedConn then walkspeedConn:Disconnect() walkspeedConn = nil end
-    local hum = getHumanoid()
-    if hum then hum.WalkSpeed = 16 end
-end
-
 -- ============================================================
 -- FLY (méthode IY BodyVelocity classique)
 -- ============================================================
@@ -263,39 +242,6 @@ local function stopFly()
     if flyBG then flyBG:Destroy() flyBG = nil end
     local hum = getHumanoid()
     if hum then hum.PlatformStand = false end
-end
-
--- ============================================================
--- CFLY (méthode IY CFrame - permet d'attaquer en volant)
--- ============================================================
-local cflyConn
-
-local function startCFly()
-    local root = getRootPart()
-    if not root then return end
-
-    cflyConn = RunService.RenderStepped:Connect(function()
-        if not Settings.CFly then return end
-        local cam = workspace.CurrentCamera
-        local dir = Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir -= Vector3.new(0,1,0) end
-
-        local r = getRootPart()
-        if r then
-            if dir.Magnitude > 0 then
-                r.CFrame = r.CFrame + dir.Unit * Settings.CFlySpeed * 0.05
-            end
-        end
-    end)
-end
-
-local function stopCFly()
-    if cflyConn then cflyConn:Disconnect() cflyConn = nil end
 end
 
 -- ============================================================
@@ -601,8 +547,8 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- Mob ESP refresh toutes les 4s
-    if Settings.MobESP and now - lastMobESP > 4 then
+    -- Mob ESP refresh toutes les 5s
+    if Settings.MobESP and now - lastMobESP > 5 then
         lastMobESP = now
         task.spawn(refreshMobESP)
     end
@@ -624,12 +570,12 @@ end)
 -- UI WINDOW
 -- ============================================================
 local Window = Fluent:CreateWindow({
-    Title       = "Setras Hub",
+    Title       = "Paradox Hub",
     SubTitle    = "Made by Setras",
     TabWidth    = 155,
     Size        = UDim2.fromOffset(610, 460),
     Acrylic     = true,
-    Theme       = "Amethyst",
+    Theme       = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl,
 })
 
@@ -738,30 +684,8 @@ local MoveTab = Window:AddTab({ Title = "Movement", Icon = "move" })
 
 MoveTab:AddSection("Walk Speed")
 
-MoveTab:AddSlider("WalkSpeed", {
-    Title    = "Walk Speed",
-    Min      = 16,
-    Max      = 500,
-    Default  = Settings.WalkSpeed,
-    Rounding = 0,
-    Callback = function(v)
-        Settings.WalkSpeed = v
-        if v > 16 then
-            startWalkSpeed(v)
-        else
-            stopWalkSpeed()
-        end
-    end,
 })
 
-MoveTab:AddButton({
-    Title    = "Reset Speed",
-    Callback = function()
-        Settings.WalkSpeed = 16
-        stopWalkSpeed()
-        Fluent:Notify({ Title = "Speed", Content = "Reset to 16", Duration = 2 })
-    end,
-})
 
 MoveTab:AddSection("Fly (Standard)")
 
@@ -784,16 +708,7 @@ MoveTab:AddSlider("FlySpeed", {
     Callback = function(v) Settings.FlySpeed = v end,
 })
 
-MoveTab:AddSection("CFly (CFrame - Attaque en vol)")
 
-MoveTab:AddToggle("CFly", {
-    Title       = "CFly",
-    Description = "Permet d'attaquer pendant le vol (bypass anti-cheat)",
-    Default     = Settings.CFly,
-    Callback    = function(v)
-        Settings.CFly = v
-        if v then startCFly() else stopCFly() end
-    end,
 })
 
 MoveTab:AddSlider("CFlySpeed", {
