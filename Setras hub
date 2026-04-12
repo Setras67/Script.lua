@@ -117,12 +117,19 @@ local function buildInputState()
     }
 end
 
-local function fireLeftClick(targetCF)
+-- IMPORTANT : Le 2e argument de LeftClick doit être le CFrame
+-- du JOUEUR (HRP), pas du mob. Le serveur Paradox (ApplyHitEffect /
+-- CombatEffects) cherche "Left Arm" sur le rig du joueur local,
+-- pas sur la cible. Passer root.CFrame du mob provoque l'erreur
+-- "Left Arm is not a valid member" car le serveur tente d'accéder
+-- au rig pointé par ce CFrame.
+local function fireLeftClick()
     if not Remotes or not HRP then return end
     local r = Remotes:FindFirstChild("LeftClick")
     if not r then return end
     local ts = os.clock()
-    r:FireServer(false, targetCF or HRP.CFrame, false, nil, nil,
+    -- On passe toujours HRP.CFrame (le joueur), jamais le CFrame du mob
+    r:FireServer(false, HRP.CFrame, false, nil, nil,
         {ts, ts + 0.001}, buildInputState())
 end
 
@@ -525,25 +532,30 @@ local function farmStep(mode)
     end
 
     -- Attaques M1 (rythme naturel, pas de spam)
+    -- fireLeftClick passe HRP.CFrame (le joueur), jamais le CFrame du mob.
+    -- C'est ce que le serveur Paradox attend pour ApplyHitEffect.
     if cfg.autoM1 and hum.Health > 0 then
         for i = 1, 3 do
             if not farmRunning then return end
-            -- Vérifier qu'on est encore en portée
-            if HRP and root and root.Parent then
-                local d = (HRP.Position - root.Position).Magnitude
-                if d > 15 then
-                    smartTP(root)
-                    task.wait(0.05)
-                end
-                fireLeftClick(root.CFrame)
+            if not (HRP and root and root.Parent) then break end
+            -- Reposition si on a dérivé
+            local d = (HRP.Position - root.Position).Magnitude
+            if d > 12 then
+                smartTP(root)
+                task.wait(0.1)
             end
-            task.wait(0.14)
+            -- On oriente notre HRP vers le mob avant chaque M1
+            -- pour que le serveur accepte l'attaque
+            HRP.CFrame = CFrame.lookAt(HRP.Position, 
+                Vector3.new(root.Position.X, HRP.Position.Y, root.Position.Z))
+            fireLeftClick()  -- passe HRP.CFrame automatiquement
+            task.wait(0.22)  -- rythme plus naturel, évite le rate-limit serveur
         end
-        -- Critical sur le dernier coup
-        if hum.Health > 0 then
+        -- Critical
+        if hum and hum.Health > 0 then
             fireCritical()
         end
-        task.wait(0.12)
+        task.wait(0.35)  -- pause entre combos
     else
         task.wait(0.3)
     end
