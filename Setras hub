@@ -1,9 +1,9 @@
 -- ================================================================
---  SetrasHub v12 — Bleach Paradox | Roblox | Luau
+--  SetrasHub v13 — Bleach Paradox | Roblox | Luau
 --  Owner : Setras | discord.gg/zd8JMkCWcw
 -- ================================================================
-if _G.SH12 then warn("[SH12] Already loaded."); return end
-_G.SH12 = true
+if getgenv().SH13 then warn("[SH13] Already loaded."); return end
+getgenv().SH13 = true
 
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
@@ -16,15 +16,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = Players.LocalPlayer
 if not LP.Character then LP.CharacterAdded:Wait() end
 
--- ── Etat global personnage ────────────────────────────────────────
+-- ── Global character state ────────────────────────────────────────
 local G = { Char=nil, HRP=nil, Hum=nil, Remotes=nil }
 
 local function initChar(c)
     G.Char = c or LP.Character
     if not G.Char then return end
     local function wc(name, t)
-        local child = G.Char:FindFirstChild(name)
         local t0 = tick()
+        local child = G.Char:FindFirstChild(name)
         while not child and (tick()-t0) < (t or 10) do
             task.wait(0.05)
             child = G.Char:FindFirstChild(name)
@@ -52,17 +52,37 @@ initChar(LP.Character)
 
 -- ── Config ────────────────────────────────────────────────────────
 local CFG_DIR  = "SetrasHub/"
-local CFG_FILE = CFG_DIR .. "v12.json"
+local CFG_FILE = CFG_DIR .. "v13.json"
 local DEFAULT = {
-    autoFarm=false, farmMobType="VastoLorde", farmPosition="Below",
-    farmOffsetY=0, farmOffsetZ=2.5, farmRange=400,
-    autoM1=true, autoEquip=true, autoDodge=false,
-    autoMission=false, missionType="Auto",
+    -- Auto Vastore Lorde
+    autoVasto=false,
+    vastoHollowCount=0,
+    vastoRange=400,
+
+    -- Bounty Farm
     bountyOne=false, bountyTarget="", bountyAll=false,
+
+    -- AutoFarm (all mobs)
+    autoFarm=false, farmRange=400,
+
+    -- Farm Settings (shared)
+    farmOffsetX=0, farmOffsetY=0, farmOffsetZ=-3,
+
+    -- Combat
+    autoM1=true,
+    autoEquip=true,
+    autoDodge=false,
+
+    -- Player
     flyOn=false, flySpeed=60,
     noclip=false, infJump=false, fov=70,
+    walkspeedEnabled=false, walkspeedValue=16,
+
+    -- ESP
     espMobs=false, espPlayers=false,
     espName=true, espDist=true, espHP=true, espMaxDist=500,
+
+    -- Misc
     antiAfk=true, autoRejoin=false, rejoinSec=300,
 }
 local cfg = {}
@@ -113,9 +133,16 @@ local function getDodge()
     return nil
 end
 
+-- ── Arm detection (R6 + R15) ─────────────────────────────────────
+local function getArm()
+    if not G.Char then return nil end
+    return G.Char:FindFirstChild("Left Arm")
+        or G.Char:FindFirstChild("LeftHand")
+        or G.Char:FindFirstChild("LeftLowerArm")
+        or G.Char:FindFirstChild("LeftUpperArm")
+end
+
 -- ── Combat (M1 / Crit) ───────────────────────────────────────────
--- IMPORTANT: on passe TOUJOURS G.HRP.CFrame — jamais le CFrame du mob
--- Le serveur cherche "Left Arm" dans le perso du joueur, pas dans le mob
 local function buildInput(rKey)
     return { LeftShiftKey=false, DKey=false, AKey=false,
              Left=false, Right=false, RKey=rKey==true }
@@ -126,9 +153,10 @@ local function doM1()
     if not rem or not G.HRP then return end
     local r = rem:FindFirstChild("LeftClick")
     if not r or not r:IsA("RemoteEvent") then return end
+    local arm = getArm()
     local t = os.clock()
     pcall(function()
-        r:FireServer(false, G.HRP.CFrame, false, nil, nil,
+        r:FireServer(false, G.HRP.CFrame, false, arm, nil,
             {t, t+0.001}, buildInput(false))
     end)
 end
@@ -175,6 +203,13 @@ local function setupNoclip()
 end
 setupNoclip()
 
+-- ── WalkSpeed bypass via getgenv ─────────────────────────────────
+RunService.Heartbeat:Connect(function()
+    if cfg.walkspeedEnabled and G.Hum then
+        pcall(function() G.Hum.WalkSpeed = cfg.walkspeedValue end)
+    end
+end)
+
 -- ── Fly ───────────────────────────────────────────────────────────
 local flyBV, flyBG, flyConn
 local function stopFly()
@@ -192,20 +227,17 @@ local function startFly()
     flyBG = Instance.new("BodyGyro")
     flyBG.MaxTorque = Vector3.new(1e6,1e6,1e6)
     flyBG.D=100; flyBG.P=1e4; flyBG.CFrame=G.HRP.CFrame; flyBG.Parent=G.HRP
-    local W=Enum.KeyCode.W; local S=Enum.KeyCode.S
-    local A=Enum.KeyCode.A; local D=Enum.KeyCode.D
-    local SP=Enum.KeyCode.Space; local LC=Enum.KeyCode.LeftControl
     flyConn = RunService.RenderStepped:Connect(function()
         if not G.HRP or not G.HRP.Parent then stopFly(); return end
         local cf = Workspace.CurrentCamera.CFrame
         local dir = Vector3.zero
         local UIS = UserInputService
-        if UIS:IsKeyDown(W)  then dir += cf.LookVector  end
-        if UIS:IsKeyDown(S)  then dir -= cf.LookVector  end
-        if UIS:IsKeyDown(A)  then dir -= cf.RightVector end
-        if UIS:IsKeyDown(D)  then dir += cf.RightVector end
-        if UIS:IsKeyDown(SP) then dir += Vector3.yAxis  end
-        if UIS:IsKeyDown(LC) then dir -= Vector3.yAxis  end
+        if UIS:IsKeyDown(Enum.KeyCode.W)            then dir += cf.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.S)            then dir -= cf.LookVector  end
+        if UIS:IsKeyDown(Enum.KeyCode.A)            then dir -= cf.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D)            then dir += cf.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space)        then dir += Vector3.yAxis  end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl)  then dir -= Vector3.yAxis  end
         flyBV.Velocity = (dir.Magnitude>0 and dir.Unit or Vector3.zero)*cfg.flySpeed
         local _,yaw,_ = cf:ToEulerAnglesYXZ()
         flyBG.CFrame = CFrame.fromEulerAnglesYXZ(0,yaw,0)
@@ -319,101 +351,99 @@ task.spawn(function()
 end)
 
 -- ── Auto Equip ────────────────────────────────────────────────────
+-- Fixed: only fires Sheathe if no tool is currently equipped AND cooldown passed
 local equipCD=false
 local function tryEquip()
     if not cfg.autoEquip or equipCD or not G.Char then return end
+    -- Check if a tool is already equipped (present as a child of Character)
     for _,v in ipairs(G.Char:GetChildren()) do
-        if v:IsA("Tool") then return end
+        if v:IsA("Tool") then return end -- already equipped, do nothing
     end
-    equipCD=true; fire("Sheathe")
-    task.delay(1,function() equipCD=false end)
-end
-
--- ── Break Invincibility ───────────────────────────────────────────
-local function breakInvincibility()
-    task.wait(2.5)
-    fire("ServerSprint",true); task.wait(0.2); fire("ServerSprint",false)
-    if G.HRP then
-        task.wait(0.2)
-        local o=G.HRP.CFrame
-        G.HRP.CFrame=o*CFrame.new(0,0,0.05); task.wait(0.05); G.HRP.CFrame=o
-    end
-end
-
--- ================================================================
---  AUTOFARM
--- ================================================================
-local Farm={running=false,thread=nil,targetName="None",targetHP="N/A",mode="Idle",lastTP=0,dodgeClock=0}
-
-local function computePos(rootPos,szY)
-    local halfH=(szY or 5)/2
-    local yOff=0
-    if cfg.farmPosition=="Above" then yOff=halfH+3+cfg.farmOffsetY
-    elseif cfg.farmPosition=="Below" then yOff=-(halfH+2)+cfg.farmOffsetY
-    else yOff=cfg.farmOffsetY end
-    local dir=Vector3.new(0,0,1)
-    if G.HRP then
-        local d=G.HRP.Position-rootPos
-        local df=Vector3.new(d.X,0,d.Z)
-        if df.Magnitude>0.1 then dir=df.Unit end
-    end
-    return rootPos+Vector3.new(0,yOff,0)+dir*cfg.farmOffsetZ
-end
-
-local function smartTP(root)
-    if not G.HRP or not root or not root.Parent then return end
-    local szY=5
-    local pp=root.Parent and root.Parent:IsA("Model") and root.Parent.PrimaryPart
-    if pp then szY=pp.Size.Y end
-    local dest=computePos(root.Position,szY)
-    if (G.HRP.Position-dest).Magnitude<4 then return end
-    local now=os.clock()
-    if now-Farm.lastTP<0.25 then return end
-    Farm.lastTP=now
-    G.HRP.CFrame=CFrame.new(dest,Vector3.new(root.Position.X,dest.Y,root.Position.Z))
-end
-
-local function mobMatches(name)
-    local t=cfg.farmMobType
-    if t=="VastoLorde" then return name:find("difficulty",1,true)~=nil end
-    if t=="Fishbone"   then return name:find("Fishbone",1,true)~=nil end
-    if t=="Crawler"    then return name:find("Crawler",1,true)~=nil end
-    return isMob(name)
-end
-
-local function findMobTarget()
-    if not G.HRP then return nil end
-    local origin=G.HRP.Position; local best,bestD=nil,math.huge
-    local pChars={}
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p.Character then pChars[p.Character]=true end
-    end
-    local cont=Workspace:FindFirstChild("Alive") or Workspace
-    for _,v in ipairs(cont:GetChildren()) do
-        if v:IsA("Model") and not pChars[v] and mobMatches(v.Name) then
-            local root=v:FindFirstChild("HumanoidRootPart")
-            local hum=v:FindFirstChildOfClass("Humanoid")
-            if root and hum and hum.Health>0 then
-                local d=(origin-root.Position).Magnitude
-                if d<bestD and d<=cfg.farmRange then best=v; bestD=d end
+    -- Also check Backpack: if tool is in backpack AND not equipped, equip it
+    local bp = LP:FindFirstChild("Backpack")
+    if bp then
+        for _,v in ipairs(bp:GetChildren()) do
+            if v:IsA("Tool") then
+                -- Tool exists in backpack but not equipped → equip
+                equipCD = true
+                fire("Sheathe")
+                task.delay(1.5, function() equipCD = false end)
+                return
             end
         end
     end
-    return best
+    -- No tool anywhere: fire Sheathe once to try pulling out katana
+    equipCD = true
+    fire("Sheathe")
+    task.delay(1.5, function() equipCD = false end)
 end
 
-local function findBountyTarget()
+-- ================================================================
+--  INVINCIBILITY BREAKER (post-respawn)
+-- ================================================================
+-- After respawn the character is invincible until they move.
+-- We simulate pressing D for ~2 seconds via VirtualInputManager to force movement
+-- and break the invincibility state, then ensure farm restarts.
+
+local function breakInvincibility()
+    task.wait(2)
+    -- Method 1: simulate D key press for 2 seconds
+    pcall(function()
+        local VIM = game:GetService("VirtualInputManager")
+        VIM:SendKeyEvent(true, Enum.KeyCode.D, false, game)
+        task.wait(2)
+        VIM:SendKeyEvent(false, Enum.KeyCode.D, false, game)
+    end)
+    -- Method 2: small CFrame nudge as backup
+    task.wait(0.1)
+    if G.HRP then
+        local orig = G.HRP.CFrame
+        G.HRP.CFrame = orig * CFrame.new(0.1, 0, 0)
+        task.wait(0.05)
+        G.HRP.CFrame = orig
+    end
+    -- Method 3: sprint remote pulse
+    task.wait(0.1)
+    fire("ServerSprint", true); task.wait(0.3); fire("ServerSprint", false)
+end
+
+-- ================================================================
+--  CORE FARM ENGINE
+--  Based on the proven follow+teleport method:
+--  TP behind target → lookAt target → M1 attack → repeat
+-- ================================================================
+
+local Farm = {
+    running = false,
+    thread  = nil,
+    -- State info for UI
+    targetName = "None",
+    targetHP   = "N/A",
+    mode       = "Idle",
+    vastoHollowCount = cfg.vastoHollowCount or 0,
+}
+
+-- Find the best mob matching a filter function within a range
+local function findTarget(filterFn, range)
     if not G.HRP then return nil end
-    local best,bestD=nil,math.huge
+    local myPos = G.HRP.Position
+    local best, bestDist = nil, math.huge
+    local pChars = {}
     for _,p in ipairs(Players:GetPlayers()) do
-        if p~=LP and p.Character then
-            local root=p.Character:FindFirstChild("HumanoidRootPart")
-            local hum=p.Character:FindFirstChildOfClass("Humanoid")
-            if root and hum and hum.Health>0 then
-                local isTarget=cfg.bountyAll or (cfg.bountyOne and p.Name==cfg.bountyTarget)
-                if isTarget then
-                    local d=(G.HRP.Position-root.Position).Magnitude
-                    if d<bestD then best=p.Character; bestD=d end
+        if p.Character then pChars[p.Character] = true end
+    end
+    local cont = Workspace:FindFirstChild("Alive") or Workspace
+    for _,v in ipairs(cont:GetChildren()) do
+        if v:IsA("Model") and not pChars[v] then
+            local root = v:FindFirstChild("HumanoidRootPart")
+            local hum  = v:FindFirstChildOfClass("Humanoid")
+            if root and hum and hum.Health > 0 then
+                local d = (myPos - root.Position).Magnitude
+                if d < bestDist and d <= (range or cfg.farmRange) then
+                    if filterFn(v.Name) then
+                        best     = v
+                        bestDist = d
+                    end
                 end
             end
         end
@@ -421,221 +451,227 @@ local function findBountyTarget()
     return best
 end
 
-local function doCombo(root)
-    for i=1,3 do
-        if not Farm.running then return end
-        if not root or not root.Parent then return end
-        if G.HRP and (G.HRP.Position-root.Position).Magnitude>15 then
-            smartTP(root); task.wait(0.06)
+-- Find a player target for bounty
+local function findPlayerTarget()
+    if not G.HRP then return nil end
+    local best, bestDist = nil, math.huge
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local root = p.Character:FindFirstChild("HumanoidRootPart")
+            local hum  = p.Character:FindFirstChildOfClass("Humanoid")
+            if root and hum and hum.Health > 0 then
+                local isTarget = cfg.bountyAll or (cfg.bountyOne and p.Name == cfg.bountyTarget)
+                if isTarget then
+                    local d = (G.HRP.Position - root.Position).Magnitude
+                    if d < bestDist then
+                        best     = p.Character
+                        bestDist = d
+                    end
+                end
+            end
         end
-        if G.HRP and root.Parent then
-            G.HRP.CFrame=CFrame.lookAt(G.HRP.Position,
-                Vector3.new(root.Position.X,G.HRP.Position.Y,root.Position.Z))
-        end
-        doM1(); task.wait(0.2)
     end
-    doCrit(); task.wait(0.22)
+    return best
 end
 
-local function farmStep()
-    if not G.HRP or not G.Hum then return end
-    if G.Hum.Health<=0 then task.wait(0.5); return end
-    tryEquip()
-    local target=nil
-    if cfg.autoFarm then
-        target=findMobTarget(); Farm.mode=cfg.farmMobType.." Farm"
-    elseif cfg.bountyOne or cfg.bountyAll then
-        target=findBountyTarget()
-        Farm.mode=cfg.bountyAll and "Bounty ALL" or ("Bounty: "..cfg.bountyTarget)
-    end
-    if not target then
-        Farm.targetName="Recherche..."; Farm.targetHP="N/A"; task.wait(0.6); return
-    end
-    local root=target:FindFirstChild("HumanoidRootPart")
-    local hum=target:FindFirstChildOfClass("Humanoid")
-    if not root or not hum or hum.Health<=0 then task.wait(0.2); return end
-    Farm.targetName=target.Name
-    Farm.targetHP=math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
-    smartTP(root); task.wait(0.07)
+-- Core attack on a target root
+local function attackTarget(targetRoot)
+    if not G.HRP or not targetRoot or not targetRoot.Parent then return end
+    -- Teleport behind/near the target using configured offsets
+    local dest = targetRoot.CFrame
+        * CFrame.new(cfg.farmOffsetX, cfg.farmOffsetY, cfg.farmOffsetZ)
+    G.HRP.CFrame = dest
+    -- Look at target
+    local lookPos = Vector3.new(targetRoot.Position.X, G.HRP.Position.Y, targetRoot.Position.Z)
+    G.HRP.CFrame = CFrame.lookAt(G.HRP.Position, lookPos)
+    -- Auto dodge with cooldown
     if cfg.autoDodge then
-        local now=os.clock()
-        if now-Farm.dodgeClock>=1.5 then
-            Farm.dodgeClock=now
-            local dr=getDodge()
-            if dr then pcall(function() dr:FireServer(false) end) end
-            task.wait(0.05)
-        end
+        local dr = getDodge()
+        if dr then pcall(function() dr:FireServer(false) end) end
     end
-    if cfg.autoM1 then doCombo(root) else task.wait(0.3) end
+    -- M1 combo
+    if cfg.autoM1 then
+        doM1(); task.wait(0.18)
+        doM1(); task.wait(0.18)
+        doM1(); task.wait(0.18)
+        doCrit(); task.wait(0.2)
+    else
+        task.wait(0.3)
+    end
 end
 
-local function farmLoop()
-    Farm.running=true
-    while Farm.running do
-        if not (cfg.autoFarm or cfg.bountyOne or cfg.bountyAll) then break end
-        local ok,err=pcall(farmStep)
-        if not ok then warn("[SH12 Farm] "..tostring(err)); task.wait(1) end
-        task.wait(0.03)
+-- ── Farm loops ────────────────────────────────────────────────────
+
+-- Vasto Lorde: kill Fishbone + Crawler (hollows), count toward 200
+local function vastoLordeLoop()
+    Farm.mode = "Auto Vasto Lorde"
+    while Farm.running and cfg.autoVasto do
+        if not G.HRP or not G.Hum then task.wait(0.5); goto continue end
+        if G.Hum.Health <= 0 then task.wait(0.5); goto continue end
+        tryEquip()
+        local target = findTarget(function(name)
+            return name:find("Fishbone",1,true) ~= nil
+                or name:find("Crawler",1,true) ~= nil
+                or name:find("difficulty",1,true) ~= nil
+        end, cfg.vastoRange)
+        if not target then
+            Farm.targetName = "Searching..."
+            Farm.targetHP   = "N/A"
+            task.wait(0.5)
+            goto continue
+        end
+        local root = target:FindFirstChild("HumanoidRootPart")
+        local hum  = target:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health <= 0 then task.wait(0.1); goto continue end
+        Farm.targetName = target.Name
+        Farm.targetHP   = math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
+        -- Watch for death to increment counter
+        local prevHP = hum.Health
+        attackTarget(root)
+        -- If mob died, increment counter
+        if hum.Health <= 0 or not hum.Parent then
+            Farm.vastoHollowCount += 1
+            cfg.vastoHollowCount = Farm.vastoHollowCount
+            saveCfg()
+        end
+        task.wait(0.05)
+        ::continue::
     end
-    Farm.running=false; Farm.targetName="None"; Farm.targetHP="N/A"; Farm.mode="Idle"
+end
+
+-- Bounty: attack players
+local function bountyLoop()
+    Farm.mode = cfg.bountyAll and "Bounty ALL" or ("Bounty: "..cfg.bountyTarget)
+    while Farm.running and (cfg.bountyOne or cfg.bountyAll) do
+        if not G.HRP or not G.Hum then task.wait(0.5); goto continue end
+        if G.Hum.Health <= 0 then task.wait(0.5); goto continue end
+        tryEquip()
+        local target = findPlayerTarget()
+        if not target then
+            Farm.targetName = "No target found"
+            Farm.targetHP   = "N/A"
+            task.wait(0.4)
+            goto continue
+        end
+        local root = target:FindFirstChild("HumanoidRootPart")
+        local hum  = target:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health <= 0 then task.wait(0.1); goto continue end
+        Farm.targetName = target.Parent and target.Parent.Name or target.Name
+        Farm.targetHP   = math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
+        attackTarget(root)
+        task.wait(0.05)
+        ::continue::
+    end
+end
+
+-- AutoFarm: all mobs in range
+local function autoFarmLoop()
+    Farm.mode = "AutoFarm (All Mobs)"
+    while Farm.running and cfg.autoFarm do
+        if not G.HRP or not G.Hum then task.wait(0.5); goto continue end
+        if G.Hum.Health <= 0 then task.wait(0.5); goto continue end
+        tryEquip()
+        local target = findTarget(function(name)
+            return isMob(name)
+        end, cfg.farmRange)
+        if not target then
+            Farm.targetName = "Searching..."
+            Farm.targetHP   = "N/A"
+            task.wait(0.5)
+            goto continue
+        end
+        local root = target:FindFirstChild("HumanoidRootPart")
+        local hum  = target:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health <= 0 then task.wait(0.1); goto continue end
+        Farm.targetName = target.Name
+        Farm.targetHP   = math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
+        attackTarget(root)
+        task.wait(0.05)
+        ::continue::
+    end
 end
 
 local function stopFarm()
-    Farm.running=false
-    if Farm.thread then pcall(function() task.cancel(Farm.thread) end); Farm.thread=nil end
-    Farm.targetName="None"; Farm.targetHP="N/A"; Farm.mode="Idle"
+    Farm.running = false
+    if Farm.thread then
+        pcall(function() task.cancel(Farm.thread) end)
+        Farm.thread = nil
+    end
+    Farm.targetName = "None"
+    Farm.targetHP   = "N/A"
+    Farm.mode       = "Idle"
 end
 
 local function startFarm()
-    stopFarm(); task.wait(0.05)
-    Farm.thread=task.spawn(farmLoop)
-end
-
--- ================================================================
---  AUTO MISSION
--- ================================================================
-local Mission={running=false,thread=nil,status="Idle",name="None",completed=0}
-
-local function fetchMissions()
-    local ok,repRem=pcall(function()
-        return ReplicatedStorage:WaitForChild("Remotes",5):WaitForChild("ReturnMissions",5)
-    end)
-    if not ok or not repRem then return nil end
-    if not repRem:IsA("RemoteFunction") then return nil end
-    local ok2,res=pcall(function() return repRem:InvokeServer() end)
-    return ok2 and res or nil
-end
-
-local function findAnyRemote(names)
-    local ok,repRem=pcall(function() return ReplicatedStorage:FindFirstChild("Remotes") end)
-    if ok and repRem then
-        for _,n in ipairs(names) do
-            local r=repRem:FindFirstChild(n); if r then return r end
-        end
+    stopFarm()
+    task.wait(0.05)
+    Farm.running = true
+    if cfg.autoVasto then
+        Farm.thread = task.spawn(vastoLordeLoop)
+    elseif cfg.bountyOne or cfg.bountyAll then
+        Farm.thread = task.spawn(bountyLoop)
+    elseif cfg.autoFarm then
+        Farm.thread = task.spawn(autoFarmLoop)
+    else
+        Farm.running = false
     end
-    local rem=getRemotes()
-    if rem then
-        for _,n in ipairs(names) do
-            local r=rem:FindFirstChild(n); if r then return r end
-        end
-    end
-    return nil
 end
 
-local ACCEPT_NAMES   = {"AcceptMission","StartMission","TakeMission","Accept","ClaimMission"}
-local COMPLETE_NAMES = {"CompleteMission","FinishMission","ClaimReward","Complete","Claim"}
-
-local function fireMissionRemote(names,...)
-    local r=findAnyRemote(names)
-    if not r then return false end
-    if r:IsA("RemoteEvent") then pcall(function() r:FireServer(...) end); return true end
-    if r:IsA("RemoteFunction") then pcall(function() r:InvokeServer(...) end); return true end
-    return false
-end
-
-local function missionLoop()
-    Mission.running=true; Mission.status="Démarrage..."
-    while Mission.running and cfg.autoMission do
-        Mission.status="Récupération missions..."
-        local missions=fetchMissions()
-        if type(missions)=="table" then
-            local keys={}
-            for k in pairs(missions) do table.insert(keys,k) end
-            if #keys==0 then
-                Mission.status="Pas de missions dispo"; task.wait(10)
-            else
-                local idx=1
-                if cfg.missionType~="Auto" then
-                    local n=tonumber(cfg.missionType:match("%d+"))
-                    if n and n<=#keys then idx=n end
-                end
-                local mKey=keys[idx]
-                Mission.name=tostring(mKey)
-                Mission.status="Accepter: "..Mission.name
-                fireMissionRemote(ACCEPT_NAMES,mKey)
-                task.wait(2)
-                Mission.status="Farm en cours..."
-                local prevFarm=cfg.autoFarm
-                cfg.autoFarm=true
-                if not Farm.running then startFarm() end
-                for i=1,35 do
-                    if not Mission.running or not cfg.autoMission then break end
-                    Mission.status=string.format("Mission active... %ds/35s",i)
-                    task.wait(1)
-                end
-                Mission.status="Complétion..."
-                fireMissionRemote(COMPLETE_NAMES,mKey)
-                Mission.completed+=1; task.wait(3)
-                cfg.autoFarm=prevFarm
-                if not prevFarm and not cfg.bountyOne and not cfg.bountyAll then stopFarm() end
-            end
-        else
-            Mission.status="Remote missions introuvable — farm actif"
-            local prev=cfg.autoFarm; cfg.autoFarm=true
-            if not Farm.running then startFarm() end
-            task.wait(20)
-            cfg.autoFarm=prev
-            if not prev and not cfg.bountyOne and not cfg.bountyAll then stopFarm() end
-        end
-        task.wait(1)
-    end
-    Mission.running=false; Mission.status="Idle"; Mission.name="None"
-end
-
-local function stopMission()
-    Mission.running=false
-    if Mission.thread then pcall(function() task.cancel(Mission.thread) end); Mission.thread=nil end
-    Mission.status="Idle"; Mission.name="None"
-end
-local function startMission()
-    stopMission(); task.wait(0.05)
-    Mission.thread=task.spawn(missionLoop)
-end
-
--- ── Respawn ───────────────────────────────────────────────────────
+-- ── Respawn handler ───────────────────────────────────────────────
 LP.CharacterAdded:Connect(function(newChar)
-    Farm.running=false; Mission.running=false; stopFly()
-    initChar(newChar); setupNoclip()
+    -- Stop everything immediately
+    stopFarm()
+    stopFly()
+    -- Reinit character references
+    initChar(newChar)
+    setupNoclip()
+    -- Break invincibility FIRST (required before farm can deal damage)
     task.spawn(breakInvincibility)
-    task.wait(3)
-    if cfg.flyOn then pcall(startFly) end
-    if cfg.espMobs or cfg.espPlayers then pcall(refreshESP) end
-    task.wait(2)
-    if cfg.autoFarm or cfg.bountyOne or cfg.bountyAll then startFarm() end
-    if cfg.autoMission then startMission() end
+    -- Wait for break to finish (~4.5s total), then restart systems
+    task.delay(5, function()
+        if cfg.flyOn then pcall(startFly) end
+        if cfg.espMobs or cfg.espPlayers then pcall(refreshESP) end
+        -- Restart whatever farm was active
+        if cfg.autoVasto or cfg.bountyOne or cfg.bountyAll or cfg.autoFarm then
+            startFarm()
+        end
+    end)
 end)
 
 -- ── Auto Rejoin ────────────────────────────────────────────────────
 task.spawn(function()
-    while true do task.wait(cfg.rejoinSec)
+    while true do
+        task.wait(cfg.rejoinSec)
         if cfg.autoRejoin then
-            pcall(function() TeleportService:Teleport(game.PlaceId,LP) end)
+            pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
         end
     end
 end)
 
 -- ── Helpers UI ────────────────────────────────────────────────────
 local function otherPlayers()
-    local t={}
+    local t = {}
     for _,p in ipairs(Players:GetPlayers()) do
-        if p~=LP then table.insert(t,p.Name) end
+        if p ~= LP then table.insert(t, p.Name) end
     end
-    return #t>0 and t or {"(aucun)"}
+    return #t>0 and t or {"(none)"}
 end
+
 local function getNPCList()
-    local list,seen={},{}
-    local pChars={}
+    local list, seen = {}, {}
+    local pChars = {}
     for _,p in ipairs(Players:GetPlayers()) do
-        if p.Character then pChars[p.Character]=true end
+        if p.Character then pChars[p.Character] = true end
     end
-    local cont=Workspace:FindFirstChild("Alive") or Workspace
+    local cont = Workspace:FindFirstChild("Alive") or Workspace
     for _,v in ipairs(cont:GetDescendants()) do
         if v:IsA("Model") and not pChars[v] and not isMob(v.Name) then
-            local h=v:FindFirstChildOfClass("Humanoid")
-            local r=v:FindFirstChild("HumanoidRootPart")
+            local h = v:FindFirstChildOfClass("Humanoid")
+            local r = v:FindFirstChild("HumanoidRootPart")
             if h and r and h.Health>0 and not seen[v.Name] then
-                seen[v.Name]=true; table.insert(list,v)
-                if #list>=50 then break end
+                seen[v.Name] = true
+                table.insert(list, v)
+                if #list >= 50 then break end
             end
         end
     end
@@ -643,7 +679,7 @@ local function getNPCList()
 end
 
 -- ================================================================
---  LINORIA
+--  LINORIA UI
 -- ================================================================
 local Library, ThemeManager, SaveManager
 local ok2, loadErr = pcall(function()
@@ -652,164 +688,262 @@ local ok2, loadErr = pcall(function()
     SaveManager  = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/SaveManager.lua"))()
 end)
 if not ok2 or not Library then
-    warn("[SH12] Linoria indisponible: "..tostring(loadErr))
-    _G.SH12Cfg=cfg; return
+    warn("[SH13] Linoria unavailable: "..tostring(loadErr))
+    getgenv().SH13Cfg = cfg; return
 end
 
 local Win = Library:CreateWindow({
-    Title="SetrasHub v12  ·  Bleach Paradox",
-    Center=true, AutoShow=true, TabPadding=8, MenuFadeTime=0.2,
+    Title   = "SetrasHub v13  ·  Bleach Paradox",
+    Center  = true,
+    AutoShow= true,
+    TabPadding  = 8,
+    MenuFadeTime= 0.2,
 })
 
 -- ================================================================
---  TAB MAIN
+--  TAB 1 — SETRAS HUB (Info tab first as requested)
+-- ================================================================
+local TAbout = Win:AddTab("SetrasHub")
+
+local GInfo = TAbout:AddLeftGroupbox("Information")
+GInfo:AddLabel("SetrasHub v13 — Bleach Paradox")
+GInfo:AddLabel("Owner  : Setras")
+GInfo:AddLabel("Version: v13")
+GInfo:AddLabel(" ")
+GInfo:AddLabel("Discord : discord.gg/zd8JMkCWcw")
+GInfo:AddButton("Copy Discord Link", function()
+    local link = "https://discord.gg/zd8JMkCWcw"
+    if setclipboard then
+        setclipboard(link)
+        Library:Notify("Discord link copied!", 3)
+    else
+        Library:Notify(link, 6)
+    end
+end)
+
+local GPanel = TAbout:AddRightGroupbox("Community")
+GPanel:AddLabel("Join the Discord for:")
+GPanel:AddLabel("* Support & bug reports")
+GPanel:AddLabel("* Feature suggestions")
+GPanel:AddLabel("* Early access updates")
+
+local GPatch = TAbout:AddLeftGroupbox("Update Log")
+GPatch:AddLabel("v13 — Full rewrite")
+GPatch:AddLabel("------------------------")
+GPatch:AddLabel("* New farm engine (follow+TP)")
+GPatch:AddLabel("* Auto Vasto Lorde with kill counter")
+GPatch:AddLabel("* AutoFarm with range selector")
+GPatch:AddLabel("* Invincibility breaker post-respawn")
+GPatch:AddLabel("* Auto equip loop fix")
+GPatch:AddLabel("* WalkSpeed via getgenv bypass")
+GPatch:AddLabel("* Full English UI")
+GPatch:AddLabel("* Cleaner tab layout")
+
+-- ================================================================
+--  TAB 2 — MAIN
 -- ================================================================
 local TMain = Win:AddTab("Main")
 
--- Status
-local GStatus = TMain:AddRightGroupbox("Statut Live")
-local lbTarget = GStatus:AddLabel("Cible    : None")
+-- ── Live Status ──────────────────────────────────────────────────
+local GStatus = TMain:AddRightGroupbox("Live Status")
+local lbTarget = GStatus:AddLabel("Target   : None")
 local lbHP     = GStatus:AddLabel("HP       : N/A")
 local lbMode   = GStatus:AddLabel("Mode     : Idle")
-local lbPos    = GStatus:AddLabel("Position : Below")
-local lbMiss   = GStatus:AddLabel("Mission  : Idle")
-local lbDone   = GStatus:AddLabel("Completees: 0")
-local stTimer=0
+local lbVasto  = GStatus:AddLabel("Hollows  : 0 / 200")
+local stTimer  = 0
 RunService.Heartbeat:Connect(function(dt)
-    stTimer+=dt; if stTimer<0.4 then return end; stTimer=0
+    stTimer += dt
+    if stTimer < 0.4 then return end
+    stTimer = 0
     pcall(function()
-        lbTarget:SetText("Cible    : "..Farm.targetName)
+        lbTarget:SetText("Target   : "..Farm.targetName)
         lbHP:SetText("HP       : "..Farm.targetHP)
         lbMode:SetText("Mode     : "..Farm.mode)
-        lbPos:SetText("Position : "..cfg.farmPosition)
-        lbMiss:SetText("Mission  : "..Mission.status)
-        lbDone:SetText("Completees: "..Mission.completed)
+        lbVasto:SetText("Hollows  : "..Farm.vastoHollowCount.." / 200")
     end)
 end)
 
--- Auto Farm
-local GFarm = TMain:AddLeftGroupbox("Auto Farm (VastoLorde/Fishbone/Crawler)")
-GFarm:AddDropdown("ddMobType",{
-    Text="Type de mob", Values={"VastoLorde","Fishbone","Crawler"}, Default=cfg.farmMobType,
-    Callback=function(v) cfg.farmMobType=v; saveCfg() end,
+-- ── Farm Settings ────────────────────────────────────────────────
+local GFarmSettings = TMain:AddLeftGroupbox("Farm Settings")
+GFarmSettings:AddLabel("Offset = position relative to target")
+GFarmSettings:AddSlider("slOffsetX",{
+    Text="Offset X (left/right)", Default=cfg.farmOffsetX, Min=-10, Max=10, Rounding=1,
+    Callback=function(v) cfg.farmOffsetX=v; saveCfg() end,
 })
-GFarm:AddDropdown("ddFarmPos",{
-    Text="Position attaque", Values={"Above","Middle","Below"}, Default=cfg.farmPosition,
-    Callback=function(v) cfg.farmPosition=v; saveCfg() end,
+GFarmSettings:AddSlider("slOffsetY",{
+    Text="Offset Y (up/down)", Default=cfg.farmOffsetY, Min=-10, Max=10, Rounding=1,
+    Callback=function(v) cfg.farmOffsetY=v; saveCfg() end,
 })
-GFarm:AddSlider("slOffsetY",{Text="Offset Y",Default=cfg.farmOffsetY,Min=-12,Max=15,Rounding=1,
-    Callback=function(v) cfg.farmOffsetY=v; saveCfg() end,})
-GFarm:AddSlider("slOffsetZ",{Text="Distance mob (Z)",Default=cfg.farmOffsetZ,Min=0,Max=12,Rounding=1,
-    Callback=function(v) cfg.farmOffsetZ=v; saveCfg() end,})
-GFarm:AddSlider("slRange",{Text="Portee detection",Default=cfg.farmRange,Min=50,Max=1000,Rounding=0,
-    Callback=function(v) cfg.farmRange=v; saveCfg() end,})
-GFarm:AddToggle("tgAutoM1",{Text="Auto M1 + Critical",Default=cfg.autoM1,
-    Callback=function(v) cfg.autoM1=v; saveCfg() end,})
-GFarm:AddToggle("tgAutoEquip",{Text="Auto Equip Katana",Default=cfg.autoEquip,
-    Callback=function(v) cfg.autoEquip=v; saveCfg() end,})
-GFarm:AddToggle("tgAutoDodge",{Text="Auto Dodge (cd 1.5s)",Default=cfg.autoDodge,
-    Callback=function(v) cfg.autoDodge=v; saveCfg() end,})
-GFarm:AddToggle("tgAutoFarm",{Text="AUTO FARM ON/OFF",Default=cfg.autoFarm,
-    Callback=function(v)
-        cfg.autoFarm=v; cfg.bountyOne=false; cfg.bountyAll=false; saveCfg()
-        if v then startFarm() else stopFarm() end
-    end,})
-GFarm:AddButton("Equip / Degainer (Sheathe)", function() fire("Sheathe") end)
+GFarmSettings:AddSlider("slOffsetZ",{
+    Text="Offset Z (front/back)", Default=cfg.farmOffsetZ, Min=-10, Max=0, Rounding=1,
+    Callback=function(v) cfg.farmOffsetZ=v; saveCfg() end,
+})
+GFarmSettings:AddLabel("Tip: Z=-3 = stand just behind target")
 
--- Auto Mission
-local GMiss = TMain:AddLeftGroupbox("Auto Mission")
-GMiss:AddLabel("Accept > Farm > Complete > Repeat")
-GMiss:AddDropdown("ddMissionType",{
-    Text="Type mission", Values={"Auto","Type1","Type2","Type3","Type4"}, Default=cfg.missionType,
-    Callback=function(v) cfg.missionType=v; saveCfg() end,
+-- ── Combat Settings ──────────────────────────────────────────────
+local GCombat = TMain:AddRightGroupbox("Combat")
+GCombat:AddToggle("tgAutoM1",{
+    Text="Auto M1 + Critical",
+    Default=cfg.autoM1,
+    Callback=function(v) cfg.autoM1=v; saveCfg() end,
 })
-GMiss:AddToggle("tgAutoMission",{Text="AUTO MISSION ON/OFF",Default=cfg.autoMission,
-    Callback=function(v) cfg.autoMission=v; saveCfg(); if v then startMission() else stopMission() end end,})
-GMiss:AddButton("Debug: Fetch Missions", function()
-    local m=fetchMissions()
-    if m then
-        local c=0; for _ in pairs(m) do c+=1 end
-        Library:Notify("Missions recues: "..c.." (voir F9)",4); print("[SH12 Missions]",m)
-    else Library:Notify("ReturnMissions -> nil",4) end
-end)
-GMiss:AddButton("Force Accept (1ere mission)", function()
-    local m=fetchMissions()
-    if m then
-        for k in pairs(m) do
-            fireMissionRemote(ACCEPT_NAMES,k)
-            Library:Notify("Accept envoye: "..tostring(k),3); break
-        end
-    else Library:Notify("Aucune mission dispo",2) end
-end)
-GMiss:AddButton("Reset compteur", function() Mission.completed=0; Library:Notify("Reset",2) end)
-
--- Bounty
-local GBounty = TMain:AddRightGroupbox("Bounty Farm")
-GBounty:AddLabel("--- Cibler un joueur ---")
-local ddBountyPlayer = GBounty:AddDropdown("ddBountyPlayer",{
-    Text="Joueur cible", Values=otherPlayers(), Default=otherPlayers()[1],
-    Callback=function(v) cfg.bountyTarget=v; saveCfg() end,
+GCombat:AddToggle("tgAutoEquip",{
+    Text="Auto Equip Katana",
+    Default=cfg.autoEquip,
+    Callback=function(v) cfg.autoEquip=v; saveCfg() end,
 })
-GBounty:AddButton("Refresh joueurs", function()
-    local l=otherPlayers()
-    if ddBountyPlayer then ddBountyPlayer:SetValues(l); cfg.bountyTarget=l[1]; saveCfg() end
-    Library:Notify("Actualise",2)
+GCombat:AddToggle("tgAutoDodge",{
+    Text="Auto Dodge (per combo)",
+    Default=cfg.autoDodge,
+    Callback=function(v) cfg.autoDodge=v; saveCfg() end,
+})
+GCombat:AddButton("Equip / Unequip Katana (Sheathe)", function()
+    fire("Sheathe")
 end)
-GBounty:AddToggle("tgBountyOne",{Text="Farm joueur selectionne",Default=cfg.bountyOne,
-    Callback=function(v)
-        cfg.bountyOne=v; cfg.autoFarm=false; cfg.bountyAll=false; saveCfg()
-        if v then startFarm() else stopFarm() end
-    end,})
-GBounty:AddLabel("--- Tous les joueurs ---")
-GBounty:AddToggle("tgBountyAll",{Text="Farm ALL players",Default=cfg.bountyAll,
-    Callback=function(v)
-        cfg.bountyAll=v; cfg.autoFarm=false; cfg.bountyOne=false; saveCfg()
-        if v then startFarm() else stopFarm() end
-    end,})
-
--- Skills
-local GSkills = TMain:AddRightGroupbox("Skills")
-GSkills:AddButton("Activate Shikai",  function() fire("ActivateShikai") end)
-GSkills:AddButton("Shikai Skill",     function() fire("ShikaiSkill") end)
-GSkills:AddButton("Transform",        function() fire("Transform") end)
-GSkills:AddButton("Skill",            function() fire("Skill") end)
-GSkills:AddButton("Flashstep",        function() fire("Flashstep") end)
-GSkills:AddButton("Dodge (manuel)",   function()
-    local d=getDodge(); if d then pcall(function() d:FireServer(false) end) end
-end)
-GSkills:AddButton("Block",    function() fire("Block") end)
-GSkills:AddButton("Unblock",  function() fire("Unblock") end)
+GCombat:AddButton("Activate Shikai", function() fire("ActivateShikai") end)
+GCombat:AddButton("Shikai Skill",    function() fire("ShikaiSkill") end)
+GCombat:AddButton("Transform",       function() fire("Transform") end)
+GCombat:AddButton("Skill",           function() fire("Skill") end)
 
 -- ================================================================
---  TAB PLAYER
+--  AUTO VASTO LORDE SECTION
+-- ================================================================
+local GVasto = TMain:AddLeftGroupbox("Auto Vasto Lorde")
+GVasto:AddLabel("Kill Fishbone & Crawler to reach Vasto Lorde")
+GVasto:AddLabel("Goal: 200 hollows killed")
+GVasto:AddSlider("slVastoRange",{
+    Text="Detection Range", Default=cfg.vastoRange, Min=50, Max=1000, Rounding=0,
+    Callback=function(v) cfg.vastoRange=v; saveCfg() end,
+})
+GVasto:AddButton("Reset Hollow Counter", function()
+    Farm.vastoHollowCount = 0
+    cfg.vastoHollowCount = 0
+    saveCfg()
+    Library:Notify("Hollow counter reset to 0",2)
+end)
+GVasto:AddToggle("tgAutoVasto",{
+    Text="AUTO VASTO LORDE ON/OFF",
+    Default=cfg.autoVasto,
+    Callback=function(v)
+        cfg.autoVasto = v
+        cfg.autoFarm  = false
+        cfg.bountyOne = false
+        cfg.bountyAll = false
+        saveCfg()
+        if v then startFarm() else stopFarm() end
+    end,
+})
+
+-- ================================================================
+--  BOUNTY FARM SECTION
+-- ================================================================
+local GBounty = TMain:AddRightGroupbox("Bounty Farm")
+GBounty:AddLabel("--- Target a specific player ---")
+local ddBountyPlayer = GBounty:AddDropdown("ddBountyPlayer",{
+    Text="Target Player",
+    Values=otherPlayers(),
+    Default=otherPlayers()[1],
+    Callback=function(v) cfg.bountyTarget=v; saveCfg() end,
+})
+GBounty:AddButton("Refresh Player List", function()
+    local l = otherPlayers()
+    if ddBountyPlayer then ddBountyPlayer:SetValues(l); cfg.bountyTarget=l[1]; saveCfg() end
+    Library:Notify("Refreshed",2)
+end)
+GBounty:AddToggle("tgBountyOne",{
+    Text="Farm selected player",
+    Default=cfg.bountyOne,
+    Callback=function(v)
+        cfg.bountyOne = v
+        cfg.autoFarm  = false
+        cfg.autoVasto = false
+        cfg.bountyAll = false
+        saveCfg()
+        if v then startFarm() else stopFarm() end
+    end,
+})
+GBounty:AddLabel("--- All players ---")
+GBounty:AddToggle("tgBountyAll",{
+    Text="Farm ALL players",
+    Default=cfg.bountyAll,
+    Callback=function(v)
+        cfg.bountyAll = v
+        cfg.autoFarm  = false
+        cfg.autoVasto = false
+        cfg.bountyOne = false
+        saveCfg()
+        if v then startFarm() else stopFarm() end
+    end,
+})
+
+-- ================================================================
+--  AUTOFARM SECTION
+-- ================================================================
+local GAutoFarm = TMain:AddLeftGroupbox("AutoFarm (All Mobs)")
+GAutoFarm:AddLabel("Detects and kills all mobs in range")
+GAutoFarm:AddSlider("slFarmRange",{
+    Text="Detection Range", Default=cfg.farmRange, Min=50, Max=1000, Rounding=0,
+    Callback=function(v) cfg.farmRange=v; saveCfg() end,
+})
+GAutoFarm:AddToggle("tgAutoFarm",{
+    Text="AUTOFARM ON/OFF",
+    Default=cfg.autoFarm,
+    Callback=function(v)
+        cfg.autoFarm  = v
+        cfg.autoVasto = false
+        cfg.bountyOne = false
+        cfg.bountyAll = false
+        saveCfg()
+        if v then startFarm() else stopFarm() end
+    end,
+})
+
+-- ================================================================
+--  TAB 3 — PLAYER
 -- ================================================================
 local TPlayer = Win:AddTab("Player")
 
-local GFly2 = TPlayer:AddLeftGroupbox("Fly")
-GFly2:AddToggle("tgFly",{Text="Fly [WASD + Space/Ctrl]",Default=cfg.flyOn,
-    Callback=function(v) cfg.flyOn=v; saveCfg(); if v then startFly() else stopFly() end end,})
-GFly2:AddSlider("slFlySpeed",{Text="Vitesse",Default=cfg.flySpeed,Min=10,Max=600,Rounding=0,
-    Callback=function(v) cfg.flySpeed=v; saveCfg() end,})
+local GFly = TPlayer:AddLeftGroupbox("Fly")
+GFly:AddToggle("tgFly",{
+    Text="Fly [WASD + Space/Ctrl]",
+    Default=cfg.flyOn,
+    Callback=function(v) cfg.flyOn=v; saveCfg(); if v then startFly() else stopFly() end end,
+})
+GFly:AddSlider("slFlySpeed",{
+    Text="Speed", Default=cfg.flySpeed, Min=10, Max=600, Rounding=0,
+    Callback=function(v) cfg.flySpeed=v; saveCfg() end,
+})
 
-local GPhys = TPlayer:AddRightGroupbox("Physique")
-GPhys:AddToggle("tgNoclip",{Text="NoClip",Default=cfg.noclip,
-    Callback=function(v) cfg.noclip=v; saveCfg() end,})
-GPhys:AddToggle("tgInfJump",{Text="Infinite Jump",Default=cfg.infJump,
-    Callback=function(v) cfg.infJump=v; saveCfg() end,})
-local wsActive,wsValue=false,16
-GPhys:AddToggle("tgWalkSpeed",{Text="Custom WalkSpeed",Default=false,
-    Callback=function(v) wsActive=v; if not v and G.Hum then G.Hum.WalkSpeed=16 end end,})
-GPhys:AddSlider("slWalkSpeed",{Text="WalkSpeed",Default=16,Min=1,Max=200,Rounding=0,
-    Callback=function(v) wsValue=v; if wsActive and G.Hum then G.Hum.WalkSpeed=v end end,})
-RunService.Heartbeat:Connect(function()
-    if wsActive and G.Hum then G.Hum.WalkSpeed=wsValue end
-end)
+local GPhys = TPlayer:AddRightGroupbox("Physics")
+GPhys:AddToggle("tgNoclip",{
+    Text="NoClip",
+    Default=cfg.noclip,
+    Callback=function(v) cfg.noclip=v; saveCfg() end,
+})
+GPhys:AddToggle("tgInfJump",{
+    Text="Infinite Jump",
+    Default=cfg.infJump,
+    Callback=function(v) cfg.infJump=v; saveCfg() end,
+})
+GPhys:AddToggle("tgWalkSpeed",{
+    Text="Custom WalkSpeed",
+    Default=cfg.walkspeedEnabled,
+    Callback=function(v) cfg.walkspeedEnabled=v; saveCfg()
+        if not v and G.Hum then G.Hum.WalkSpeed=16 end
+    end,
+})
+GPhys:AddSlider("slWalkSpeed",{
+    Text="WalkSpeed", Default=cfg.walkspeedValue, Min=1, Max=250, Rounding=0,
+    Callback=function(v) cfg.walkspeedValue=v; saveCfg() end,
+})
 
 local GCam = TPlayer:AddLeftGroupbox("Camera & FOV")
-GCam:AddSlider("slFOV",{Text="FOV",Default=cfg.fov,Min=30,Max=120,Rounding=0,
-    Callback=function(v) applyFOV(v); saveCfg() end,})
+GCam:AddSlider("slFOV",{
+    Text="FOV", Default=cfg.fov, Min=30, Max=120, Rounding=0,
+    Callback=function(v) applyFOV(v); saveCfg() end,
+})
 GCam:AddDropdown("ddFOVPreset",{
-    Text="Preset FOV",
+    Text="FOV Preset",
     Values={"Normal (70)","Large (90)","Ultra (110)","Cinema (55)"},
     Default="Normal (70)",
     Callback=function(v)
@@ -818,174 +952,194 @@ GCam:AddDropdown("ddFOVPreset",{
     end,
 })
 local fpConn
-GCam:AddToggle("tgFirstPerson",{Text="First Person (POV)",Default=false,
+GCam:AddToggle("tgFirstPerson",{
+    Text="First Person (POV)",
+    Default=false,
     Callback=function(v)
-        local cam=Workspace.CurrentCamera; if not cam then return end
+        local cam = Workspace.CurrentCamera; if not cam then return end
         if v then
-            cam.CameraType=Enum.CameraType.Scriptable
+            cam.CameraType = Enum.CameraType.Scriptable
             if fpConn then fpConn:Disconnect() end
-            fpConn=RunService.RenderStepped:Connect(function()
+            fpConn = RunService.RenderStepped:Connect(function()
                 if not Toggles or not Toggles.tgFirstPerson or not Toggles.tgFirstPerson.Value then
-                    cam.CameraType=Enum.CameraType.Custom
+                    cam.CameraType = Enum.CameraType.Custom
                     if fpConn then fpConn:Disconnect(); fpConn=nil end
                     return
                 end
                 if G.Char then
-                    local head=G.Char:FindFirstChild("Head")
-                    if head then cam.CFrame=head.CFrame end
+                    local head = G.Char:FindFirstChild("Head")
+                    if head then cam.CFrame = head.CFrame end
                 end
             end)
         else
-            cam.CameraType=Enum.CameraType.Custom
+            cam.CameraType = Enum.CameraType.Custom
             if fpConn then fpConn:Disconnect(); fpConn=nil end
         end
-    end,})
+    end,
+})
 GCam:AddButton("Reset Camera", function()
-    local cam=Workspace.CurrentCamera
+    local cam = Workspace.CurrentCamera
     if cam then cam.CameraType=Enum.CameraType.Custom; cam.FieldOfView=70 end
     cfg.fov=70; saveCfg(); Library:Notify("Camera reset",2)
 end)
 
 local GBring = TPlayer:AddRightGroupbox("Bring Players")
-GBring:AddButton("Bring ALL vers moi", function()
+GBring:AddButton("Bring ALL to me", function()
     if not G.HRP then return end
     local c=0
     for _,p in ipairs(Players:GetPlayers()) do
         if p~=LP and p.Character then
             local r=p.Character:FindFirstChild("HumanoidRootPart")
-            if r then r.CFrame=G.HRP.CFrame*CFrame.new(math.random(-4,4),0,math.random(-4,4)); c+=1 end
+            if r then
+                r.CFrame = G.HRP.CFrame * CFrame.new(math.random(-4,4),0,math.random(-4,4))
+                c += 1
+            end
         end
     end
-    Library:Notify(c.." joueur(s) ramenes",2)
+    Library:Notify(c.." player(s) brought",2)
 end)
 
 -- ================================================================
---  TAB TELEPORT
+--  TAB 4 — TELEPORT
 -- ================================================================
 local TTP = Win:AddTab("Teleport")
 
-local GTPPlayer = TTP:AddLeftGroupbox("Teleport vers Joueur")
+local GTPPlayer = TTP:AddLeftGroupbox("Teleport to Player")
 local ddTPPlayer = GTPPlayer:AddDropdown("ddTPPlayer",{
-    Text="Joueur", Values=otherPlayers(), Default=otherPlayers()[1], Callback=function() end,})
+    Text="Player", Values=otherPlayers(), Default=otherPlayers()[1], Callback=function() end,
+})
 GTPPlayer:AddButton("Refresh", function()
-    local l=otherPlayers(); if ddTPPlayer then ddTPPlayer:SetValues(l) end; Library:Notify("OK",1)
+    local l = otherPlayers()
+    if ddTPPlayer then ddTPPlayer:SetValues(l) end
+    Library:Notify("Refreshed",1)
 end)
 GTPPlayer:AddButton("Teleport", function()
     if not G.HRP or not ddTPPlayer then return end
-    local p=Players:FindFirstChild(ddTPPlayer.Value)
+    local p = Players:FindFirstChild(ddTPPlayer.Value)
     if p and p.Character then
-        local r=p.Character:FindFirstChild("HumanoidRootPart")
-        if r then G.HRP.CFrame=r.CFrame*CFrame.new(3,0,3); Library:Notify("TP -> "..p.Name,2); return end
+        local r = p.Character:FindFirstChild("HumanoidRootPart")
+        if r then
+            G.HRP.CFrame = r.CFrame * CFrame.new(3,0,3)
+            Library:Notify("TP -> "..p.Name, 2)
+            return
+        end
     end
-    Library:Notify("Joueur introuvable",2)
+    Library:Notify("Player not found",2)
 end)
 
-local GTPNPC = TTP:AddRightGroupbox("Teleport vers NPC")
+local GTPNPC = TTP:AddRightGroupbox("Teleport to NPC")
 local function npcNames()
-    local t={}
-    for _,v in ipairs(getNPCList()) do table.insert(t,v.Name) end
-    return #t>0 and t or {"(aucun NPC)"}
+    local t = {}
+    for _,v in ipairs(getNPCList()) do table.insert(t, v.Name) end
+    return #t>0 and t or {"(no NPC found)"}
 end
 local ddNPC = GTPNPC:AddDropdown("ddNPC",{
-    Text="NPC", Values=npcNames(), Default=npcNames()[1], Callback=function() end,})
-GTPNPC:AddButton("Refresh NPC", function()
-    local l=npcNames(); if ddNPC then ddNPC:SetValues(l) end; Library:Notify(#l.." NPC(s)",2)
+    Text="NPC", Values=npcNames(), Default=npcNames()[1], Callback=function() end,
+})
+GTPNPC:AddButton("Refresh NPC List", function()
+    local l = npcNames()
+    if ddNPC then ddNPC:SetValues(l) end
+    Library:Notify(#l.." NPC(s) found",2)
 end)
 GTPNPC:AddButton("Teleport", function()
     if not G.HRP or not ddNPC then return end
+    local targetName = ddNPC.Value
     for _,v in ipairs(getNPCList()) do
-        if v.Name==ddNPC.Value then
-            local r=v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root")
-            if r then G.HRP.CFrame=r.CFrame*CFrame.new(3,0,3); Library:Notify("TP -> "..v.Name,2); return end
+        if v.Name == targetName then
+            local r = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Root") or v.PrimaryPart
+            if r then
+                G.HRP.CFrame = r.CFrame * CFrame.new(3,0,3)
+                Library:Notify("TP -> "..v.Name, 2)
+                return
+            end
         end
     end
-    Library:Notify("NPC introuvable",2)
+    Library:Notify("NPC not found — try Refresh",2)
 end)
 
-local GServer = TTP:AddLeftGroupbox("Serveur")
-GServer:AddButton("Rejoindre meme serveur", function()
-    pcall(function() TeleportService:Teleport(game.PlaceId,LP) end)
+local GServer = TTP:AddLeftGroupbox("Server")
+GServer:AddButton("Rejoin current server", function()
+    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
 end)
-GServer:AddButton("Serveur aleatoire", function()
+GServer:AddButton("Random server", function()
     task.spawn(function()
-        local ok3,data=pcall(function()
+        local ok3, data = pcall(function()
             return HttpService:JSONDecode(game:HttpGet(
-                "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=10"))
+                "https://games.roblox.com/v1/games/"..game.PlaceId..
+                "/servers/Public?sortOrder=Asc&limit=10"))
         end)
         if ok3 and data and data.data and #data.data>0 then
-            local s=data.data[math.random(1,#data.data)]
-            pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId,s.id,LP) end)
+            local s = data.data[math.random(1,#data.data)]
+            pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LP) end)
         else
-            pcall(function() TeleportService:Teleport(game.PlaceId,LP) end)
+            pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
         end
     end)
 end)
-GServer:AddToggle("tgAutoRejoin",{Text="Auto Rejoin",Default=cfg.autoRejoin,
-    Callback=function(v) cfg.autoRejoin=v; saveCfg() end,})
-GServer:AddSlider("slRejoinSec",{Text="Intervalle (s)",Default=cfg.rejoinSec,Min=60,Max=7200,Rounding=0,
-    Callback=function(v) cfg.rejoinSec=v; saveCfg() end,})
+GServer:AddToggle("tgAutoRejoin",{
+    Text="Auto Rejoin",
+    Default=cfg.autoRejoin,
+    Callback=function(v) cfg.autoRejoin=v; saveCfg() end,
+})
+GServer:AddSlider("slRejoinSec",{
+    Text="Interval (seconds)", Default=cfg.rejoinSec, Min=60, Max=7200, Rounding=0,
+    Callback=function(v) cfg.rejoinSec=v; saveCfg() end,
+})
 
 -- ================================================================
---  TAB ESP
+--  TAB 5 — ESP
 -- ================================================================
 local TESP = Win:AddTab("ESP")
+
 local GESP = TESP:AddLeftGroupbox("ESP")
-GESP:AddToggle("tgESPMobs",{Text="ESP Mobs",Default=cfg.espMobs,
-    Callback=function(v) cfg.espMobs=v; saveCfg(); pcall(refreshESP) end,})
-GESP:AddToggle("tgESPPlayers",{Text="ESP Joueurs",Default=cfg.espPlayers,
-    Callback=function(v) cfg.espPlayers=v; saveCfg(); pcall(refreshESP) end,})
-local GESPOpt = TESP:AddRightGroupbox("Options ESP")
-GESPOpt:AddToggle("tgESPName",{Text="Afficher Nom",Default=cfg.espName,
-    Callback=function(v) cfg.espName=v; saveCfg() end,})
-GESPOpt:AddToggle("tgESPDist",{Text="Afficher Distance",Default=cfg.espDist,
-    Callback=function(v) cfg.espDist=v; saveCfg() end,})
-GESPOpt:AddToggle("tgESPHP",{Text="Afficher HP",Default=cfg.espHP,
-    Callback=function(v) cfg.espHP=v; saveCfg() end,})
-GESPOpt:AddSlider("slESPDist",{Text="Distance max",Default=cfg.espMaxDist,Min=50,Max=2000,Rounding=0,
-    Callback=function(v) cfg.espMaxDist=v; saveCfg() end,})
+GESP:AddToggle("tgESPMobs",{
+    Text="ESP Mobs",
+    Default=cfg.espMobs,
+    Callback=function(v) cfg.espMobs=v; saveCfg(); pcall(refreshESP) end,
+})
+GESP:AddToggle("tgESPPlayers",{
+    Text="ESP Players",
+    Default=cfg.espPlayers,
+    Callback=function(v) cfg.espPlayers=v; saveCfg(); pcall(refreshESP) end,
+})
+
+local GESPOpt = TESP:AddRightGroupbox("ESP Options")
+GESPOpt:AddToggle("tgESPName",{
+    Text="Show Name", Default=cfg.espName,
+    Callback=function(v) cfg.espName=v; saveCfg() end,
+})
+GESPOpt:AddToggle("tgESPDist",{
+    Text="Show Distance", Default=cfg.espDist,
+    Callback=function(v) cfg.espDist=v; saveCfg() end,
+})
+GESPOpt:AddToggle("tgESPHP",{
+    Text="Show HP", Default=cfg.espHP,
+    Callback=function(v) cfg.espHP=v; saveCfg() end,
+})
+GESPOpt:AddSlider("slESPDist",{
+    Text="Max Distance", Default=cfg.espMaxDist, Min=50, Max=2000, Rounding=0,
+    Callback=function(v) cfg.espMaxDist=v; saveCfg() end,
+})
 GESPOpt:AddButton("Refresh ESP", function() pcall(refreshESP) end)
 GESPOpt:AddButton("Clear ESP",   function() pcall(clearESP) end)
 
 -- ================================================================
---  TAB MISC
+--  TAB 6 — MISC
 -- ================================================================
 local TMisc = Win:AddTab("Misc")
-local GMisc = TMisc:AddLeftGroupbox("Options")
-GMisc:AddToggle("tgAntiAfk",{Text="Anti AFK",Default=cfg.antiAfk,
-    Callback=function(v) cfg.antiAfk=v; saveCfg() end,})
-GMisc:AddButton("Sauvegarder config", function() saveCfg(); Library:Notify("Config sauvegardee",3) end)
-GMisc:AddButton("Reset config", function()
-    cfg={}; for k,v in pairs(DEFAULT) do cfg[k]=v end; saveCfg()
-    Library:Notify("Config reset — relancer le script",4)
-end)
 
-local GDebug = TMisc:AddRightGroupbox("Debug Remotes")
-GDebug:AddButton("Lister CharHandler Remotes", function()
-    local r=getRemotes()
-    if r then
-        local list={}
-        for _,child in ipairs(r:GetChildren()) do table.insert(list,child.Name.." ["..child.ClassName.."]") end
-        print("[SH12] CharHandler Remotes ("..#list.."):")
-        for _,s in ipairs(list) do print("  "..s) end
-        Library:Notify(#list.." remotes (F9)",3)
-    else Library:Notify("CharHandler.Remotes introuvable",3) end
+local GMisc = TMisc:AddLeftGroupbox("Options")
+GMisc:AddToggle("tgAntiAfk",{
+    Text="Anti AFK",
+    Default=cfg.antiAfk,
+    Callback=function(v) cfg.antiAfk=v; saveCfg() end,
+})
+GMisc:AddButton("Save Config", function()
+    saveCfg(); Library:Notify("Config saved",3)
 end)
-GDebug:AddButton("Lister RepStorage Remotes", function()
-    local ok3,r=pcall(function() return ReplicatedStorage:WaitForChild("Remotes",3) end)
-    if ok3 and r then
-        local list={}
-        for _,child in ipairs(r:GetChildren()) do table.insert(list,child.Name.." ["..child.ClassName.."]") end
-        print("[SH12] RepStorage Remotes ("..#list.."):")
-        for _,s in ipairs(list) do print("  "..s) end
-        Library:Notify(#list.." remotes (F9)",3)
-    else Library:Notify("RepStorage.Remotes introuvable",3) end
-end)
-GDebug:AddButton("Test M1", function() doM1(); Library:Notify("M1 envoye",2) end)
-GDebug:AddButton("Test Critical", function() doCrit(); Library:Notify("Critical envoye",2) end)
-GDebug:AddButton("Verifier G.Remotes", function()
-    local r=getRemotes()
-    if r then Library:Notify("Remotes OK: "..r:GetFullName(),3)
-    else Library:Notify("Remotes NIL — reessayez apres spawn",3) end
+GMisc:AddButton("Reset Config", function()
+    cfg={}; for k,v in pairs(DEFAULT) do cfg[k]=v end; saveCfg()
+    Library:Notify("Config reset — please re-execute script",4)
 end)
 
 if ThemeManager and SaveManager then
@@ -999,72 +1153,47 @@ if ThemeManager and SaveManager then
 end
 
 -- ================================================================
---  TAB SETRAS HUB
--- ================================================================
-local TAbout = Win:AddTab("SetrasHub")
-local GInfo = TAbout:AddLeftGroupbox("Informations")
-GInfo:AddLabel("SetrasHub v12 — Bleach Paradox")
-GInfo:AddLabel("Owner  : Setras")
-GInfo:AddLabel("Version: v12")
-GInfo:AddLabel(" ")
-GInfo:AddLabel("Discord : discord.gg/zd8JMkCWcw")
-GInfo:AddButton("Copier lien Discord", function()
-    local link="https://discord.gg/zd8JMkCWcw"
-    if setclipboard then setclipboard(link); Library:Notify("Lien Discord copie !",3)
-    else Library:Notify(link,6) end
-end)
-
-local GPatch = TAbout:AddRightGroupbox("Update Log")
-GPatch:AddLabel("v12 — Refonte totale")
-GPatch:AddLabel("------------------------")
-GPatch:AddLabel("* AutoFarm reecrit de zero")
-GPatch:AddLabel("* M1/Crit: CFrame joueur fixe")
-GPatch:AddLabel("* initChar avec timeout robuste")
-GPatch:AddLabel("* Guard anti double-load")
-GPatch:AddLabel("* Auto Mission 4 types")
-GPatch:AddLabel("* Debug remotes integre")
-GPatch:AddLabel("* FOV + First Person")
-GPatch:AddLabel("* WalkSpeed custom")
-GPatch:AddLabel("* Tous pcall en place")
-GPatch:AddLabel(" ")
-GPatch:AddLabel("Prochaine update: (rien)")
-
-local GPanel = TAbout:AddLeftGroupbox("Panel Setras")
-GPanel:AddLabel("Rejoins le Discord pour :")
-GPanel:AddLabel("* Support & bugs")
-GPanel:AddLabel("* Suggestions features")
-GPanel:AddLabel("* Updates en avant-premiere")
-GPanel:AddLabel(" ")
-GPanel:AddLabel("Script free to use")
-GPanel:AddLabel("Ne pas revendre.")
-
--- ================================================================
 --  KEYBINDS
 -- ================================================================
-UserInputService.InputBegan:Connect(function(inp,gp)
+UserInputService.InputBegan:Connect(function(inp, gp)
     if gp then return end
-    if inp.KeyCode==Enum.KeyCode.RightControl then
+    -- Right Ctrl: toggle UI
+    if inp.KeyCode == Enum.KeyCode.RightControl then
         pcall(function() Library:ToggleHidden() end)
     end
-    if inp.KeyCode==Enum.KeyCode.RightShift then
-        cfg.autoFarm=not cfg.autoFarm; cfg.bountyOne=false; cfg.bountyAll=false; saveCfg()
-        if cfg.autoFarm then startFarm(); Library:Notify("Farm ON [RShift]",2)
-        else stopFarm(); Library:Notify("Farm OFF [RShift]",2) end
+    -- Right Shift: toggle AutoFarm
+    if inp.KeyCode == Enum.KeyCode.RightShift then
+        cfg.autoFarm  = not cfg.autoFarm
+        cfg.autoVasto = false
+        cfg.bountyOne = false
+        cfg.bountyAll = false
+        saveCfg()
+        if cfg.autoFarm then
+            startFarm()
+            Library:Notify("AutoFarm ON [RShift]", 2)
+        else
+            stopFarm()
+            Library:Notify("AutoFarm OFF [RShift]", 2)
+        end
     end
 end)
 
 -- ================================================================
---  DEMARRAGE
+--  STARTUP
 -- ================================================================
 task.defer(function()
     task.wait(0.3)
     applyFOV(cfg.fov)
     if cfg.flyOn then pcall(startFly) end
     if cfg.espMobs or cfg.espPlayers then pcall(refreshESP) end
-    if cfg.autoFarm or cfg.bountyOne or cfg.bountyAll then startFarm() end
-    if cfg.autoMission then startMission() end
+    if cfg.autoVasto or cfg.bountyOne or cfg.bountyAll or cfg.autoFarm then
+        startFarm()
+    end
     task.spawn(breakInvincibility)
 end)
 
-Library:Notify("SetrasHub v12 | [RCtrl] UI | [RShift] Farm toggle | discord.gg/zd8JMkCWcw",7)
-print("[SetrasHub v12] Charge — discord.gg/zd8JMkCWcw")
+Library:Notify(
+    "SetrasHub v13 | [RCtrl] UI | [RShift] AutoFarm toggle | discord.gg/zd8JMkCWcw",
+    7
+)
+print("[SetrasHub v13] Loaded — discord.gg/zd8JMkCWcw")
