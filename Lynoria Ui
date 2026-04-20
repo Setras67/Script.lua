@@ -1,0 +1,510 @@
+--[[ LYNORIA UI LIBRARY v1.0 | Owner: Setras ]]
+local Players=game:GetService("Players")
+local TS=game:GetService("TweenService")
+local UIS=game:GetService("UserInputService")
+local HS=game:GetService("HttpService")
+local CG=game:GetService("CoreGui")
+local P=Players.LocalPlayer
+
+local T={
+Bg=Color3.fromRGB(10,10,15),Bg2=Color3.fromRGB(13,13,20),
+Surface=Color3.fromRGB(18,18,26),SurfHover=Color3.fromRGB(26,26,37),
+SurfActive=Color3.fromRGB(32,32,45),Border=Color3.fromRGB(30,30,42),
+Text=Color3.fromRGB(240,240,255),TextDim=Color3.fromRGB(136,136,170),
+TextMuted=Color3.fromRGB(85,85,119),Green=Color3.fromRGB(0,255,136),
+Red=Color3.fromRGB(255,51,85),Yellow=Color3.fromRGB(255,215,0),
+ToggleOn=Color3.fromRGB(240,240,255),ToggleOff=Color3.fromRGB(40,40,55),
+SliderFill=Color3.fromRGB(240,240,255),SliderTrack=Color3.fromRGB(30,30,45),
+Corner=UDim.new(0,8),CornerSm=UDim.new(0,6),
+}
+
+local function C(cls,pr)
+local i=Instance.new(cls)
+local p2
+for k,v in pairs(pr) do
+if k=="Parent" then p2=v else i[k]=v end
+end
+if p2 then i.Parent=p2 end
+return i
+end
+
+local function Tw(o,t,pr)
+local tw=TS:Create(o,TweenInfo.new(t or 0.3,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),pr)
+tw:Play()
+return tw
+end
+
+local function MkDrag(fr,hd)
+local dg,ds,sp
+hd.InputBegan:Connect(function(inp)
+if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+dg=true;ds=inp.Position;sp=fr.Position
+inp.Changed:Connect(function()
+if inp.UserInputState==Enum.UserInputState.End then dg=false end
+end)
+end
+end)
+UIS.InputChanged:Connect(function(inp)
+if dg and inp.UserInputType==Enum.UserInputType.MouseMovement then
+local d=inp.Position-ds
+fr.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y)
+end
+end)
+end
+
+local function SW(p,d) local o,e=pcall(function() writefile(p,d) end) return o end
+local function SR(p) local o,d=pcall(function() return readfile(p) end) return o,d end
+local function SMF(p) pcall(function() if not isfolder(p) then makefolder(p) end end) end
+local function SLF(p) local o,f=pcall(function() return listfiles(p) end) return o and f or {} end
+local function SDF(p) pcall(function() delfile(p) end) end
+local function SIF(p) local o,r=pcall(function() return isfile(p) end) return o and r end
+
+local Lynoria={}
+Lynoria.__index=Lynoria
+local Tab={}
+Tab.__index=Tab
+
+function Lynoria.new(title)
+local self=setmetatable({},Lynoria)
+self.Title=title or "Lynoria"
+self.Tabs={} self.ActiveTab=nil self.Flags={} self.Connections={}
+self.ToggleKey=Enum.KeyCode.RightShift self.Visible=true self.Minimized=false
+SMF("Lynoria") SMF("Lynoria/configs")
+
+self.Gui=C("ScreenGui",{Name="Lynoria",ZIndexBehavior=Enum.ZIndexBehavior.Global,ResetOnSpawn=false})
+local ok=pcall(function() self.Gui.Parent=CG end)
+if not ok then self.Gui.Parent=P:WaitForChild("PlayerGui") end
+
+self.Shadow=C("Frame",{Name="Shadow",Size=UDim2.new(0,636,0,466),Position=UDim2.new(0.5,-318,0.5,-233),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.55,BorderSizePixel=0,ZIndex=1,Parent=self.Gui})
+C("UICorner",{CornerRadius=UDim.new(0,14),Parent=self.Shadow})
+
+self.Main=C("Frame",{Name="Main",Size=UDim2.new(0,630,0,460),Position=UDim2.new(0.5,-315,0.5,-230),BackgroundColor3=T.Bg,BorderSizePixel=0,ClipsDescendants=true,ZIndex=2,Parent=self.Gui})
+C("UICorner",{CornerRadius=UDim.new(0,12),Parent=self.Main})
+C("UIStroke",{Color=T.Border,Thickness=1,Parent=self.Main})
+
+self.TitleBar=C("Frame",{Size=UDim2.new(1,0,0,42),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+C("Frame",{Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.TitleBar})
+C("TextLabel",{Text="Lynoria",Font=Enum.Font.GothamBold,TextSize=20,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,200,1,0),Position=UDim2.new(0,16,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=4,Parent=self.TitleBar})
+
+MkDrag(self.Main,self.TitleBar)
+self.Main:GetPropertyChangedSignal("Position"):Connect(function()
+self.Shadow.Position=UDim2.new(self.Main.Position.X.Scale,self.Main.Position.X.Offset-3,self.Main.Position.Y.Scale,self.Main.Position.Y.Offset-3)
+end)
+
+local cb=C("TextButton",{Text="X",Font=Enum.Font.GothamBold,TextSize=14,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,32,0,28),Position=UDim2.new(1,-40,0,7),ZIndex=5,Parent=self.TitleBar})
+cb.MouseEnter:Connect(function() Tw(cb,0.2,{TextColor3=T.Red}) end)
+cb.MouseLeave:Connect(function() Tw(cb,0.2,{TextColor3=T.TextDim}) end)
+cb.MouseButton1Click:Connect(function() self:Toggle() end)
+
+local mb=C("TextButton",{Text="-",Font=Enum.Font.GothamBold,TextSize=18,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,32,0,28),Position=UDim2.new(1,-74,0,7),ZIndex=5,Parent=self.TitleBar})
+mb.MouseEnter:Connect(function() Tw(mb,0.2,{TextColor3=T.Text}) end)
+mb.MouseLeave:Connect(function() Tw(mb,0.2,{TextColor3=T.TextDim}) end)
+mb.MouseButton1Click:Connect(function() self:Minimize() end)
+
+self.Sidebar=C("Frame",{Size=UDim2.new(0,145,1,-73),Position=UDim2.new(0,0,0,42),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+C("Frame",{Size=UDim2.new(0,1,1,0),Position=UDim2.new(1,-1,0,0),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
+self.TabList=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-8),Position=UDim2.new(0,2,0,4),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=T.TextMuted,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,Parent=self.Sidebar})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=self.TabList})
+C("UIPadding",{PaddingTop=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4),Parent=self.TabList})
+
+self.Content=C("Frame",{Size=UDim2.new(1,-145,1,-73),Position=UDim2.new(0,145,0,42),BackgroundTransparency=1,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+
+self.BottomBar=C("Frame",{Size=UDim2.new(1,0,0,31),Position=UDim2.new(0,0,1,-31),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+C("Frame",{Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.BottomBar})
+
+self.StatusDot=C("Frame",{Size=UDim2.new(0,10,0,10),Position=UDim2.new(0,12,0.5,-5),BackgroundColor3=T.Green,BorderSizePixel=0,ZIndex=5,Parent=self.BottomBar})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=self.StatusDot})
+self.StatusGlow=C("UIStroke",{Color=T.Green,Thickness=2,Transparency=0.5,Parent=self.StatusDot})
+C("TextLabel",{Text="Injecteur",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,80,1,0),Position=UDim2.new(0,28,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.BottomBar})
+
+task.spawn(function()
+while self.Gui and self.Gui.Parent do
+Tw(self.StatusGlow,0.8,{Transparency=0.9}) task.wait(0.8)
+Tw(self.StatusGlow,0.8,{Transparency=0.3}) task.wait(0.8)
+end
+end)
+
+C("TextLabel",{Text="Credits | Owner: Setras",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,160,1,0),Position=UDim2.new(1,-172,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5,Parent=self.BottomBar})
+
+self.NotifHolder=C("Frame",{Size=UDim2.new(0,260,0,400),Position=UDim2.new(1,-270,0,10),BackgroundTransparency=1,ZIndex=100,Parent=self.Gui})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6),VerticalAlignment=Enum.VerticalAlignment.Top,Parent=self.NotifHolder})
+
+UIS.InputBegan:Connect(function(inp,gpe)
+if not gpe and inp.KeyCode==self.ToggleKey then self:Toggle() end
+end)
+
+self.Main.Size=UDim2.new(0,630,0,0)
+self.Shadow.Size=UDim2.new(0,636,0,0)
+task.defer(function()
+Tw(self.Main,0.4,{Size=UDim2.new(0,630,0,460)})
+Tw(self.Shadow,0.4,{Size=UDim2.new(0,636,0,466)})
+end)
+task.defer(function() task.wait(0.5) self:_AutoLoadConfig() end)
+return self
+end
+
+function Lynoria:Toggle()
+self.Visible=not self.Visible
+if self.Visible then
+self.Gui.Enabled=true
+Tw(self.Main,0.35,{Size=UDim2.new(0,630,0,460)})
+Tw(self.Shadow,0.35,{Size=UDim2.new(0,636,0,466)})
+else
+local tw=Tw(self.Main,0.25,{Size=UDim2.new(0,630,0,0)})
+Tw(self.Shadow,0.25,{Size=UDim2.new(0,636,0,0)})
+tw.Completed:Wait() self.Gui.Enabled=false
+end
+end
+
+function Lynoria:Minimize()
+self.Minimized=not self.Minimized
+if self.Minimized then
+Tw(self.Main,0.3,{Size=UDim2.new(0,630,0,42)})
+Tw(self.Shadow,0.3,{Size=UDim2.new(0,636,0,48)})
+else
+Tw(self.Main,0.3,{Size=UDim2.new(0,630,0,460)})
+Tw(self.Shadow,0.3,{Size=UDim2.new(0,636,0,466)})
+end
+end
+
+function Lynoria:SetStatus(a)
+local c=a and T.Green or T.Red
+Tw(self.StatusDot,0.3,{BackgroundColor3=c}) self.StatusGlow.Color=c
+end
+
+function Lynoria:Notify(title,msg,nt)
+nt=nt or "success"
+local ac=T.Text
+if nt=="warning" then ac=T.Yellow elseif nt=="error" then ac=T.Red end
+local nf=C("Frame",{Size=UDim2.new(1,0,0,60),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=101,BackgroundTransparency=1,Parent=self.NotifHolder})
+C("UICorner",{CornerRadius=T.Corner,Parent=nf})
+C("UIStroke",{Color=T.Border,Thickness=1,Parent=nf})
+local br=C("Frame",{Size=UDim2.new(0,3,0.6,0),Position=UDim2.new(0,6,0.2,0),BackgroundColor3=ac,BorderSizePixel=0,ZIndex=102,Parent=nf})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=br})
+C("TextLabel",{Text=title or"",Font=Enum.Font.GothamBold,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-24,0,20),Position=UDim2.new(0,16,0,8),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=102,Parent=nf})
+C("TextLabel",{Text=msg or"",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-24,0,20),Position=UDim2.new(0,16,0,30),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=102,Parent=nf})
+Tw(nf,0.3,{BackgroundTransparency=0})
+task.delay(3,function() local tw=Tw(nf,0.4,{BackgroundTransparency=1}) tw.Completed:Wait() nf:Destroy() end)
+end
+
+function Lynoria:AddTab(name,icon)
+local tab=setmetatable({},Tab)
+tab.Name=name tab.Icon=icon or"*" tab.Window=self tab.Elements={}
+
+tab.Button=C("TextButton",{Name=name,Text="",Size=UDim2.new(1,0,0,36),BackgroundColor3=T.Surface,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=5,Parent=self.TabList})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=tab.Button})
+
+tab.ActiveBar=C("Frame",{Size=UDim2.new(0,3,0.6,0),Position=UDim2.new(0,0,0.2,0),BackgroundColor3=T.Text,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=6,Parent=tab.Button})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=tab.ActiveBar})
+
+C("TextLabel",{Text=icon or"*",Font=Enum.Font.Gotham,TextSize=16,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,30,1,0),Position=UDim2.new(0,8,0,0),ZIndex=6,Parent=tab.Button})
+tab.TabLabel=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=13,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-44,1,0),Position=UDim2.new(0,38,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=tab.Button})
+
+tab.Page=C("ScrollingFrame",{Name=name.."Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=T.TextMuted,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false,ZIndex=4,Parent=self.Content})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,5),Parent=tab.Page})
+C("UIPadding",{PaddingTop=UDim.new(0,8),PaddingBottom=UDim.new(0,8),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12),Parent=tab.Page})
+
+tab.Button.MouseButton1Click:Connect(function() self:_SwitchTab(tab) end)
+tab.Button.MouseEnter:Connect(function() if self.ActiveTab~=tab then Tw(tab.Button,0.2,{BackgroundTransparency=0.5}) end end)
+tab.Button.MouseLeave:Connect(function() if self.ActiveTab~=tab then Tw(tab.Button,0.2,{BackgroundTransparency=1}) end end)
+
+table.insert(self.Tabs,tab)
+if #self.Tabs==1 then self:_SwitchTab(tab) end
+return tab
+end
+
+function Lynoria:_SwitchTab(tab)
+if self.ActiveTab then
+self.ActiveTab.Page.Visible=false
+Tw(self.ActiveTab.Button,0.2,{BackgroundTransparency=1})
+Tw(self.ActiveTab.ActiveBar,0.2,{BackgroundTransparency=1})
+Tw(self.ActiveTab.TabLabel,0.2,{TextColor3=T.TextDim})
+end
+self.ActiveTab=tab
+tab.Page.Visible=true
+Tw(tab.Button,0.2,{BackgroundTransparency=0.6})
+Tw(tab.ActiveBar,0.2,{BackgroundTransparency=0})
+Tw(tab.TabLabel,0.2,{TextColor3=T.Text})
+end
+
+function Lynoria:_SaveConfig(name)
+local data={}
+for flag,info in pairs(self.Flags) do data[flag]=info.Value end
+local json=HS:JSONEncode(data)
+if SW("Lynoria/configs/"..name..".json",json) then
+self:Notify("Config","Saved: "..name,"success")
+else self:Notify("Error","Cannot save","error") end
+end
+
+function Lynoria:_LoadConfig(name)
+local ok,raw=SR("Lynoria/configs/"..name..".json")
+if not ok then self:Notify("Error","Cannot load: "..name,"error") return end
+local s,data=pcall(function() return HS:JSONDecode(raw) end)
+if not s then self:Notify("Error","Corrupt config","error") return end
+for flag,value in pairs(data) do
+if self.Flags[flag] and self.Flags[flag].SetValue then self.Flags[flag].SetValue(value) end
+end
+self:Notify("Config","Loaded: "..name,"success")
+end
+
+function Lynoria:_DeleteConfig(name) SDF("Lynoria/configs/"..name..".json") self:Notify("Config","Deleted: "..name,"success") end
+
+function Lynoria:_SetAutoLoad(name)
+if name then SW("Lynoria/autoload.json",HS:JSONEncode({config=name})) self:Notify("Config","Autoload: "..name,"success")
+else SDF("Lynoria/autoload.json") end
+end
+
+function Lynoria:_AutoLoadConfig()
+if not SIF("Lynoria/autoload.json") then return end
+local ok,raw=SR("Lynoria/autoload.json")
+if not ok then return end
+local s,data=pcall(function() return HS:JSONDecode(raw) end)
+if s and data.config then self:_LoadConfig(data.config) end
+end
+
+function Lynoria:_GetConfigs()
+local files=SLF("Lynoria/configs")
+local configs={}
+for _,f in ipairs(files) do
+local name=f:match("([^/\\]+)%.json$")
+if name then table.insert(configs,name) end
+end
+return configs
+end
+
+function Lynoria:Destroy()
+for _,conn in ipairs(self.Connections) do pcall(function() conn:Disconnect() end) end
+if self.Gui then self.Gui:Destroy() end
+end
+
+-- COMPONENTS
+
+function Tab:AddToggle(name,default,callback,desc)
+default=default or false
+local val=default
+local h=C("Frame",{Size=UDim2.new(1,0,0,desc and 50 or 36),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=h})
+C("TextLabel",{Text=name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-70,0,20),Position=UDim2.new(0,12,0,desc and 6 or 8),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+if desc then C("TextLabel",{Text=desc,Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,-70,0,16),Position=UDim2.new(0,12,0,28),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h}) end
+local sw=C("Frame",{Size=UDim2.new(0,40,0,22),Position=UDim2.new(1,-52,0.5,-11),BackgroundColor3=val and T.ToggleOn or T.ToggleOff,BorderSizePixel=0,ZIndex=7,Parent=h})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=sw})
+local ci=C("Frame",{Size=UDim2.new(0,16,0,16),Position=val and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8),BackgroundColor3=val and T.Bg or T.TextDim,BorderSizePixel=0,ZIndex=8,Parent=sw})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=ci})
+local btn=C("TextButton",{Text="",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ZIndex=9,Parent=h})
+local function SV(v) val=v
+Tw(sw,0.2,{BackgroundColor3=v and T.ToggleOn or T.ToggleOff})
+Tw(ci,0.2,{Position=v and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8),BackgroundColor3=v and T.Bg or T.TextDim})
+if self.Window.Flags[name] then self.Window.Flags[name].Value=v end
+if callback then pcall(callback,v) end
+end
+btn.MouseButton1Click:Connect(function() SV(not val) end)
+btn.MouseEnter:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.1}) end)
+btn.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) end)
+self.Window.Flags[name]={Type="Toggle",Value=val,SetValue=SV}
+return {SetValue=SV,GetValue=function() return val end}
+end
+
+function Tab:AddButton(name,callback)
+local btn=C("TextButton",{Text=name,Font=Enum.Font.GothamMedium,TextSize=13,TextColor3=T.Text,Size=UDim2.new(1,0,0,34),BackgroundColor3=T.Surface,BackgroundTransparency=0.3,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=btn})
+btn.MouseEnter:Connect(function() Tw(btn,0.2,{BackgroundTransparency=0,BackgroundColor3=T.SurfHover}) end)
+btn.MouseLeave:Connect(function() Tw(btn,0.2,{BackgroundTransparency=0.3,BackgroundColor3=T.Surface}) end)
+btn.MouseButton1Click:Connect(function()
+Tw(btn,0.1,{BackgroundColor3=T.SurfActive})
+task.delay(0.15,function() Tw(btn,0.2,{BackgroundColor3=T.Surface}) end)
+if callback then pcall(callback) end
+end)
+end
+
+function Tab:AddSlider(name,min,max,default,callback,step)
+min=min or 0 max=max or 100 default=default or min step=step or 1
+local val=default
+local h=C("Frame",{Size=UDim2.new(1,0,0,50),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=h})
+C("TextLabel",{Text=name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-60,0,20),Position=UDim2.new(0,12,0,4),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local vl=C("TextLabel",{Text=tostring(val),Font=Enum.Font.GothamBold,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,50,0,20),Position=UDim2.new(1,-56,0,4),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=6,Parent=h})
+local tr=C("Frame",{Size=UDim2.new(1,-24,0,6),Position=UDim2.new(0,12,0,32),BackgroundColor3=T.SliderTrack,BorderSizePixel=0,ZIndex=6,Parent=h})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=tr})
+local fl=C("Frame",{Size=UDim2.new((default-min)/(max-min),0,1,0),BackgroundColor3=T.SliderFill,BorderSizePixel=0,ZIndex=7,Parent=tr})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=fl})
+local kn=C("Frame",{Size=UDim2.new(0,14,0,14),Position=UDim2.new((default-min)/(max-min),-7,0.5,-7),BackgroundColor3=T.Text,BorderSizePixel=0,ZIndex=8,Parent=tr})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=kn})
+local function SV(v) v=math.clamp(v,min,max) v=math.floor(v/step+0.5)*step val=v
+local pct=(v-min)/(max-min) fl.Size=UDim2.new(pct,0,1,0) kn.Position=UDim2.new(pct,-7,0.5,-7) vl.Text=tostring(v)
+if self.Window.Flags[name] then self.Window.Flags[name].Value=v end
+if callback then pcall(callback,v) end
+end
+local sliding=false
+local ib=C("TextButton",{Text="",Size=UDim2.new(1,0,1,10),Position=UDim2.new(0,0,0,-5),BackgroundTransparency=1,ZIndex=9,Parent=tr})
+local function upd(inp) local ax=tr.AbsolutePosition.X local aw=tr.AbsoluteSize.X local pct=math.clamp((inp.Position.X-ax)/aw,0,1) SV(min+pct*(max-min)) end
+ib.InputBegan:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 then sliding=true upd(inp) end end)
+UIS.InputChanged:Connect(function(inp) if sliding and inp.UserInputType==Enum.UserInputType.MouseMovement then upd(inp) end end)
+UIS.InputEnded:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 then sliding=false end end)
+h.MouseEnter:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.1}) end)
+h.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) end)
+self.Window.Flags[name]={Type="Slider",Value=val,SetValue=SV}
+return {SetValue=SV,GetValue=function() return val end}
+end
+
+function Tab:AddDropdown(name,options,default,callback)
+options=options or {} local sel=default or options[1] local opened=false
+local h=C("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=h})
+C("TextLabel",{Text=name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.5,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local db=C("TextButton",{Text=tostring(sel).." v",Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.45,-8,0,26),Position=UDim2.new(0.55,0,0,5),BorderSizePixel=0,ZIndex=7,Parent=h})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=db})
+local lf=C("ScrollingFrame",{Size=UDim2.new(0,200,0,math.min(#options*28+8,150)),BackgroundColor3=T.Bg2,BorderSizePixel=0,Visible=false,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=50,Parent=self.Window.Gui})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=lf})
+C("UIStroke",{Color=T.Border,Thickness=1,Parent=lf})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,1),Parent=lf})
+C("UIPadding",{PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4),Parent=lf})
+for i,opt in ipairs(options) do
+local ob=C("TextButton",{Text="  "..tostring(opt),Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Surface,BackgroundTransparency=0.5,Size=UDim2.new(1,0,0,26),BorderSizePixel=0,ZIndex=52,LayoutOrder=i,Parent=lf})
+C("UICorner",{CornerRadius=UDim.new(0,4),Parent=ob})
+ob.MouseEnter:Connect(function() Tw(ob,0.15,{BackgroundTransparency=0,TextColor3=T.Text}) end)
+ob.MouseLeave:Connect(function() Tw(ob,0.15,{BackgroundTransparency=0.5,TextColor3=T.TextDim}) end)
+ob.MouseButton1Click:Connect(function() sel=opt db.Text=tostring(opt).." v" lf.Visible=false opened=false
+if self.Window.Flags[name] then self.Window.Flags[name].Value=sel end
+if callback then pcall(callback,sel) end end)
+end
+db.MouseButton1Click:Connect(function() opened=not opened
+local ap=db.AbsolutePosition local as=db.AbsoluteSize
+lf.Position=UDim2.new(0,ap.X,0,ap.Y+as.Y+4) lf.Size=UDim2.new(0,as.X,0,math.min(#options*28+8,150))
+lf.Visible=opened end)
+h.MouseEnter:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.1}) end)
+h.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) end)
+local function SV(v) sel=v db.Text=tostring(v).." v" if self.Window.Flags[name] then self.Window.Flags[name].Value=v end end
+self.Window.Flags[name]={Type="Dropdown",Value=sel,SetValue=SV}
+return {SetValue=SV,GetValue=function() return sel end}
+end
+
+function Tab:AddTextBox(name,placeholder,callback)
+local val=""
+local h=C("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=h})
+C("TextLabel",{Text=name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.4,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local inp=C("TextBox",{Text="",PlaceholderText=placeholder or"...",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.55,-8,0,26),Position=UDim2.new(0.45,0,0,5),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=h})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=inp})
+C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=inp})
+inp.FocusLost:Connect(function() val=inp.Text if self.Window.Flags[name] then self.Window.Flags[name].Value=val end if callback then pcall(callback,val) end end)
+local function SV(v) val=v inp.Text=v if self.Window.Flags[name] then self.Window.Flags[name].Value=v end end
+h.MouseEnter:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.1}) end)
+h.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) end)
+self.Window.Flags[name]={Type="TextBox",Value=val,SetValue=SV}
+return {SetValue=SV,GetValue=function() return val end}
+end
+
+function Tab:AddLabel(text)
+local l=C("TextLabel",{Text=text,Font=Enum.Font.GothamBold,TextSize=13,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,24),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
+return {SetText=function(t) l.Text=t end}
+end
+
+function Tab:AddSeparator(text)
+local h=C("Frame",{Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
+if text then
+C("TextLabel",{Text=string.upper(text),Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0.4,0,1,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+C("Frame",{Size=UDim2.new(0.58,0,0,1),Position=UDim2.new(0.42,0,0.5,0),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=6,Parent=h})
+else
+C("Frame",{Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,0.5,0),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=6,Parent=h})
+end
+end
+
+function Tab:AddKeybind(name,default,callback)
+local ck=default or Enum.KeyCode.Unknown local listening=false
+local h=C("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=h})
+C("TextLabel",{Text=name,Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-90,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local kb=C("TextButton",{Text="["..ck.Name.."]",Font=Enum.Font.GothamBold,TextSize=11,TextColor3=T.TextDim,BackgroundColor3=T.SurfHover,Size=UDim2.new(0,70,0,26),Position=UDim2.new(1,-78,0,5),BorderSizePixel=0,ZIndex=7,Parent=h})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=kb})
+kb.MouseButton1Click:Connect(function() listening=true kb.Text="[...]" Tw(kb,0.2,{TextColor3=T.Text}) end)
+UIS.InputBegan:Connect(function(inp,gpe)
+if listening and inp.UserInputType==Enum.UserInputType.Keyboard then
+ck=inp.KeyCode kb.Text="["..ck.Name.."]" listening=false Tw(kb,0.2,{TextColor3=T.TextDim})
+if self.Window.Flags[name] then self.Window.Flags[name].Value=ck.Name end
+end
+if not listening and not gpe and inp.KeyCode==ck then if callback then pcall(callback,ck) end end
+end)
+local function SV(v) if type(v)=="string" then local o,k=pcall(function() return Enum.KeyCode[v] end) if o then ck=k end
+elseif typeof(v)=="EnumItem" then ck=v end
+kb.Text="["..ck.Name.."]" if self.Window.Flags[name] then self.Window.Flags[name].Value=ck.Name end end
+h.MouseEnter:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.1}) end)
+h.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) end)
+self.Window.Flags[name]={Type="Keybind",Value=ck.Name,SetValue=SV}
+return {SetValue=SV,GetValue=function() return ck end}
+end
+
+function Tab:AddConfigSection()
+local win=self.Window local selCfg=nil
+self:AddLabel("Config Manager")
+self:AddSeparator()
+local ch=C("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=ch})
+local ci=C("TextBox",{Text="",PlaceholderText="Config name...",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.65,-8,0,26),Position=UDim2.new(0,6,0,5),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=ch})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=ci})
+C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=ci})
+local crb=C("TextButton",{Text="+ Create",Font=Enum.Font.GothamBold,TextSize=12,TextColor3=T.Bg,BackgroundColor3=T.Text,Size=UDim2.new(0.33,-4,0,26),Position=UDim2.new(0.66,2,0,5),BorderSizePixel=0,ZIndex=7,Parent=ch})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=crb})
+
+local sl=C("TextLabel",{Text="No config selected",Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,22),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
+
+local lc=C("Frame",{Size=UDim2.new(1,0,0,140),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=lc})
+C("UIStroke",{Color=T.Border,Thickness=1,Parent=lc})
+local ls=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=lc})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ls})
+C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ls})
+
+local ah=C("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
+local bns={"Load","Save","Delete","Autoload"}
+local bw=1/#bns
+local refreshConfigList
+for i,bn in ipairs(bns) do
+local ab=C("TextButton",{Text=bn,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(bw,-4,1,0),Position=UDim2.new(bw*(i-1),2,0,0),BorderSizePixel=0,ZIndex=6,Parent=ah})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=ab})
+ab.MouseEnter:Connect(function() Tw(ab,0.15,{BackgroundColor3=T.SurfHover}) end)
+ab.MouseLeave:Connect(function() Tw(ab,0.15,{BackgroundColor3=T.Surface}) end)
+ab.MouseButton1Click:Connect(function()
+if not selCfg then win:Notify("Config","Select a config first","warning") return end
+if i==1 then win:_LoadConfig(selCfg)
+elseif i==2 then win:_SaveConfig(selCfg)
+elseif i==3 then win:_DeleteConfig(selCfg) selCfg=nil sl.Text="No config selected" refreshConfigList()
+elseif i==4 then win:_SetAutoLoad(selCfg) end
+end)
+end
+
+refreshConfigList=function()
+for _,c in ipairs(ls:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+local cfgs=win:_GetConfigs()
+for idx,cn in ipairs(cfgs) do
+local cb=C("TextButton",{Text="  "..cn,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Surface,BackgroundTransparency=0.5,Size=UDim2.new(1,0,0,28),BorderSizePixel=0,ZIndex=7,LayoutOrder=idx,Parent=ls})
+C("UICorner",{CornerRadius=UDim.new(0,4),Parent=cb})
+cb.MouseEnter:Connect(function() if selCfg~=cn then Tw(cb,0.15,{BackgroundTransparency=0.2}) end end)
+cb.MouseLeave:Connect(function() if selCfg~=cn then Tw(cb,0.15,{BackgroundTransparency=0.5}) end end)
+cb.MouseButton1Click:Connect(function() selCfg=cn sl.Text="Selected: "..cn
+for _,c2 in ipairs(ls:GetChildren()) do if c2:IsA("TextButton") then Tw(c2,0.15,{BackgroundTransparency=0.5,TextColor3=T.TextDim}) end end
+Tw(cb,0.15,{BackgroundTransparency=0,TextColor3=T.Text}) end)
+end
+end
+
+crb.MouseButton1Click:Connect(function()
+local cn=ci.Text:gsub("[^%w%s_-]",""):gsub("^%s+",""):gsub("%s+$","")
+if cn=="" then win:Notify("Config","Invalid name","error") return end
+for _,n in ipairs(win:_GetConfigs()) do if n==cn then win:Notify("Config","Already exists","warning") return end end
+if SW("Lynoria/configs/"..cn..".json","{}") then win:Notify("Config","Created: "..cn,"success") ci.Text="" refreshConfigList()
+else win:Notify("Config","Creation error","error") end
+end)
+crb.MouseEnter:Connect(function() Tw(crb,0.15,{BackgroundColor3=T.TextDim}) end)
+crb.MouseLeave:Connect(function() Tw(crb,0.15,{BackgroundColor3=T.Text}) end)
+
+self:AddSeparator()
+self:AddToggle("Auto-load on inject",false,function(v)
+if v and selCfg then win:_SetAutoLoad(selCfg) elseif not v then win:_SetAutoLoad(nil) end
+end,"Automatically loads selected config")
+task.defer(refreshConfigList)
+end
+
+-- ============================================================
+-- LIBRARY RETURN — allows loadstring usage
+-- ============================================================
+return Lynoria
+
