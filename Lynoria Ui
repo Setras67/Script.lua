@@ -2,7 +2,7 @@
 -- ============================================================
 -- HARDCODED BRANDING (mandatory ??? cannot be removed)
 -- ============================================================
-local LOGO_ID = "rbxassetid://XXXXX" -- Owner: replace XXXXX with your asset ID
+local LOGO_ID = "rbxassetid://126320999437943" -- Lynoria Logo
 local DISCORD_URL = "https://discord.gg/efe89PftR8"
 local OWNER = "Setras"
 local VERSION = "2.0"
