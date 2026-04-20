@@ -1,4 +1,15 @@
 --[[ LYNORIA UI LIBRARY v2.0 | Owner: Setras ]]
+-- ============================================================
+-- HARDCODED BRANDING (mandatory ??? cannot be removed)
+-- ============================================================
+local LOGO_ID = "rbxassetid://XXXXX" -- Owner: replace XXXXX with your asset ID
+local DISCORD_URL = "https://discord.gg/efe89PftR8"
+local OWNER = "Setras"
+local VERSION = "2.0"
+
+-- ============================================================
+-- SERVICES
+-- ============================================================
 local Players=game:GetService("Players")
 local TS=game:GetService("TweenService")
 local UIS=game:GetService("UserInputService")
@@ -6,7 +17,9 @@ local HS=game:GetService("HttpService")
 local CG=game:GetService("CoreGui")
 local P=Players.LocalPlayer
 
+-- ============================================================
 -- THEME PRESETS
+-- ============================================================
 local Presets={
 PureBlack={Bg=Color3.fromRGB(0,0,0),Bg2=Color3.fromRGB(8,8,8),Surface=Color3.fromRGB(14,14,14),SurfHover=Color3.fromRGB(22,22,22),SurfActive=Color3.fromRGB(30,30,30),Border=Color3.fromRGB(28,28,28),Text=Color3.fromRGB(255,255,255),TextDim=Color3.fromRGB(175,175,175),TextMuted=Color3.fromRGB(95,95,95),Green=Color3.fromRGB(0,255,120),Red=Color3.fromRGB(255,50,80),Yellow=Color3.fromRGB(255,210,0),ToggleOn=Color3.fromRGB(255,255,255),ToggleOff=Color3.fromRGB(35,35,35),SliderFill=Color3.fromRGB(255,255,255),SliderTrack=Color3.fromRGB(28,28,28)},
 Midnight={Bg=Color3.fromRGB(10,10,15),Bg2=Color3.fromRGB(13,13,20),Surface=Color3.fromRGB(18,18,26),SurfHover=Color3.fromRGB(26,26,37),SurfActive=Color3.fromRGB(32,32,45),Border=Color3.fromRGB(30,30,42),Text=Color3.fromRGB(240,240,255),TextDim=Color3.fromRGB(160,160,190),TextMuted=Color3.fromRGB(85,85,119),Green=Color3.fromRGB(0,255,136),Red=Color3.fromRGB(255,51,85),Yellow=Color3.fromRGB(255,215,0),ToggleOn=Color3.fromRGB(240,240,255),ToggleOff=Color3.fromRGB(40,40,55),SliderFill=Color3.fromRGB(240,240,255),SliderTrack=Color3.fromRGB(30,30,45)},
@@ -17,6 +30,9 @@ Slate={Bg=Color3.fromRGB(13,17,23),Bg2=Color3.fromRGB(18,24,32),Surface=Color3.f
 local T={} for k,v in pairs(Presets.PureBlack) do T[k]=v end
 T.Corner=UDim.new(0,8) T.CornerSm=UDim.new(0,6)
 
+-- ============================================================
+-- UTILITY HELPERS
+-- ============================================================
 local function C(cls,pr) local i=Instance.new(cls) local p2 for k,v in pairs(pr) do if k=="Parent" then p2=v else i[k]=v end end if p2 then i.Parent=p2 end return i end
 local function Tw(o,t,pr) local tw=TS:Create(o,TweenInfo.new(t or 0.3,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),pr) tw:Play() return tw end
 
@@ -33,15 +49,28 @@ local function SLF(p) local o,f=pcall(function() return listfiles(p) end) return
 local function SDF(p) pcall(function() delfile(p) end) end
 local function SIF(p) local o,r=pcall(function() return isfile(p) end) return o and r end
 
+-- ============================================================
+-- CORE CLASSES
+-- ============================================================
 local Lynoria={} Lynoria.__index=Lynoria
 local Tab={} Tab.__index=Tab
 
-function Lynoria.new(title, opts)
-opts=opts or {}
+function Lynoria:GetVersion() return VERSION end
+
+function Lynoria.new(title)
 local self=setmetatable({},Lynoria)
 self.Title=title or "Lynoria" self.Tabs={} self.ActiveTab=nil self.Flags={} self.Connections={} self.UIElements={}
 self.ToggleKey=Enum.KeyCode.RightShift self.Visible=true self.Minimized=false self.CurrentTheme="PureBlack"
+self._notifQueue={} self._notifActive=0 self._maxNotifs=3
 SMF("Lynoria") SMF("Lynoria/configs") SMF("Lynoria/themes")
+
+-- Load saved keybind
+pcall(function()
+if SIF("Lynoria/settings.json") then
+local ok,raw=SR("Lynoria/settings.json")
+if ok then local s,d=pcall(function() return HS:JSONDecode(raw) end)
+if s and d.ToggleKey then local o2,k=pcall(function() return Enum.KeyCode[d.ToggleKey] end) if o2 then self.ToggleKey=k end end end
+end end)
 
 self.Gui=C("ScreenGui",{Name="Lynoria",ZIndexBehavior=Enum.ZIndexBehavior.Global,ResetOnSpawn=false})
 local ok=pcall(function() self.Gui.Parent=CG end) if not ok then self.Gui.Parent=P:WaitForChild("PlayerGui") end
@@ -54,13 +83,14 @@ C("UICorner",{CornerRadius=UDim.new(0,12),Parent=self.Main})
 self.MainStroke=C("UIStroke",{Color=T.Border,Thickness=1,Parent=self.Main})
 table.insert(self.UIElements,{obj=self.Main,prop="BackgroundColor3",key="Bg"})
 
+-- TITLEBAR
 self.TitleBar=C("Frame",{Size=UDim2.new(1,0,0,48),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 C("Frame",{Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.TitleBar})
 table.insert(self.UIElements,{obj=self.TitleBar,prop="BackgroundColor3",key="Bg2"})
 
--- Replace XXXXX with your Roblox asset ID for the logo
-if opts.LogoId then
-C("ImageLabel",{Image=opts.LogoId,BackgroundTransparency=1,Size=UDim2.new(0,120,0,32),Position=UDim2.new(0,14,0.5,-16),ScaleType=Enum.ScaleType.Fit,ZIndex=4,Parent=self.TitleBar})
+-- BUG FIX 1: Hardcoded branding ??? always render logo
+if LOGO_ID and LOGO_ID~="" and LOGO_ID~="rbxassetid://XXXXX" then
+C("ImageLabel",{Image=LOGO_ID,BackgroundTransparency=1,Size=UDim2.new(0,110,0,34),Position=UDim2.new(0,12,0.5,-17),ScaleType=Enum.ScaleType.Fit,ZIndex=4,Parent=self.TitleBar})
 else
 C("TextLabel",{Text="Lynoria",Font=Enum.Font.GothamBold,TextSize=18,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,200,1,0),Position=UDim2.new(0,16,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=4,Parent=self.TitleBar})
 end
@@ -69,14 +99,25 @@ MkDrag(self.Main,self.TitleBar)
 self.Main:GetPropertyChangedSignal("Position"):Connect(function()
 self.Shadow.Position=UDim2.new(self.Main.Position.X.Scale,self.Main.Position.X.Offset-4,self.Main.Position.Y.Scale,self.Main.Position.Y.Offset-4) end)
 
+-- Close button (X)
 local cb=C("TextButton",{Text="X",Font=Enum.Font.GothamBold,TextSize=14,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,36,0,32),Position=UDim2.new(1,-44,0,8),ZIndex=5,Parent=self.TitleBar})
 cb.MouseEnter:Connect(function() Tw(cb,0.2,{TextColor3=T.Red}) end) cb.MouseLeave:Connect(function() Tw(cb,0.2,{TextColor3=T.TextDim}) end)
 cb.MouseButton1Click:Connect(function() self:Toggle() end)
 
-local mb=C("TextButton",{Text="-",Font=Enum.Font.GothamBold,TextSize=20,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,36,0,32),Position=UDim2.new(1,-80,0,8),ZIndex=5,Parent=self.TitleBar})
-mb.MouseEnter:Connect(function() Tw(mb,0.2,{TextColor3=T.Text}) end) mb.MouseLeave:Connect(function() Tw(mb,0.2,{TextColor3=T.TextDim}) end)
-mb.MouseButton1Click:Connect(function() self:Minimize() end)
+-- Minimize button (???/+)
+self.MinBtn=C("TextButton",{Text=string.char(0xE2,0x80,0x94),Font=Enum.Font.GothamBold,TextSize=14,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,36,0,32),Position=UDim2.new(1,-80,0,8),ZIndex=5,Parent=self.TitleBar})
+self.MinBtn.MouseEnter:Connect(function() Tw(self.MinBtn,0.2,{TextColor3=T.Text}) end) self.MinBtn.MouseLeave:Connect(function() Tw(self.MinBtn,0.2,{TextColor3=T.TextDim}) end)
+self.MinBtn.MouseButton1Click:Connect(function() self:Minimize() end)
 
+-- FEATURE 1: Discord button
+local dcBtn=C("TextButton",{Text="Discord",Font=Enum.Font.GothamBold,TextSize=11,TextColor3=Color3.fromRGB(255,255,255),BackgroundColor3=Color3.fromRGB(88,101,242),Size=UDim2.new(0,64,0,26),Position=UDim2.new(1,-150,0,11),BorderSizePixel=0,ZIndex=5,Parent=self.TitleBar})
+C("UICorner",{CornerRadius=UDim.new(0,13),Parent=dcBtn})
+C("UIStroke",{Color=Color3.fromRGB(108,121,255),Thickness=1,Transparency=0.5,Parent=dcBtn})
+dcBtn.MouseEnter:Connect(function() Tw(dcBtn,0.2,{BackgroundColor3=Color3.fromRGB(108,121,255)}) end)
+dcBtn.MouseLeave:Connect(function() Tw(dcBtn,0.2,{BackgroundColor3=Color3.fromRGB(88,101,242)}) end)
+dcBtn.MouseButton1Click:Connect(function() pcall(setclipboard,DISCORD_URL) self:Notify("Lynoria","Discord link copied!","success") end)
+
+-- SIDEBAR
 self.Sidebar=C("Frame",{Size=UDim2.new(0,165,1,-82),Position=UDim2.new(0,0,0,48),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 C("Frame",{Size=UDim2.new(0,1,1,0),Position=UDim2.new(1,-1,0,0),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
 table.insert(self.UIElements,{obj=self.Sidebar,prop="BackgroundColor3",key="Bg2"})
@@ -84,9 +125,11 @@ self.TabList=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-8),Position=UDim2.new(0,
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=self.TabList})
 C("UIPadding",{PaddingTop=UDim.new(0,4),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6),Parent=self.TabList})
 
+-- CONTENT
 self.Content=C("Frame",{Size=UDim2.new(1,-165,1,-82),Position=UDim2.new(0,165,0,48),BackgroundTransparency=1,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 
-self.BottomBar=C("Frame",{Size=UDim2.new(1,0,0,34),Position=UDim2.new(0,0,1,-34),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+-- BOTTOMBAR (ClipsDescendants to prevent overflow ??? BUG FIX 2 related)
+self.BottomBar=C("Frame",{Size=UDim2.new(1,0,0,34),Position=UDim2.new(0,0,1,-34),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=3,Parent=self.Main})
 C("Frame",{Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=3,Parent=self.BottomBar})
 table.insert(self.UIElements,{obj=self.BottomBar,prop="BackgroundColor3",key="Bg2"})
 
@@ -97,29 +140,58 @@ self.StatusText=C("TextLabel",{Text="Updated",Font=Enum.Font.GothamBold,TextSize
 
 task.spawn(function() while self.Gui and self.Gui.Parent do Tw(self.StatusGlow,0.8,{Transparency=0.9}) task.wait(0.8) Tw(self.StatusGlow,0.8,{Transparency=0.3}) task.wait(0.8) end end)
 
-C("TextLabel",{Text="Credits | Owner: Setras",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,170,1,0),Position=UDim2.new(1,-182,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5,Parent=self.BottomBar})
+C("TextLabel",{Text="Credits | Owner: "..OWNER,Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,170,1,0),Position=UDim2.new(1,-182,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5,Parent=self.BottomBar})
 
+-- NOTIFICATION HOLDER
 self.NotifHolder=C("Frame",{Size=UDim2.new(0,280,0,400),Position=UDim2.new(1,-290,0,10),BackgroundTransparency=1,ZIndex=100,Parent=self.Gui})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6),VerticalAlignment=Enum.VerticalAlignment.Top,Parent=self.NotifHolder})
 
+-- Toggle key input
 UIS.InputBegan:Connect(function(inp,gpe) if not gpe and inp.KeyCode==self.ToggleKey then self:Toggle() end end)
 
+-- Animate in
 self.Main.Size=UDim2.new(0,780,0,0) self.Shadow.Size=UDim2.new(0,788,0,0)
 task.defer(function() Tw(self.Main,0.4,{Size=UDim2.new(0,780,0,540)}) Tw(self.Shadow,0.4,{Size=UDim2.new(0,788,0,548)}) end)
 task.defer(function() task.wait(0.5) self:_AutoLoadConfig() self:_AutoLoadTheme() end)
 return self
 end
+-- ============================================================
+-- CORE METHODS
+-- ============================================================
 
 function Lynoria:Toggle()
 self.Visible=not self.Visible
-if self.Visible then self.Gui.Enabled=true Tw(self.Main,0.35,{Size=UDim2.new(0,780,0,540)}) Tw(self.Shadow,0.35,{Size=UDim2.new(0,788,0,548)})
-else local tw=Tw(self.Main,0.25,{Size=UDim2.new(0,780,0,0)}) Tw(self.Shadow,0.25,{Size=UDim2.new(0,788,0,0)}) tw.Completed:Wait() self.Gui.Enabled=false end
+if self.Visible then
+self.Gui.Enabled=true
+Tw(self.Main,0.35,{Size=UDim2.new(0,780,0,self.Minimized and 48 or 540)})
+Tw(self.Shadow,0.35,{Size=UDim2.new(0,788,0,self.Minimized and 56 or 548)})
+else
+local tw=Tw(self.Main,0.25,{Size=UDim2.new(0,780,0,0)})
+Tw(self.Shadow,0.25,{Size=UDim2.new(0,788,0,0)})
+tw.Completed:Wait() self.Gui.Enabled=false
+end
 end
 
+-- BUG FIX 2: Minimize hides Sidebar/Content/BottomBar, changes button text
 function Lynoria:Minimize()
 self.Minimized=not self.Minimized
-if self.Minimized then Tw(self.Main,0.3,{Size=UDim2.new(0,780,0,48)}) Tw(self.Shadow,0.3,{Size=UDim2.new(0,788,0,56)})
-else Tw(self.Main,0.3,{Size=UDim2.new(0,780,0,540)}) Tw(self.Shadow,0.3,{Size=UDim2.new(0,788,0,548)}) end
+if self.Minimized then
+self.Sidebar.Visible=false
+self.Content.Visible=false
+self.BottomBar.Visible=false
+self.MinBtn.Text="+"
+Tw(self.Main,0.3,{Size=UDim2.new(0,780,0,48)})
+Tw(self.Shadow,0.3,{Size=UDim2.new(0,788,0,56)})
+else
+local tw=Tw(self.Main,0.3,{Size=UDim2.new(0,780,0,540)})
+Tw(self.Shadow,0.3,{Size=UDim2.new(0,788,0,548)})
+tw.Completed:Connect(function()
+self.Sidebar.Visible=true
+self.Content.Visible=true
+self.BottomBar.Visible=true
+end)
+self.MinBtn.Text=string.char(0xE2,0x80,0x94)
+end
 end
 
 function Lynoria:SetStatus(a)
@@ -128,9 +200,13 @@ Tw(self.StatusDot,0.3,{BackgroundColor3=col}) self.StatusGlow.Color=col
 Tw(self.StatusText,0.3,{TextColor3=col}) self.StatusText.Text=txt
 end
 
+-- Notification queue: max 3 visible, newer ones queue
 function Lynoria:Notify(title,msg,nt)
 nt=nt or "success" local ac=T.Text
 if nt=="warning" then ac=T.Yellow elseif nt=="error" then ac=T.Red end
+
+local function showNotif()
+self._notifActive=self._notifActive+1
 local nf=C("Frame",{Size=UDim2.new(1,0,0,65),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=101,BackgroundTransparency=1,Parent=self.NotifHolder})
 C("UICorner",{CornerRadius=T.Corner,Parent=nf}) C("UIStroke",{Color=T.Border,Thickness=1,Parent=nf})
 local br=C("Frame",{Size=UDim2.new(0,3,0.6,0),Position=UDim2.new(0,6,0.2,0),BackgroundColor3=ac,BorderSizePixel=0,ZIndex=102,Parent=nf})
@@ -138,9 +214,20 @@ C("UICorner",{CornerRadius=UDim.new(1,0),Parent=br})
 C("TextLabel",{Text=title or"",Font=Enum.Font.GothamBold,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-24,0,22),Position=UDim2.new(0,18,0,8),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=102,Parent=nf})
 C("TextLabel",{Text=msg or"",Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-24,0,20),Position=UDim2.new(0,18,0,32),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=102,Parent=nf})
 Tw(nf,0.3,{BackgroundTransparency=0})
-task.delay(3,function() local tw=Tw(nf,0.4,{BackgroundTransparency=1}) tw.Completed:Wait() nf:Destroy() end)
+task.delay(3,function()
+local tw2=Tw(nf,0.4,{BackgroundTransparency=1}) tw2.Completed:Wait() nf:Destroy()
+self._notifActive=self._notifActive-1
+if #self._notifQueue>0 then local next=table.remove(self._notifQueue,1) next() end
+end)
 end
 
+if self._notifActive<self._maxNotifs then showNotif()
+else table.insert(self._notifQueue,showNotif) end
+end
+
+-- ============================================================
+-- TAB SYSTEM
+-- ============================================================
 function Lynoria:AddTab(name,icon)
 local tab=setmetatable({},Tab) tab.Name=name tab.Icon=icon or"*" tab.Window=self tab.Elements={}
 tab.Button=C("TextButton",{Name=name,Text="",Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=5,Parent=self.TabList})
@@ -163,6 +250,9 @@ if self.ActiveTab then self.ActiveTab.Page.Visible=false Tw(self.ActiveTab.Butto
 self.ActiveTab=tab tab.Page.Visible=true Tw(tab.Button,0.2,{BackgroundTransparency=0.6}) Tw(tab.ActiveBar,0.2,{BackgroundTransparency=0}) Tw(tab.TabLabel,0.2,{TextColor3=T.Text})
 end
 
+-- ============================================================
+-- CONFIG SYSTEM
+-- ============================================================
 function Lynoria:_SaveConfig(name)
 local data={} for flag,info in pairs(self.Flags) do data[flag]=info.Value end
 if SW("Lynoria/configs/"..name..".json",HS:JSONEncode(data)) then self:Notify("Config","Saved: "..name,"success")
@@ -180,7 +270,11 @@ function Lynoria:_DeleteConfig(name) SDF("Lynoria/configs/"..name..".json") self
 function Lynoria:_SetAutoLoad(name) if name then SW("Lynoria/autoload.json",HS:JSONEncode({config=name})) self:Notify("Config","Autoload: "..name,"success") else SDF("Lynoria/autoload.json") end end
 function Lynoria:_AutoLoadConfig() if not SIF("Lynoria/autoload.json") then return end local ok,raw=SR("Lynoria/autoload.json") if not ok then return end local s,data=pcall(function() return HS:JSONDecode(raw) end) if s and data.config then self:_LoadConfig(data.config) end end
 function Lynoria:_GetConfigs() local files=SLF("Lynoria/configs") local cfgs={} for _,f in ipairs(files) do local n=f:match("([^/\\]+)%.json$") if n then table.insert(cfgs,n) end end return cfgs end
+function Lynoria:_GetAutoLoadName() if not SIF("Lynoria/autoload.json") then return nil end local ok,raw=SR("Lynoria/autoload.json") if not ok then return nil end local s,data=pcall(function() return HS:JSONDecode(raw) end) if s and data.config then return data.config end return nil end
 
+-- ============================================================
+-- THEME SYSTEM
+-- ============================================================
 function Lynoria:SetTheme(name)
 local theme=Presets[name]
 if not theme then local ok,raw=SR("Lynoria/themes/"..name..".json") if ok then local s,d=pcall(function() return HS:JSONDecode(raw) end)
@@ -198,10 +292,15 @@ end
 
 function Lynoria:LoadTheme(name) self:SetTheme(name) end
 function Lynoria:_AutoLoadTheme() if not SIF("Lynoria/active_theme.json") then return end local ok,raw=SR("Lynoria/active_theme.json") if not ok then return end local s,data=pcall(function() return HS:JSONDecode(raw) end) if s and data.theme then self:SetTheme(data.theme) end end
-function Lynoria:_GetThemes() local list={} for n,_ in pairs(Presets) do table.insert(list,n) end local files=SLF("Lynoria/themes") for _,f in ipairs(files) do local n=f:match("([^/\\]+)%.json$") if n then table.insert(list,n) end end return list end
+function Lynoria:_GetThemes()
+local list={} local order={"PureBlack","Midnight","Carbon","Slate"}
+for _,n in ipairs(order) do table.insert(list,n) end
+local files=SLF("Lynoria/themes") for _,f in ipairs(files) do local n=f:match("([^/\\]+)%.json$") if n then table.insert(list,n) end end return list
+end
 function Lynoria:Destroy() for _,c in ipairs(self.Connections) do pcall(function() c:Disconnect() end) end if self.Gui then self.Gui:Destroy() end end
-
+-- ============================================================
 -- COMPONENTS v2
+-- ============================================================
 
 function Tab:AddToggle(name,default,cb,desc)
 default=default or false local val=default
@@ -332,13 +431,43 @@ h.MouseLeave:Connect(function() Tw(h,0.2,{BackgroundTransparency=0.4}) Tw(hs5,0.
 self.Window.Flags[name]={Type="Keybind",Value=ck.Name,SetValue=SV}
 return {SetValue=SV,GetValue=function() return ck end}
 end
-
--- SETTINGS SECTION v2 (Config Manager + Theme Manager)
+-- ============================================================
+-- SETTINGS SECTION v2 (Keybind + Config + Theme + Custom Editor)
+-- ============================================================
 
 function Tab:AddSettingsSection()
 local win=self.Window local selCfg=nil
-self:AddLabel("Config Manager")
-self:AddSeparator()
+
+-- FEATURE 2: UI KEYBIND PICKER
+self:AddSeparator("UI Keybind")
+local kbRef=self:AddKeybind("Toggle UI Visibility",win.ToggleKey,function() end)
+local kbLabel=self:AddLabel("Current key: ["..win.ToggleKey.Name.."] -- press to open/close UI")
+
+-- Override keybind callback to update ToggleKey + save + update label
+local origFlag=win.Flags["Toggle UI Visibility"]
+if origFlag then
+local origSV=origFlag.SetValue
+origFlag.SetValue=function(v)
+origSV(v)
+local newKey=kbRef.GetValue()
+win.ToggleKey=newKey
+kbLabel.SetText("Current key: ["..newKey.Name.."] -- press to open/close UI")
+pcall(function() SW("Lynoria/settings.json",HS:JSONEncode({ToggleKey=newKey.Name})) end)
+end
+end
+-- Also hook InputBegan for live update
+UIS.InputBegan:Connect(function(inp,gpe)
+if origFlag and not gpe then
+local cur=kbRef.GetValue()
+if inp.KeyCode==cur and cur~=win.ToggleKey then
+win.ToggleKey=cur
+kbLabel.SetText("Current key: ["..cur.Name.."] ??? press to open/close UI")
+end
+end
+end)
+
+-- CONFIG MANAGER
+self:AddSeparator("Config Manager")
 
 local ch=C("Frame",{Size=UDim2.new(1,0,0,40),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=ch})
@@ -355,25 +484,40 @@ local ls=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ls})
 C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ls})
 
+-- Empty state label
+local emptyLabel=C("TextLabel",{Text="No configs yet -- create one above",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,0,0,28),TextXAlignment=Enum.TextXAlignment.Center,ZIndex=7,Visible=true,Parent=ls})
+
+-- FEATURE 3: Button reorder [Autoload, Load, Save, Delete]
 local ah=C("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
-local bns={"Load","Save","Delete","Autoload"} local bw=1/#bns local refreshCfg
+local bns={"Autoload","Load","Save","Delete"} local bw=1/#bns local refreshCfg
 for i,bn in ipairs(bns) do
 local ab=C("TextButton",{Text=bn,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(bw,-4,0,30),Position=UDim2.new(bw*(i-1),2,0,2),BorderSizePixel=0,ZIndex=6,Parent=ah})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=ab})
+if bn=="Delete" then
+ab.MouseEnter:Connect(function() Tw(ab,0.15,{BackgroundColor3=Color3.fromRGB(60,20,20)}) end)
+ab.MouseLeave:Connect(function() Tw(ab,0.15,{BackgroundColor3=T.Surface}) end)
+else
 ab.MouseEnter:Connect(function() Tw(ab,0.15,{BackgroundColor3=T.SurfHover}) end)
 ab.MouseLeave:Connect(function() Tw(ab,0.15,{BackgroundColor3=T.Surface}) end)
+end
 ab.MouseButton1Click:Connect(function()
 if not selCfg then win:Notify("Config","Select a config first","warning") return end
-if i==1 then win:_LoadConfig(selCfg) elseif i==2 then win:_SaveConfig(selCfg)
-elseif i==3 then win:_DeleteConfig(selCfg) selCfg=nil sl.Text="No config selected" refreshCfg()
-elseif i==4 then win:_SetAutoLoad(selCfg) end
+if bn=="Autoload" then win:_SetAutoLoad(selCfg) refreshCfg()
+elseif bn=="Load" then win:_LoadConfig(selCfg)
+elseif bn=="Save" then win:_SaveConfig(selCfg)
+elseif bn=="Delete" then win:_DeleteConfig(selCfg) selCfg=nil sl.Text="No config selected" refreshCfg()
+end
 end)
 end
 
 refreshCfg=function()
 for _,c in ipairs(ls:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-for idx,cn in ipairs(win:_GetConfigs()) do
-local cb2=C("TextButton",{Text="  "..cn,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Surface,BackgroundTransparency=0.5,Size=UDim2.new(1,0,0,28),BorderSizePixel=0,ZIndex=7,LayoutOrder=idx,Parent=ls})
+local cfgs=win:_GetConfigs()
+local autoName=win:_GetAutoLoadName()
+emptyLabel.Visible=(#cfgs==0)
+for idx,cn in ipairs(cfgs) do
+local prefix=(autoName and autoName==cn) and (string.char(0xE2,0x98,0x85).." ") or "  "
+local cb2=C("TextButton",{Text=prefix..cn,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.TextDim,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Surface,BackgroundTransparency=0.5,Size=UDim2.new(1,0,0,28),BorderSizePixel=0,ZIndex=7,LayoutOrder=idx,Parent=ls})
 C("UICorner",{CornerRadius=UDim.new(0,4),Parent=cb2})
 cb2.MouseEnter:Connect(function() if selCfg~=cn then Tw(cb2,0.15,{BackgroundTransparency=0.2}) end end)
 cb2.MouseLeave:Connect(function() if selCfg~=cn then Tw(cb2,0.15,{BackgroundTransparency=0.5}) end end)
@@ -382,7 +526,6 @@ for _,c2 in ipairs(ls:GetChildren()) do if c2:IsA("TextButton") then Tw(c2,0.15,
 Tw(cb2,0.15,{BackgroundTransparency=0,TextColor3=T.Text}) end)
 end end
 
--- BUG FIX: Create = Create + Save (not empty {})
 crb.MouseButton1Click:Connect(function()
 local cn=ci.Text:gsub("[^%w%s_-]",""):gsub("^%s+",""):gsub("%s+$","")
 if cn=="" then win:Notify("Config","Invalid name","error") return end
@@ -397,16 +540,8 @@ crb.MouseLeave:Connect(function() Tw(crb,0.15,{BackgroundColor3=T.Text}) end)
 self:AddSeparator()
 self:AddToggle("Auto-load on inject",false,function(v) if v and selCfg then win:_SetAutoLoad(selCfg) elseif not v then win:_SetAutoLoad(nil) end end,"Loads selected config automatically")
 task.defer(refreshCfg)
-
--- THEME MANAGER
+-- THEME MANAGER (continuation of AddSettingsSection)
 self:AddSeparator("Themes")
-
-local activeTheme=win.CurrentTheme
-local themeContainer=C("Frame",{Size=UDim2.new(1,0,0,140),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=themeContainer}) C("UIStroke",{Color=T.Border,Thickness=1,Parent=themeContainer})
-local ts=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=themeContainer})
-C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ts})
-C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ts})
 
 local function getThemeColors(name)
 if Presets[name] then return Presets[name] end
@@ -416,62 +551,195 @@ if s then local t={} for k,v in pairs(d) do if type(v)=="table" and v.R then t[k
 return nil
 end
 
+local themeContainer=C("Frame",{Size=UDim2.new(1,0,0,140),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=themeContainer}) C("UIStroke",{Color=T.Border,Thickness=1,Parent=themeContainer})
+local ts=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=themeContainer})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ts})
+C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ts})
+
+-- State for custom editor population
+local editorSliders={}
+local function populateEditor(tc)
+if not tc then return end
+local map={Bg="Bg",Surface="Surface",Border="Border",Text="Text",TextDim="TextDim",Accent="ToggleOn"}
+for label,key in pairs(map) do
+if editorSliders[label] and tc[key] then
+local col=tc[key]
+editorSliders[label].R.SetValue(math.floor(col.R*255))
+editorSliders[label].G.SetValue(math.floor(col.G*255))
+editorSliders[label].B.SetValue(math.floor(col.B*255))
+end
+end
+end
+
 local function refreshThemes()
 for _,c in ipairs(ts:GetChildren()) do if c:IsA("Frame") and c.Name~="UIListLayout" and c.Name~="UIPadding" then c:Destroy() end end
 local themes=win:_GetThemes()
+local presetCount=4
 for idx,tn in ipairs(themes) do
+-- Add divider between presets and custom
+if idx==presetCount+1 then
+local div=C("Frame",{Name="divider",Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10-5,Parent=ts})
+end
 local tc=getThemeColors(tn)
-local row=C("Frame",{Name="theme_"..tn,Size=UDim2.new(1,0,0,32),BackgroundColor3=T.Surface,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx,Parent=ts})
+local row=C("Frame",{Name="theme_"..tn,Size=UDim2.new(1,0,0,32),BackgroundColor3=T.Surface,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10,Parent=ts})
 C("UICorner",{CornerRadius=UDim.new(0,4),Parent=row})
-
 local bar=C("Frame",{Size=UDim2.new(0,3,0.6,0),Position=UDim2.new(0,2,0.2,0),BackgroundColor3=T.Text,BackgroundTransparency=win.CurrentTheme==tn and 0 or 1,BorderSizePixel=0,ZIndex=8,Parent=row})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=bar})
-
 C("TextLabel",{Text="  "..tn,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=win.CurrentTheme==tn and T.Text or T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-60,1,0),Position=UDim2.new(0,8,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=8,Parent=row})
-
 if tc then
 local px=C("Frame",{Size=UDim2.new(0,48,0,16),Position=UDim2.new(1,-56,0.5,-8),BackgroundTransparency=1,ZIndex=8,Parent=row})
-local colors={tc.Bg or T.Bg, tc.Text or T.Text, tc.ToggleOn or tc.SliderFill or T.Text}
+local colors={tc.Bg or T.Bg,tc.Text or T.Text,tc.ToggleOn or tc.SliderFill or T.Text}
 for ci2,col in ipairs(colors) do
 local dot=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(0,(ci2-1)*16,0.5,-6),BackgroundColor3=col,BorderSizePixel=0,ZIndex=9,Parent=px})
-C("UICorner",{CornerRadius=UDim.new(1,0),Parent=dot})
-C("UIStroke",{Color=T.Border,Thickness=1,Parent=dot})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=dot}) C("UIStroke",{Color=T.Border,Thickness=1,Parent=dot})
 end
 end
-
 local rbtn=C("TextButton",{Text="",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ZIndex=10,Parent=row})
 rbtn.MouseEnter:Connect(function() Tw(row,0.15,{BackgroundTransparency=0.2}) end)
 rbtn.MouseLeave:Connect(function() Tw(row,0.15,{BackgroundTransparency=0.5}) end)
 rbtn.MouseButton1Click:Connect(function()
 win:SetTheme(tn)
 win:Notify("Theme","Applied: "..tn,"success")
+populateEditor(tc)
 refreshThemes()
 end)
 end
 end
 task.defer(refreshThemes)
 
--- Custom theme creation
-self:AddSeparator()
-local newThemeName=""
-self:AddTextBox("New Theme Name","My Theme",function(v) newThemeName=v end)
+-- FEATURE 4: CUSTOM THEME EDITOR
+self:AddSeparator("Custom Theme Editor")
 
-local saveThemeBtn=C("TextButton",{Text="Save Current as Theme",Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,Size=UDim2.new(1,0,0,32),BackgroundColor3=T.Surface,BackgroundTransparency=0.3,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=saveThemeBtn})
-saveThemeBtn.MouseEnter:Connect(function() Tw(saveThemeBtn,0.15,{BackgroundTransparency=0,BackgroundColor3=T.SurfHover}) end)
-saveThemeBtn.MouseLeave:Connect(function() Tw(saveThemeBtn,0.15,{BackgroundTransparency=0.3,BackgroundColor3=T.Surface}) end)
-saveThemeBtn.MouseButton1Click:Connect(function()
-local n=newThemeName:gsub("[^%w%s_-]",""):gsub("^%s+",""):gsub("%s+$","")
-if n=="" then win:Notify("Theme","Enter a name first","warning") return end
-local colors={}
-for k,v in pairs(T) do if typeof(v)=="Color3" then colors[k]=v end end
-win:SaveTheme(n,colors)
-refreshThemes()
-end)
+local newThemeName=""
+local thNameBox=C("Frame",{Size=UDim2.new(1,0,0,40),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.Corner,Parent=thNameBox})
+C("TextLabel",{Text="Theme Name",Font=Enum.Font.Gotham,TextSize=13,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.4,0,1,0),Position=UDim2.new(0,14,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=thNameBox})
+local thInput=C("TextBox",{Text="",PlaceholderText="My Theme",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=12,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.55,-10,0,28),Position=UDim2.new(0.45,0,0,6),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=thNameBox})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=thInput}) C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=thInput})
+thInput.FocusLost:Connect(function() newThemeName=thInput.Text end)
+
+-- Live preview bar
+local previewBar=C("Frame",{Size=UDim2.new(1,0,0,20),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=UDim.new(0,4),Parent=previewBar})
+C("UIStroke",{Color=T.Border,Thickness=1,Parent=previewBar})
+local previewSegments={}
+local colorLabels={"Bg","Surface","Border","Text","TextDim","Accent"}
+for idx,_ in ipairs(colorLabels) do
+local seg=C("Frame",{Size=UDim2.new(1/#colorLabels,0,1,0),Position=UDim2.new((idx-1)/#colorLabels,0,0,0),BackgroundColor3=T.Bg,BorderSizePixel=0,ZIndex=6,Parent=previewBar})
+previewSegments[idx]=seg
 end
 
+local function updatePreview()
+local map={Bg="Bg",Surface="Surface",Border="Border",Text="Text",TextDim="TextDim",Accent="ToggleOn"}
+for idx,label in ipairs(colorLabels) do
+local key=map[label]
+if editorSliders[label] then
+local r=editorSliders[label].R.GetValue()
+local g=editorSliders[label].G.GetValue()
+local b=editorSliders[label].B.GetValue()
+previewSegments[idx].BackgroundColor3=Color3.fromRGB(r,g,b)
+end
+end
+end
+
+-- RGB slider rows for 6 colors
+local defaultColors={
+Bg={0,0,0},Surface={14,14,14},Border={28,28,28},
+Text={255,255,255},TextDim={175,175,175},Accent={255,255,255}
+}
+
+local function makeRGBSlider(parent,label,channel,default,onChange)
+local val=default
+local row=C("Frame",{Size=UDim2.new(1,0,0,24),BackgroundTransparency=1,ZIndex=5,Parent=parent})
+C("TextLabel",{Text=channel,Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,16,1,0),Position=UDim2.new(0,0,0,0),ZIndex=6,Parent=row})
+local track=C("Frame",{Size=UDim2.new(1,-60,0,4),Position=UDim2.new(0,20,0.5,-2),BackgroundColor3=T.SliderTrack,BorderSizePixel=0,ZIndex=6,Parent=row})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=track})
+local fill=C("Frame",{Size=UDim2.new(default/255,0,1,0),BackgroundColor3=T.SliderFill,BorderSizePixel=0,ZIndex=7,Parent=track})
+C("UICorner",{CornerRadius=UDim.new(1,0),Parent=fill})
+local numLabel=C("TextLabel",{Text=tostring(default),Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,30,1,0),Position=UDim2.new(1,-30,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=6,Parent=row})
+local sliding=false
+local ib=C("TextButton",{Text="",Size=UDim2.new(1,0,1,10),Position=UDim2.new(0,0,0,-5),BackgroundTransparency=1,ZIndex=9,Parent=track})
+local function sv(v) v=math.clamp(math.floor(v+0.5),0,255) val=v fill.Size=UDim2.new(v/255,0,1,0) numLabel.Text=tostring(v) if onChange then onChange() end end
+local function upd(inp) local ax=track.AbsolutePosition.X local aw=track.AbsoluteSize.X local pct=math.clamp((inp.Position.X-ax)/aw,0,1) sv(pct*255) end
+ib.InputBegan:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 then sliding=true upd(inp) end end)
+UIS.InputChanged:Connect(function(inp) if sliding and inp.UserInputType==Enum.UserInputType.MouseMovement then upd(inp) end end)
+UIS.InputEnded:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 then sliding=false end end)
+return {GetValue=function() return val end,SetValue=function(v) sv(v) end}
+end
+
+for _,label in ipairs(colorLabels) do
+local colorRow=C("Frame",{Size=UDim2.new(1,0,0,82),BackgroundColor3=T.Surface,BackgroundTransparency=0.4,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.Corner,Parent=colorRow})
+C("TextLabel",{Text=label,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,14,0,2),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=colorRow})
+local sliderContainer=C("Frame",{Size=UDim2.new(1,-20,0,58),Position=UDim2.new(0,10,0,22),BackgroundTransparency=1,ZIndex=5,Parent=colorRow})
+local dc=defaultColors[label]
+local rSlider=makeRGBSlider(sliderContainer,label,"R",dc[1],updatePreview)
+local gSlider=makeRGBSlider(sliderContainer,label,"G",dc[2],updatePreview)
+local bSlider=makeRGBSlider(sliderContainer,label,"B",dc[3],updatePreview)
+editorSliders[label]={R=rSlider,G=gSlider,B=bSlider}
+end
+task.defer(updatePreview)
+
+-- Save & Apply button
+local saveApplyBtn=C("TextButton",{Text="Save & Apply",Font=Enum.Font.GothamBold,TextSize=12,TextColor3=T.Bg,BackgroundColor3=T.Text,Size=UDim2.new(0.48,-2,0,32),Position=UDim2.new(0,0,0,0),BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=saveApplyBtn})
+saveApplyBtn.MouseEnter:Connect(function() Tw(saveApplyBtn,0.15,{BackgroundColor3=T.TextDim}) end)
+saveApplyBtn.MouseLeave:Connect(function() Tw(saveApplyBtn,0.15,{BackgroundColor3=T.Text}) end)
+
+-- Reset to Default button
+local resetBtn=C("TextButton",{Text="Reset to Default",Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(0.48,-2,0,32),Position=UDim2.new(0.52,2,0,0),BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=resetBtn})
+resetBtn.MouseEnter:Connect(function() Tw(resetBtn,0.15,{BackgroundColor3=T.SurfHover}) end)
+resetBtn.MouseLeave:Connect(function() Tw(resetBtn,0.15,{BackgroundColor3=T.Surface}) end)
+
+-- Wrap both buttons in a row frame
+local btnRow=C("Frame",{Size=UDim2.new(1,0,0,34),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
+saveApplyBtn.Parent=btnRow
+resetBtn.Parent=btnRow
+
+saveApplyBtn.MouseButton1Click:Connect(function()
+local n=newThemeName:gsub("[^%w%s_-]",""):gsub("^%s+",""):gsub("%s+$","")
+if n=="" then win:Notify("Theme","Enter a theme name first","warning") return end
+local colors={}
+local map={Bg="Bg",Surface="Surface",Border="Border",Text="Text",TextDim="TextDim"}
+for label,key in pairs(map) do
+if editorSliders[label] then
+colors[key]=Color3.fromRGB(editorSliders[label].R.GetValue(),editorSliders[label].G.GetValue(),editorSliders[label].B.GetValue())
+end
+end
+-- Accent sets ToggleOn, SliderFill
+if editorSliders["Accent"] then
+local ac=Color3.fromRGB(editorSliders["Accent"].R.GetValue(),editorSliders["Accent"].G.GetValue(),editorSliders["Accent"].B.GetValue())
+colors.ToggleOn=ac colors.SliderFill=ac
+end
+-- Fill remaining keys from current theme
+for k,v in pairs(T) do if typeof(v)=="Color3" and not colors[k] then colors[k]=v end end
+win:SaveTheme(n,colors)
+win:SetTheme(n)
+refreshThemes()
+end)
+
+resetBtn.MouseButton1Click:Connect(function()
+win:SetTheme("PureBlack")
+populateEditor(Presets.PureBlack)
+win:Notify("Theme","Reset to PureBlack","success")
+refreshThemes()
+end)
+
+-- Populate editor with current theme on load
+task.defer(function()
+local tc=getThemeColors(win.CurrentTheme)
+if tc then populateEditor(tc) end
+end)
+
+end -- end AddSettingsSection
+
+-- Backward compatibility alias
+Tab.AddConfigSection = Tab.AddSettingsSection
+
 -- ============================================================
--- DEMO (remove this section when using as library)
+-- DEMO (commented out -- 3 tabs: Combat, Movement, Settings)
 -- ============================================================
 --[[
 local Window=Lynoria.new("Lynoria")
@@ -499,8 +767,7 @@ movement:AddSlider("Jump Power",50,500,50,function(v) end)
 local settings=Window:AddTab("Settings","#")
 settings:AddSettingsSection()
 
-task.delay(1,function() Window:Notify("Lynoria","Welcome! UI v2.0 loaded","success") end)
+task.delay(1,function() Window:Notify("Lynoria","Welcome! UI v"..VERSION.." loaded","success") end)
 ]]
 
 return Lynoria
-
