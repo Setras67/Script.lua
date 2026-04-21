@@ -47,7 +47,7 @@ CombatTab:AddLabel("Use these settings carefully!")
 
 ## 🎛️ 3. UI Components & Return Methods
 
-**CRITICAL DETAIL FOR DEVELOPERS & AI:** Every interactive component (`AddToggle`, `AddSlider`, `AddDropdown`, `AddTextBox`, `AddKeybind`) returns a table containing two methods:
+**CRITICAL DETAIL FOR DEVELOPERS :** Every interactive component (`AddToggle`, `AddSlider`, `AddDropdown`, `AddTextBox`, `AddKeybind`) returns a table containing two methods:
 1. `SetValue(value)`: Programmatically changes the value and updates the UI.
 2. `GetValue()`: Returns the current value.
 
