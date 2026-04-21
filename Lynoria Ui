@@ -13,9 +13,9 @@ local CG=game:GetService("CoreGui")
 local P=Players.LocalPlayer
 
 local Presets={
-PureBlack={Bg=Color3.fromRGB(0,0,0),Bg2=Color3.fromRGB(8,8,8),Surface=Color3.fromRGB(16,16,16),SurfHover=Color3.fromRGB(24,24,24),SurfActive=Color3.fromRGB(32,32,32),Border=Color3.fromRGB(30,30,30),Text=Color3.fromRGB(255,255,255),TextDim=Color3.fromRGB(170,170,170),TextMuted=Color3.fromRGB(90,90,90),Green=Color3.fromRGB(50,215,75),Red=Color3.fromRGB(255,69,58),Yellow=Color3.fromRGB(255,214,10),ToggleOn=Color3.fromRGB(50,215,75),ToggleOff=Color3.fromRGB(38,38,40),SliderFill=Color3.fromRGB(255,255,255),SliderTrack=Color3.fromRGB(38,38,40)},
-Carbon={Bg=Color3.fromRGB(18,18,18),Bg2=Color3.fromRGB(24,24,24),Surface=Color3.fromRGB(32,32,32),SurfHover=Color3.fromRGB(42,42,42),SurfActive=Color3.fromRGB(52,52,52),Border=Color3.fromRGB(44,44,44),Text=Color3.fromRGB(235,235,235),TextDim=Color3.fromRGB(162,162,162),TextMuted=Color3.fromRGB(96,96,96),Green=Color3.fromRGB(50,215,75),Red=Color3.fromRGB(255,69,58),Yellow=Color3.fromRGB(255,214,10),ToggleOn=Color3.fromRGB(50,215,75),ToggleOff=Color3.fromRGB(54,54,56),SliderFill=Color3.fromRGB(235,235,235),SliderTrack=Color3.fromRGB(54,54,56)},
-Snow={Bg=Color3.fromRGB(246,246,248),Bg2=Color3.fromRGB(232,232,237),Surface=Color3.fromRGB(255,255,255),SurfHover=Color3.fromRGB(240,240,245),SurfActive=Color3.fromRGB(228,228,233),Border=Color3.fromRGB(198,198,206),Text=Color3.fromRGB(28,28,30),TextDim=Color3.fromRGB(100,100,110),TextMuted=Color3.fromRGB(148,148,158),Green=Color3.fromRGB(34,197,94),Red=Color3.fromRGB(239,68,68),Yellow=Color3.fromRGB(234,179,8),ToggleOn=Color3.fromRGB(52,199,89),ToggleOff=Color3.fromRGB(198,198,206),SliderFill=Color3.fromRGB(28,28,30),SliderTrack=Color3.fromRGB(198,198,206)},
+PureBlack={Bg=Color3.fromRGB(0,0,0),Bg2=Color3.fromRGB(8,8,8),Surface=Color3.fromRGB(16,16,16),SurfHover=Color3.fromRGB(24,24,24),SurfActive=Color3.fromRGB(32,32,32),Border=Color3.fromRGB(30,30,30),Text=Color3.fromRGB(255,255,255),TextDim=Color3.fromRGB(170,170,170),TextMuted=Color3.fromRGB(90,90,90),Green=Color3.fromRGB(50,215,75),Red=Color3.fromRGB(255,69,58),Yellow=Color3.fromRGB(255,214,10),ToggleOn=Color3.fromRGB(255,69,58),ToggleOff=Color3.fromRGB(38,38,40),SliderFill=Color3.fromRGB(255,69,58),SliderTrack=Color3.fromRGB(38,38,40)},
+Carbon={Bg=Color3.fromRGB(18,18,18),Bg2=Color3.fromRGB(24,24,24),Surface=Color3.fromRGB(32,32,32),SurfHover=Color3.fromRGB(42,42,42),SurfActive=Color3.fromRGB(52,52,52),Border=Color3.fromRGB(44,44,44),Text=Color3.fromRGB(235,235,235),TextDim=Color3.fromRGB(162,162,162),TextMuted=Color3.fromRGB(96,96,96),Green=Color3.fromRGB(50,215,75),Red=Color3.fromRGB(255,69,58),Yellow=Color3.fromRGB(255,214,10),ToggleOn=Color3.fromRGB(255,69,58),ToggleOff=Color3.fromRGB(54,54,56),SliderFill=Color3.fromRGB(255,69,58),SliderTrack=Color3.fromRGB(54,54,56)},
+Snow={Bg=Color3.fromRGB(246,246,248),Bg2=Color3.fromRGB(232,232,237),Surface=Color3.fromRGB(255,255,255),SurfHover=Color3.fromRGB(240,240,245),SurfActive=Color3.fromRGB(228,228,233),Border=Color3.fromRGB(198,198,206),Text=Color3.fromRGB(28,28,30),TextDim=Color3.fromRGB(100,100,110),TextMuted=Color3.fromRGB(148,148,158),Green=Color3.fromRGB(34,197,94),Red=Color3.fromRGB(239,68,68),Yellow=Color3.fromRGB(234,179,8),ToggleOn=Color3.fromRGB(239,68,68),ToggleOff=Color3.fromRGB(198,198,206),SliderFill=Color3.fromRGB(239,68,68),SliderTrack=Color3.fromRGB(198,198,206)},
 }
 
 local T={} for k,v in pairs(Presets.PureBlack) do T[k]=v end
@@ -104,14 +104,14 @@ MkDrag(self.Main,self.TitleBar)
 self.Main:GetPropertyChangedSignal("Position"):Connect(function()
 self.Shadow.Position=UDim2.new(self.Main.Position.X.Scale,self.Main.Position.X.Offset-4,self.Main.Position.Y.Scale,self.Main.Position.Y.Offset-4) end)
 
--- SIDEBAR
-self.Sidebar=C("Frame",{Size=UDim2.new(0,150,1,-66),Position=UDim2.new(0,0,0,38),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
+-- SIDEBAR (same color as main)
+self.Sidebar=C("Frame",{Size=UDim2.new(0,150,1,-66),Position=UDim2.new(0,0,0,38),BackgroundColor3=T.Bg,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 C("UICorner",{CornerRadius=UDim.new(0,10),Parent=self.Sidebar})
-local sbCoverTop=C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
-local sbCoverBR=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(1,-12,1,-12),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
-table.insert(self.UIElements,{obj=self.Sidebar,prop="BackgroundColor3",key="Bg2"})
-table.insert(self.UIElements,{obj=sbCoverTop,prop="BackgroundColor3",key="Bg2"})
-table.insert(self.UIElements,{obj=sbCoverBR,prop="BackgroundColor3",key="Bg2"})
+local sbCoverTop=C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
+local sbCoverBR=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(1,-12,1,-12),BackgroundColor3=T.Bg,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
+table.insert(self.UIElements,{obj=self.Sidebar,prop="BackgroundColor3",key="Bg"})
+table.insert(self.UIElements,{obj=sbCoverTop,prop="BackgroundColor3",key="Bg"})
+table.insert(self.UIElements,{obj=sbCoverBR,prop="BackgroundColor3",key="Bg"})
 
 self.TabList=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-8),Position=UDim2.new(0,2,0,4),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=4,ScrollBarImageColor3=T.TextDim,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,Parent=self.Sidebar})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=self.TabList})
@@ -204,8 +204,9 @@ function Lynoria:AddTab(name,icon)
 local tab=setmetatable({},Tab) tab.Name=name tab.Icon=icon or STAR tab.Window=self tab.Elements={}
 tab.Button=C("TextButton",{Name=name,Text="",Size=UDim2.new(1,0,0,34),BackgroundColor3=T.Surface,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=5,Parent=self.TabList})
 C("UICorner",{CornerRadius=UDim.new(0,6),Parent=tab.Button})
-tab.ActiveBar=C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,0,0.25,0),BackgroundColor3=T.Green,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=6,Parent=tab.Button})
+tab.ActiveBar=C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,0,0.25,0),BackgroundColor3=T.ToggleOn,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=6,Parent=tab.Button})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=tab.ActiveBar})
+table.insert(self.UIElements,{obj=tab.ActiveBar,prop="BackgroundColor3",key="ToggleOn"})
 tab.TabLabel=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-16,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=tab.Button})
 table.insert(self.UIElements,{obj=tab.TabLabel,prop="TextColor3",key="TextDim"})
 tab.Page=C("ScrollingFrame",{Name=name.."Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=4,ScrollBarImageColor3=T.TextDim,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false,ZIndex=4,Parent=self.Content})
@@ -543,7 +544,7 @@ local tc=getThemeColors(tn)
 local isCurrent=win.CurrentTheme==tn
 local row=C("Frame",{Name="t_"..tn,Size=UDim2.new(1,0,0,30),BackgroundColor3=isCurrent and T.SurfActive or T.Surface,BackgroundTransparency=isCurrent and 0 or 0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10,Parent=ts})
 C("UICorner",{CornerRadius=UDim.new(0,4),Parent=row})
-if isCurrent then C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,2,0.25,0),BackgroundColor3=T.Green,BorderSizePixel=0,ZIndex=8,Parent=row}) end
+if isCurrent then C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,2,0.25,0),BackgroundColor3=T.ToggleOn,BorderSizePixel=0,ZIndex=8,Parent=row}) end
 C("TextLabel",{Text="  "..tn,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=isCurrent and T.Text or T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-60,1,0),Position=UDim2.new(0,6,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=8,Parent=row})
 if tc then
 local px=C("Frame",{Size=UDim2.new(0,44,0,14),Position=UDim2.new(1,-52,0.5,-7),BackgroundTransparency=1,ZIndex=8,Parent=row})
