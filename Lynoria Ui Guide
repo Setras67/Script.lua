@@ -1,1 +1,188 @@
+# Lynoria UI Library v4.0 🎨 - The Ultimate Guide
+
+Welcome to the complete, exhaustive guide for **Lynoria UI Library v4.0**. This document is designed for developers and script makers who want to understand every single capability of this library.
+
+Lynoria is a premium, high-performance UI library designed for Roblox exploit scripts. It features a macOS-inspired aesthetic, automatic configuration saving/loading, and a dynamic color palette system.
+
+---
+
+## 🚀 1. Bootstrapping (Initialization)
+
+To use Lynoria in your script, you load it via a raw GitHub URL using `loadstring`.
+
+```lua
+-- Load the library
+local Lynoria = loadstring(game:HttpGet(""))()
+
+-- Create the main window (Pass the title of your script)
+local Win = Lynoria.new("My Script Name")
+
+-- Set the bottom-left status indicator (true = Green/Updated, false = Red/Down)
+Win:SetStatus(true) 
+```
+
+**What happens here?**
+* The library creates the UI in `CoreGui` (or `PlayerGui` as fallback).
+* It automatically creates a `Lynoria` folder in your workspace directory (for configs and themes).
+* It auto-loads the last used theme and configuration if they exist.
+
+---
+
+## 📑 2. Creating Tabs & Layout
+
+Everything in Lynoria revolves around **Tabs**. You create a tab, and then add UI elements to it.
+
+```lua
+local CombatTab = Win:AddTab("Combat")
+local MovementTab = Win:AddTab("Movement")
+
+-- Add a separator to organize sections within the tab
+CombatTab:AddSeparator("Aimbot Settings")
+
+-- Add a simple label for instructions or warnings
+CombatTab:AddLabel("Use these settings carefully!")
+```
+
+---
+
+## 🎛️ 3. UI Components & Return Methods
+
+**CRITICAL DETAIL FOR DEVELOPERS & AI:** Every interactive component (`AddToggle`, `AddSlider`, `AddDropdown`, `AddTextBox`, `AddKeybind`) returns a table containing two methods:
+1. `SetValue(value)`: Programmatically changes the value and updates the UI.
+2. `GetValue()`: Returns the current value.
+
+All interactive components also automatically register themselves in the `Win.Flags` dictionary using their name as the key. You can access values directly via `Win.Flags["ComponentName"].Value`.
+
+### Toggle
+```lua
+local aimToggle = CombatTab:AddToggle("Aimbot", false, function(state)
+    print("Aimbot is now:", state)
+end, "Locks aim onto the closest player") -- Description is optional
+
+-- Programmatically change it later
+aimToggle.SetValue(true)
+print(aimToggle.GetValue()) -- true
+```
+
+### Slider
+```lua
+-- Name, Min, Max, Default, Callback, Step
+local fovSlider = CombatTab:AddSlider("FOV", 10, 100, 50, function(value)
+    print("FOV changed to:", value)
+end, 1)
+```
+
+### Dropdown
+```lua
+-- Name, Options Table, Default, Callback
+local targetPart = CombatTab:AddDropdown("Hitbox", {"Head", "Torso", "Legs"}, "Head", function(value)
+    print("Targeting:", value)
+end)
+```
+
+### TextBox
+```lua
+-- Name, Placeholder Text, Callback
+CombatTab:AddTextBox("Whitelist Player", "Enter username...", function(value)
+    print("Whitelisted:", value)
+end)
+```
+
+### Keybind
+```lua
+-- Name, Default Key, Callback
+local toggleKey = CombatTab:AddKeybind("Hide UI", Enum.KeyCode.RightShift, function(key)
+    print("UI keybind pressed!")
+end)
+```
+
+---
+
+## 💾 4. The `Flags` System (State Management)
+
+If you don't want to use callback functions for everything, you can read the current state of any component at any time using `Win.Flags`. 
+
+This is highly recommended for loops (like Aimbot or ESP loops).
+
+```lua
+-- Inside a RunService loop:
+if Win.Flags["Aimbot"] and Win.Flags["Aimbot"].Value == true then
+    local currentFov = Win.Flags["FOV"].Value
+    local currentHitbox = Win.Flags["Hitbox"].Value
+    -- Do aimbot math here...
+end
+```
+
+---
+
+## ⚙️ 5. Built-in Automated Systems
+
+Lynoria handles settings and themes automatically. You just need to add the built-in sections to your tabs. **Do not skip these**, as users expect to be able to save their configs and change colors!
+
+```lua
+-- Personalization (Theme Engine, Live Colors, Save/Delete Themes)
+local PersTab = Win:AddTab("Personalization")
+PersTab:AddPersonalizationSection()
+
+-- Settings (Config Manager to save all Flags, UI Toggle Keybind)
+local SettingsTab = Win:AddTab("Settings")
+SettingsTab:AddSettingsSection()
+```
+
+---
+
+## 🔔 6. Window Controls & Notifications
+
+### Notifications
+Lynoria has a built-in notification queue system. Max 3 notifications display at once; extras are queued.
+
+```lua
+-- Win:Notify(Title, Message, Type)
+-- Type options: "success" (Green), "warning" (Yellow), "error" (Red)
+Win:Notify("Auto-Heal", "Successfully healed!", "success")
+Win:Notify("Danger", "Admin joined the game!", "error")
+```
+
+### Window Methods
+You can control the UI programmatically.
+
+```lua
+Win:Toggle()   -- Opens or closes the UI (like pressing RightShift)
+Win:Minimize() -- Minimizes the UI to just the titlebar (like clicking the yellow traffic light)
+Win:Destroy()  -- Completely removes the UI, disconnects all events, deletes the ScreenGui
+```
+
+---
+
+## 🎨 7. For Advanced Devs: Adding Default Themes
+
+If you are modifying the source code of `Lynoria.lua` and want to add new default themes for everyone, look at the `Presets` table at the very top of the script (line ~15).
+
+A valid theme requires these exact color keys:
+```lua
+local Presets = {
+    MyCustomTheme = {
+        Bg = Color3.fromRGB(0, 0, 0),
+        Bg2 = Color3.fromRGB(8, 8, 8),
+        Surface = Color3.fromRGB(16, 16, 16),
+        SurfHover = Color3.fromRGB(24, 24, 24),
+        SurfActive = Color3.fromRGB(32, 32, 32),
+        Border = Color3.fromRGB(30, 30, 30),
+        Text = Color3.fromRGB(255, 255, 255),
+        TextDim = Color3.fromRGB(170, 170, 170),
+        TextMuted = Color3.fromRGB(90, 90, 90),
+        Green = Color3.fromRGB(50, 215, 75),  -- Only used for the Status Dot
+        Red = Color3.fromRGB(255, 69, 58),    -- Only used for UI close button
+        Yellow = Color3.fromRGB(255, 214, 10),-- Only used for UI minimize button
+        ToggleOn = Color3.fromRGB(255, 69, 58), -- MAIN ACCENT COLOR (Sliders, Toggles, Active Tabs)
+        ToggleOff = Color3.fromRGB(38, 38, 40),
+        SliderFill = Color3.fromRGB(255, 69, 58), -- Matches ToggleOn
+        SliderTrack = Color3.fromRGB(38, 38, 40)
+    }
+}
+```
+*Note: In v4.0, the "Accent" color is primarily driven by `ToggleOn` and `SliderFill`.*
+
+---
+*End of Documentation*
 
