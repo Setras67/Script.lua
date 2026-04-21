@@ -12,7 +12,7 @@ To use Lynoria in your script, you load it via a raw GitHub URL using `loadstrin
 
 ```lua
 -- Load the library
-local Lynoria = loadstring(game:HttpGet(""))()
+local Lynoria = loadstring(game:HttpGet("https://github.com/Setras67/Script.lua/blob/main/Lynoria%20Ui"))()
 
 -- Create the main window (Pass the title of your script)
 local Win = Lynoria.new("My Script Name")
