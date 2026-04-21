@@ -1,9 +1,8 @@
---[[ LYNORIA UI LIBRARY v3.1 | Owner: Setras ]]
+--[[ LYNORIA UI LIBRARY v4.0 | Owner: Setras ]]
 local LOGO_ID="rbxassetid://126320999437943"
 local DISCORD_URL="https://discord.gg/efe89PftR8"
 local OWNER="Setras"
-local VERSION="3.1"
-local EMDASH=string.char(0xE2,0x80,0x94)
+local VERSION="4.0"
 local STAR=string.char(0xE2,0x98,0x85)
 
 local Players=game:GetService("Players")
@@ -46,7 +45,6 @@ local self=setmetatable({},Lynoria)
 self.Title=title or "Lynoria" self.Tabs={} self.ActiveTab=nil self.Flags={} self.Connections={} self.UIElements={}
 self.ToggleKey=Enum.KeyCode.RightShift self.Visible=true self.Minimized=false self.CurrentTheme="PureBlack"
 self._notifQueue={} self._notifActive=0 self._maxNotifs=3
-self._persOpacity=100
 SMF("Lynoria") SMF("Lynoria/configs") SMF("Lynoria/themes")
 
 pcall(function()
@@ -66,74 +64,76 @@ self.Main=C("Frame",{Name="Main",Size=UDim2.new(0,720,0,480),Position=UDim2.new(
 C("UICorner",{CornerRadius=UDim.new(0,10),Parent=self.Main})
 self.MainStroke=C("UIStroke",{Color=T.Border,Thickness=1,Transparency=0.3,Parent=self.Main})
 table.insert(self.UIElements,{obj=self.Main,prop="BackgroundColor3",key="Bg"})
+table.insert(self.UIElements,{obj=self.MainStroke,prop="Color",key="Border"})
 
--- TITLEBAR (38px, macOS style)
+-- TITLEBAR
 self.TitleBar=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 C("UICorner",{CornerRadius=UDim.new(0,10),Parent=self.TitleBar})
--- Cover bottom corners of titlebar (so only top is rounded)
-C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,1,-12),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.TitleBar})
-C("Frame",{Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=T.Border,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=4,Parent=self.TitleBar})
+local tbCover=C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,1,-12),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.TitleBar})
+local tbLine=C("Frame",{Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=T.Border,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=4,Parent=self.TitleBar})
 table.insert(self.UIElements,{obj=self.TitleBar,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=tbCover,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=tbLine,prop="BackgroundColor3",key="Border"})
 
--- Traffic light dots (macOS style, left side)
-local tlColors={{Color3.fromRGB(255,69,58),function() self:Toggle() end},{Color3.fromRGB(255,214,10),function() self:Minimize() end},{Color3.fromRGB(50,215,75),nil}}
-local tlDots={}
-for i,tl in ipairs(tlColors) do
-local dot=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(0,12+(i-1)*20,0.5,-6),BackgroundColor3=T.TextMuted,BorderSizePixel=0,ZIndex=6,Parent=self.TitleBar})
+-- Traffic lights (always colored, 8px, left side)
+local tlDefs={{Color3.fromRGB(255,69,58),function() self:Toggle() end},{Color3.fromRGB(255,214,10),function() self:Minimize() end},{Color3.fromRGB(50,215,75),nil}}
+for i,tl in ipairs(tlDefs) do
+local dot=C("Frame",{Size=UDim2.new(0,8,0,8),Position=UDim2.new(0,12+(i-1)*16,0.5,-4),BackgroundColor3=tl[1],BorderSizePixel=0,ZIndex=6,Parent=self.TitleBar})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=dot})
-local btn=C("TextButton",{Text="",Size=UDim2.new(1,4,1,4),Position=UDim2.new(0,-2,0,-2),BackgroundTransparency=1,ZIndex=7,Parent=dot})
+local btn=C("TextButton",{Text="",Size=UDim2.new(1,6,1,6),Position=UDim2.new(0,-3,0,-3),BackgroundTransparency=1,ZIndex=7,Parent=dot})
 if tl[2] then btn.MouseButton1Click:Connect(tl[2]) end
-table.insert(tlDots,{dot=dot,color=tl[1]})
 end
--- Show colors on titlebar hover
-self.TitleBar.MouseEnter:Connect(function() for _,d in ipairs(tlDots) do Tw(d.dot,0.15,{BackgroundColor3=d.color}) end end)
-self.TitleBar.MouseLeave:Connect(function() for _,d in ipairs(tlDots) do Tw(d.dot,0.15,{BackgroundColor3=T.TextMuted}) end end)
 
--- Centered branding: logo + text
+-- Centered branding
 local brandFrame=C("Frame",{Size=UDim2.new(0,140,1,0),Position=UDim2.new(0.5,-70,0,0),BackgroundTransparency=1,ZIndex=5,Parent=self.TitleBar})
-C("ImageLabel",{Image=LOGO_ID,ImageColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,22,0,22),Position=UDim2.new(0,0,0.5,-11),ScaleType=Enum.ScaleType.Fit,ZIndex=5,Parent=brandFrame})
-C("TextLabel",{Text="Lynoria",Font=Enum.Font.GothamBold,TextSize=14,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,80,1,0),Position=UDim2.new(0,28,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=brandFrame})
+self._logoImg=C("ImageLabel",{Image=LOGO_ID,ImageColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,22,0,22),Position=UDim2.new(0,0,0.5,-11),ScaleType=Enum.ScaleType.Fit,ZIndex=5,Parent=brandFrame})
+self._brandText=C("TextLabel",{Text="Lynoria",Font=Enum.Font.GothamBold,TextSize=14,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0,80,1,0),Position=UDim2.new(0,28,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=brandFrame})
+table.insert(self.UIElements,{obj=self._logoImg,prop="ImageColor3",key="Text"})
+table.insert(self.UIElements,{obj=self._brandText,prop="TextColor3",key="Text"})
 
--- Discord button (subtle, right side)
+-- Discord button
 local dcBtn=C("TextButton",{Text="Discord",Font=Enum.Font.GothamMedium,TextSize=10,TextColor3=T.TextDim,BackgroundColor3=T.Surface,Size=UDim2.new(0,58,0,22),Position=UDim2.new(1,-68,0.5,-11),BorderSizePixel=0,ZIndex=5,Parent=self.TitleBar})
 C("UICorner",{CornerRadius=UDim.new(0,11),Parent=dcBtn})
 dcBtn.MouseEnter:Connect(function() Tw(dcBtn,0.15,{BackgroundColor3=T.SurfHover}) end)
 dcBtn.MouseLeave:Connect(function() Tw(dcBtn,0.15,{BackgroundColor3=T.Surface}) end)
 dcBtn.MouseButton1Click:Connect(function() pcall(setclipboard,DISCORD_URL) self:Notify("Lynoria","Discord link copied!","success") end)
 table.insert(self.UIElements,{obj=dcBtn,prop="BackgroundColor3",key="Surface"})
+table.insert(self.UIElements,{obj=dcBtn,prop="TextColor3",key="TextDim"})
 
 MkDrag(self.Main,self.TitleBar)
 self.Main:GetPropertyChangedSignal("Position"):Connect(function()
 self.Shadow.Position=UDim2.new(self.Main.Position.X.Scale,self.Main.Position.X.Offset-4,self.Main.Position.Y.Scale,self.Main.Position.Y.Offset-4) end)
 
--- SIDEBAR (150px, rounded bottom-left)
+-- SIDEBAR
 self.Sidebar=C("Frame",{Size=UDim2.new(0,150,1,-66),Position=UDim2.new(0,0,0,38),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 C("UICorner",{CornerRadius=UDim.new(0,10),Parent=self.Sidebar})
-C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar}) -- cover top corners
-C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(1,-12,1,-12),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar}) -- cover bottom-right corner
+local sbCoverTop=C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
+local sbCoverBR=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new(1,-12,1,-12),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.Sidebar})
 table.insert(self.UIElements,{obj=self.Sidebar,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=sbCoverTop,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=sbCoverBR,prop="BackgroundColor3",key="Bg2"})
 
-self.TabList=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-8),Position=UDim2.new(0,2,0,4),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=0,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,Parent=self.Sidebar})
+self.TabList=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-8),Position=UDim2.new(0,2,0,4),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=4,ScrollBarImageColor3=T.TextDim,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,Parent=self.Sidebar})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=self.TabList})
 C("UIPadding",{PaddingTop=UDim.new(0,6),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6),Parent=self.TabList})
 
 -- CONTENT
 self.Content=C("Frame",{Size=UDim2.new(1,-150,1,-66),Position=UDim2.new(0,150,0,38),BackgroundTransparency=1,BorderSizePixel=0,ZIndex=3,Parent=self.Main})
 
--- BOTTOMBAR (28px, rounded bottom)
+-- BOTTOMBAR
 self.BottomBar=C("Frame",{Size=UDim2.new(1,0,0,28),Position=UDim2.new(0,0,1,-28),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=3,Parent=self.Main})
 C("UICorner",{CornerRadius=UDim.new(0,10),Parent=self.BottomBar})
-C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.BottomBar}) -- cover top corners
-C("Frame",{Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=4,Parent=self.BottomBar})
+local bbCoverTop=C("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,0,0),BackgroundColor3=T.Bg2,BorderSizePixel=0,ZIndex=3,Parent=self.BottomBar})
+local bbLine=C("Frame",{Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=4,Parent=self.BottomBar})
 table.insert(self.UIElements,{obj=self.BottomBar,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=bbCoverTop,prop="BackgroundColor3",key="Bg2"})
+table.insert(self.UIElements,{obj=bbLine,prop="BackgroundColor3",key="Border"})
 
 self.StatusDot=C("Frame",{Size=UDim2.new(0,8,0,8),Position=UDim2.new(0,12,0.5,-4),BackgroundColor3=T.Green,BorderSizePixel=0,ZIndex=5,Parent=self.BottomBar})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=self.StatusDot})
-self.StatusGlow=C("UIStroke",{Color=T.Green,Thickness=1,Transparency=0.5,Parent=self.StatusDot})
-self.StatusText=C("TextLabel",{Text="Ready",Font=Enum.Font.GothamMedium,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,60,1,0),Position=UDim2.new(0,26,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.BottomBar})
-C("TextLabel",{Text="v"..VERSION.." | "..OWNER,Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,120,1,0),Position=UDim2.new(1,-130,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5,Parent=self.BottomBar})
-
-task.spawn(function() while self.Gui and self.Gui.Parent do Tw(self.StatusGlow,1,{Transparency=0.85}) task.wait(1) Tw(self.StatusGlow,1,{Transparency=0.3}) task.wait(1) end end)
+self.StatusText=C("TextLabel",{Text="Updated v"..VERSION,Font=Enum.Font.GothamMedium,TextSize=10,TextColor3=T.Green,BackgroundTransparency=1,Size=UDim2.new(0,90,1,0),Position=UDim2.new(0,26,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.BottomBar})
+self._creditsLabel=C("TextLabel",{Text="Owner: "..OWNER,Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(0,100,1,0),Position=UDim2.new(1,-110,0,0),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5,Parent=self.BottomBar})
+table.insert(self.UIElements,{obj=self._creditsLabel,prop="TextColor3",key="TextMuted"})
 
 self.NotifHolder=C("Frame",{Size=UDim2.new(0,260,0,400),Position=UDim2.new(1,-270,0,10),BackgroundTransparency=1,ZIndex=100,Parent=self.Gui})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6),VerticalAlignment=Enum.VerticalAlignment.Top,Parent=self.NotifHolder})
@@ -142,7 +142,7 @@ UIS.InputBegan:Connect(function(inp,gpe) if not gpe and inp.KeyCode==self.Toggle
 
 self.Main.Size=UDim2.new(0,720,0,0) self.Shadow.Size=UDim2.new(0,728,0,0)
 task.defer(function() Tw(self.Main,0.4,{Size=UDim2.new(0,720,0,480)}) Tw(self.Shadow,0.4,{Size=UDim2.new(0,728,0,488)}) end)
-task.defer(function() task.wait(0.5) self:_AutoLoadConfig() self:_AutoLoadTheme() self:_LoadPersonalization() end)
+task.defer(function() task.wait(0.5) self:_AutoLoadConfig() self:_AutoLoadTheme() end)
 return self
 end
 function Lynoria:Toggle()
@@ -172,9 +172,10 @@ end
 end
 
 function Lynoria:SetStatus(a)
-local col=a and T.Green or T.Red local txt=a and "Ready" or "Down"
-Tw(self.StatusDot,0.3,{BackgroundColor3=col}) self.StatusGlow.Color=col
-self.StatusText.Text=txt
+local col=a and T.Green or T.Red
+Tw(self.StatusDot,0.3,{BackgroundColor3=col})
+self.StatusText.Text=a and ("Updated v"..VERSION) or "Down"
+self.StatusText.TextColor3=col
 end
 
 function Lynoria:Notify(title,msg,nt)
@@ -206,7 +207,8 @@ C("UICorner",{CornerRadius=UDim.new(0,6),Parent=tab.Button})
 tab.ActiveBar=C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,0,0.25,0),BackgroundColor3=T.Green,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=6,Parent=tab.Button})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=tab.ActiveBar})
 tab.TabLabel=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-16,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=tab.Button})
-tab.Page=C("ScrollingFrame",{Name=name.."Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,ScrollBarImageColor3=T.TextMuted,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false,ZIndex=4,Parent=self.Content})
+table.insert(self.UIElements,{obj=tab.TabLabel,prop="TextColor3",key="TextDim"})
+tab.Page=C("ScrollingFrame",{Name=name.."Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=4,ScrollBarImageColor3=T.TextDim,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false,ZIndex=4,Parent=self.Content})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6),Parent=tab.Page})
 C("UIPadding",{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,16),PaddingRight=UDim.new(0,16),Parent=tab.Page})
 tab.Button.MouseButton1Click:Connect(function() self:_SwitchTab(tab) end)
@@ -216,17 +218,26 @@ table.insert(self.Tabs,tab) if #self.Tabs==1 then self:_SwitchTab(tab) end retur
 end
 
 function Lynoria:_SwitchTab(tab)
-if self.ActiveTab then self.ActiveTab.Page.Visible=false Tw(self.ActiveTab.Button,0.15,{BackgroundTransparency=1}) Tw(self.ActiveTab.ActiveBar,0.15,{BackgroundTransparency=1}) Tw(self.ActiveTab.TabLabel,0.15,{TextColor3=T.TextDim}) end
-self.ActiveTab=tab tab.Page.Visible=true Tw(tab.Button,0.15,{BackgroundTransparency=0.6}) Tw(tab.ActiveBar,0.15,{BackgroundTransparency=0}) Tw(tab.TabLabel,0.15,{TextColor3=T.Text})
+if self.ActiveTab then
+self.ActiveTab.Page.Visible=false
+Tw(self.ActiveTab.Button,0.15,{BackgroundTransparency=1})
+Tw(self.ActiveTab.ActiveBar,0.15,{BackgroundTransparency=1})
+self.ActiveTab.TabLabel.TextColor3=T.TextDim
+end
+self.ActiveTab=tab tab.Page.Visible=true
+Tw(tab.Button,0.15,{BackgroundTransparency=0.6})
+Tw(tab.ActiveBar,0.15,{BackgroundTransparency=0})
+tab.TabLabel.TextColor3=T.Text
 end
 
+-- Config system
 function Lynoria:_SaveConfig(name)
 local data={} for flag,info in pairs(self.Flags) do data[flag]=info.Value end
 if SW("Lynoria/configs/"..name..".json",HS:JSONEncode(data)) then self:Notify("Config","Saved: "..name,"success")
 else self:Notify("Error","Cannot save","error") end
 end
 function Lynoria:_LoadConfig(name)
-local ok,raw=SR("Lynoria/configs/"..name..".json") if not ok then self:Notify("Error","Cannot load: "..name,"error") return end
+local ok,raw=SR("Lynoria/configs/"..name..".json") if not ok then self:Notify("Error","Cannot load","error") return end
 local s,data=pcall(function() return HS:JSONDecode(raw) end) if not s then self:Notify("Error","Corrupt config","error") return end
 for flag,value in pairs(data) do if self.Flags[flag] and self.Flags[flag].SetValue then self.Flags[flag].SetValue(value) end end
 self:Notify("Config","Loaded: "..name,"success")
@@ -237,54 +248,50 @@ function Lynoria:_AutoLoadConfig() if not SIF("Lynoria/autoload.json") then retu
 function Lynoria:_GetConfigs() local files=SLF("Lynoria/configs") local cfgs={} for _,f in ipairs(files) do local n=f:match("([^/\\]+)%.json$") if n then table.insert(cfgs,n) end end return cfgs end
 function Lynoria:_GetAutoLoadName() if not SIF("Lynoria/autoload.json") then return nil end local ok,raw=SR("Lynoria/autoload.json") if not ok then return nil end local s,data=pcall(function() return HS:JSONDecode(raw) end) if s and data.config then return data.config end return nil end
 
+-- Theme system (SetTheme updates ALL registered elements)
 function Lynoria:SetTheme(name)
 local theme=Presets[name]
 if not theme then local ok,raw=SR("Lynoria/themes/"..name..".json") if ok then local s,d=pcall(function() return HS:JSONDecode(raw) end)
 if s then theme={} for k,v in pairs(d) do if type(v)=="table" and v.R then theme[k]=Color3.fromRGB(v.R,v.G,v.B) else theme[k]=v end end end end end
 if not theme then return end
-self.CurrentTheme=name for k,v in pairs(theme) do T[k]=v end
-for _,e in ipairs(self.UIElements) do if e.obj and e.obj.Parent and e.key and T[e.key] then pcall(function() Tw(e.obj,0.3,{[e.prop]=T[e.key]}) end) end end
+self.CurrentTheme=name
+for k,v in pairs(theme) do if typeof(v)=="Color3" then T[k]=v end end
+-- Update ALL registered UI elements
+for _,e in ipairs(self.UIElements) do
+if e.obj and e.obj.Parent and e.key and T[e.key] then
+pcall(function() Tw(e.obj,0.3,{[e.prop]=T[e.key]}) end)
+end
+end
+-- Update active tab colors
+if self.ActiveTab then
+self.ActiveTab.TabLabel.TextColor3=T.Text
+for _,tab in ipairs(self.Tabs) do
+if tab~=self.ActiveTab then tab.TabLabel.TextColor3=T.TextDim end
+end
+end
 SW("Lynoria/active_theme.json",HS:JSONEncode({theme=name}))
 end
 function Lynoria:SaveTheme(name,colors)
 local data={} for k,v in pairs(colors) do if typeof(v)=="Color3" then data[k]={R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} else data[k]=v end end
 SW("Lynoria/themes/"..name..".json",HS:JSONEncode(data)) self:Notify("Theme","Saved: "..name,"success")
 end
-function Lynoria:LoadTheme(name) self:SetTheme(name) end
 function Lynoria:_DeleteTheme(name) SDF("Lynoria/themes/"..name..".json") self:Notify("Theme","Deleted: "..name,"success") if self.CurrentTheme==name then self:SetTheme("PureBlack") end end
 function Lynoria:_AutoLoadTheme() if not SIF("Lynoria/active_theme.json") then return end local ok,raw=SR("Lynoria/active_theme.json") if not ok then return end local s,data=pcall(function() return HS:JSONDecode(raw) end) if s and data.theme then self:SetTheme(data.theme) end end
 function Lynoria:_GetThemes()
-local list={} local order={"PureBlack","Carbon","Snow"}
-for _,n in ipairs(order) do table.insert(list,n) end
+local list={"PureBlack","Carbon","Snow"}
 local files=SLF("Lynoria/themes") for _,f in ipairs(files) do local n=f:match("([^/\\]+)%.json$") if n then table.insert(list,n) end end return list
 end
 function Lynoria:Destroy() for _,c in ipairs(self.Connections) do pcall(function() c:Disconnect() end) end if self.Gui then self.Gui:Destroy() end end
-
--- Personalization persistence (simplified â€” opacity only)
-function Lynoria:_SavePersonalization()
-SW("Lynoria/personalization.json",HS:JSONEncode({opacity=self._persOpacity}))
-end
-function Lynoria:_LoadPersonalization()
-if not SIF("Lynoria/personalization.json") then return end
-local ok,raw=SR("Lynoria/personalization.json") if not ok then return end
-local s,data=pcall(function() return HS:JSONDecode(raw) end) if not s then return end
-if data.opacity then self._persOpacity=data.opacity local tr=1-(data.opacity/100)
-self.Main.BackgroundTransparency=tr self.TitleBar.BackgroundTransparency=tr*0.5
-self.Sidebar.BackgroundTransparency=tr*0.5 self.BottomBar.BackgroundTransparency=tr*0.5
-end
-end
-
 function Tab:AddToggle(name,default,cb,desc)
 default=default or false local val=default
 local h=C("Frame",{Size=UDim2.new(1,0,0,desc and 48 or 38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=h})
-C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-64,0,20),Position=UDim2.new(0,12,0,desc and 4 or 9),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
-if desc then C("TextLabel",{Text=desc,Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,-64,0,14),Position=UDim2.new(0,12,0,26),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h}) end
+local nl=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-64,0,20),Position=UDim2.new(0,12,0,desc and 4 or 9),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local dl if desc then dl=C("TextLabel",{Text=desc,Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,-64,0,14),Position=UDim2.new(0,12,0,26),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h}) end
 local sw=C("Frame",{Size=UDim2.new(0,38,0,22),Position=UDim2.new(1,-50,0.5,-11),BackgroundColor3=val and T.ToggleOn or T.ToggleOff,BorderSizePixel=0,ZIndex=7,Parent=h})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=sw})
 local ci=C("Frame",{Size=UDim2.new(0,16,0,16),Position=val and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=8,Parent=sw})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=ci})
-C("UIStroke",{Color=Color3.fromRGB(0,0,0),Thickness=0,Transparency=0.85,Parent=ci})
 local btn=C("TextButton",{Text="",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ZIndex=9,Parent=h})
 local function SV(v) val=v Tw(sw,0.2,{BackgroundColor3=v and T.ToggleOn or T.ToggleOff}) Tw(ci,0.2,{Position=v and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8)}) if self.Window.Flags[name] then self.Window.Flags[name].Value=v end if cb then pcall(cb,v) end end
 btn.MouseButton1Click:Connect(function() SV(not val) end)
@@ -292,6 +299,8 @@ btn.MouseEnter:Connect(function() Tw(h,0.15,{BackgroundColor3=T.SurfHover}) end)
 btn.MouseLeave:Connect(function() Tw(h,0.15,{BackgroundColor3=T.Surface}) end)
 self.Window.Flags[name]={Type="Toggle",Value=val,SetValue=SV}
 table.insert(self.Window.UIElements,{obj=h,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=nl,prop="TextColor3",key="Text"})
+if dl then table.insert(self.Window.UIElements,{obj=dl,prop="TextColor3",key="TextMuted"}) end
 return {SetValue=SV,GetValue=function() return val end}
 end
 
@@ -302,13 +311,14 @@ btn.MouseEnter:Connect(function() Tw(btn,0.15,{BackgroundColor3=T.SurfHover}) en
 btn.MouseLeave:Connect(function() Tw(btn,0.15,{BackgroundColor3=T.Surface}) end)
 btn.MouseButton1Click:Connect(function() Tw(btn,0.08,{BackgroundColor3=T.SurfActive}) task.delay(0.12,function() Tw(btn,0.15,{BackgroundColor3=T.Surface}) end) if cb then pcall(cb) end end)
 table.insert(self.Window.UIElements,{obj=btn,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=btn,prop="TextColor3",key="Text"})
 end
 
 function Tab:AddSlider(name,min,max,default,cb,step)
 min=min or 0 max=max or 100 default=default or min step=step or 1 local val=default
 local h=C("Frame",{Size=UDim2.new(1,0,0,50),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=h})
-C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-50,0,20),Position=UDim2.new(0,12,0,4),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local nl=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-50,0,20),Position=UDim2.new(0,12,0,4),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
 local vl=C("TextLabel",{Text=tostring(val),Font=Enum.Font.GothamBold,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,40,0,20),Position=UDim2.new(1,-48,0,4),TextXAlignment=Enum.TextXAlignment.Right,ZIndex=6,Parent=h})
 local tr=C("Frame",{Size=UDim2.new(1,-24,0,4),Position=UDim2.new(0,12,0,34),BackgroundColor3=T.SliderTrack,BorderSizePixel=0,ZIndex=6,Parent=h})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=tr})
@@ -316,7 +326,7 @@ local fl=C("Frame",{Size=UDim2.new((default-min)/(max-min),0,1,0),BackgroundColo
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=fl})
 local kn=C("Frame",{Size=UDim2.new(0,12,0,12),Position=UDim2.new((default-min)/(max-min),-6,0.5,-6),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=8,Parent=tr})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=kn})
-C("UIStroke",{Color=T.Border,Thickness=1,Parent=kn})
+local knStroke=C("UIStroke",{Color=T.Border,Thickness=1,Parent=kn})
 local function SV(v) v=math.clamp(v,min,max) v=math.floor(v/step+0.5)*step val=v local pct=(v-min)/(max-min) fl.Size=UDim2.new(pct,0,1,0) kn.Position=UDim2.new(pct,-6,0.5,-6) vl.Text=tostring(v) if self.Window.Flags[name] then self.Window.Flags[name].Value=v end if cb then pcall(cb,v) end end
 local sliding=false
 local ib=C("TextButton",{Text="",Size=UDim2.new(1,0,1,12),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,ZIndex=9,Parent=tr})
@@ -328,6 +338,11 @@ h.MouseEnter:Connect(function() Tw(h,0.15,{BackgroundColor3=T.SurfHover}) end)
 h.MouseLeave:Connect(function() Tw(h,0.15,{BackgroundColor3=T.Surface}) end)
 self.Window.Flags[name]={Type="Slider",Value=val,SetValue=SV}
 table.insert(self.Window.UIElements,{obj=h,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=nl,prop="TextColor3",key="Text"})
+table.insert(self.Window.UIElements,{obj=vl,prop="TextColor3",key="TextDim"})
+table.insert(self.Window.UIElements,{obj=tr,prop="BackgroundColor3",key="SliderTrack"})
+table.insert(self.Window.UIElements,{obj=fl,prop="BackgroundColor3",key="SliderFill"})
+table.insert(self.Window.UIElements,{obj=knStroke,prop="Color",key="Border"})
 return {SetValue=SV,GetValue=function() return val end}
 end
 
@@ -335,7 +350,7 @@ function Tab:AddDropdown(name,options,default,cb)
 options=options or {} local sel=default or options[1] local opened=false
 local h=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=h})
-C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.5,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local nl=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.5,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
 local db=C("TextButton",{Text=tostring(sel).." v",Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.TextDim,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.45,-10,0,26),Position=UDim2.new(0.55,0,0,6),BorderSizePixel=0,ZIndex=7,Parent=h})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=db})
 local lf=C("ScrollingFrame",{Size=UDim2.new(0,200,0,math.min(#options*28+8,150)),BackgroundColor3=T.Bg2,BorderSizePixel=0,Visible=false,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=50,Parent=self.Window.Gui})
@@ -354,6 +369,10 @@ h.MouseEnter:Connect(function() Tw(h,0.15,{BackgroundColor3=T.SurfHover}) end)
 h.MouseLeave:Connect(function() Tw(h,0.15,{BackgroundColor3=T.Surface}) end)
 local function SV(v) sel=v db.Text=tostring(v).." v" if self.Window.Flags[name] then self.Window.Flags[name].Value=v end end
 self.Window.Flags[name]={Type="Dropdown",Value=sel,SetValue=SV}
+table.insert(self.Window.UIElements,{obj=h,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=nl,prop="TextColor3",key="Text"})
+table.insert(self.Window.UIElements,{obj=db,prop="TextColor3",key="TextDim"})
+table.insert(self.Window.UIElements,{obj=db,prop="BackgroundColor3",key="SurfHover"})
 return {SetValue=SV,GetValue=function() return sel end}
 end
 
@@ -361,7 +380,7 @@ function Tab:AddTextBox(name,placeholder,cb)
 local val=""
 local h=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=h})
-C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.4,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local nl=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(0.4,0,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
 local inp=C("TextBox",{Text="",PlaceholderText=placeholder or"...",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.55,-10,0,26),Position=UDim2.new(0.45,0,0,6),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=h})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=inp}) C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=inp})
 inp.FocusLost:Connect(function() val=inp.Text if self.Window.Flags[name] then self.Window.Flags[name].Value=val end if cb then pcall(cb,val) end end)
@@ -369,18 +388,24 @@ local function SV(v) val=v inp.Text=v if self.Window.Flags[name] then self.Windo
 h.MouseEnter:Connect(function() Tw(h,0.15,{BackgroundColor3=T.SurfHover}) end)
 h.MouseLeave:Connect(function() Tw(h,0.15,{BackgroundColor3=T.Surface}) end)
 self.Window.Flags[name]={Type="TextBox",Value=val,SetValue=SV}
+table.insert(self.Window.UIElements,{obj=h,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=nl,prop="TextColor3",key="Text"})
+table.insert(self.Window.UIElements,{obj=inp,prop="TextColor3",key="Text"})
+table.insert(self.Window.UIElements,{obj=inp,prop="BackgroundColor3",key="SurfHover"})
 return {SetValue=SV,GetValue=function() return val end}
 end
 
 function Tab:AddLabel(text)
 local l=C("TextLabel",{Text=text,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,22),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
+table.insert(self.Window.UIElements,{obj=l,prop="TextColor3",key="TextDim"})
 return {SetText=function(t) l.Text=t end}
 end
 
 function Tab:AddSeparator(text)
 local h=C("Frame",{Size=UDim2.new(1,0,0,26),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
 if text then
-C("TextLabel",{Text=STAR.." "..string.upper(text),Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local sl=C("TextLabel",{Text=STAR.." "..string.upper(text),Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+table.insert(self.Window.UIElements,{obj=sl,prop="TextColor3",key="TextMuted"})
 end
 end
 
@@ -388,7 +413,7 @@ function Tab:AddKeybind(name,default,cb)
 local ck=default or Enum.KeyCode.Unknown local listening=false
 local h=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.Corner,Parent=h})
-C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-80,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
+local nl=C("TextLabel",{Text=name,Font=Enum.Font.GothamMedium,TextSize=12,TextColor3=T.Text,BackgroundTransparency=1,Size=UDim2.new(1,-80,1,0),Position=UDim2.new(0,12,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=h})
 local kb=C("TextButton",{Text="["..ck.Name.."]",Font=Enum.Font.GothamBold,TextSize=10,TextColor3=T.TextDim,BackgroundColor3=T.SurfHover,Size=UDim2.new(0,68,0,26),Position=UDim2.new(1,-76,0,6),BorderSizePixel=0,ZIndex=7,Parent=h})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=kb})
 kb.MouseButton1Click:Connect(function() listening=true kb.Text="[...]" Tw(kb,0.15,{TextColor3=T.Text}) end)
@@ -398,6 +423,10 @@ local function SV(v) if type(v)=="string" then local o,k=pcall(function() return
 h.MouseEnter:Connect(function() Tw(h,0.15,{BackgroundColor3=T.SurfHover}) end)
 h.MouseLeave:Connect(function() Tw(h,0.15,{BackgroundColor3=T.Surface}) end)
 self.Window.Flags[name]={Type="Keybind",Value=ck.Name,SetValue=SV}
+table.insert(self.Window.UIElements,{obj=h,prop="BackgroundColor3",key="Surface"})
+table.insert(self.Window.UIElements,{obj=nl,prop="TextColor3",key="Text"})
+table.insert(self.Window.UIElements,{obj=kb,prop="TextColor3",key="TextDim"})
+table.insert(self.Window.UIElements,{obj=kb,prop="BackgroundColor3",key="SurfHover"})
 return {SetValue=SV,GetValue=function() return ck end}
 end
 function Tab:AddSettingsSection()
@@ -429,7 +458,8 @@ crb.MouseLeave:Connect(function() Tw(crb,0.1,{BackgroundColor3=T.SurfActive}) en
 local sl=C("TextLabel",{Text="No config selected",Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,20),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
 local lc=C("Frame",{Size=UDim2.new(1,0,0,120),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=lc})
-local ls=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=lc})
+table.insert(win.UIElements,{obj=lc,prop="BackgroundColor3",key="Bg2"})
+local ls=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=lc})
 C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ls})
 C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ls})
 local emptyLabel=C("TextLabel",{Text="No configs yet",Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextMuted,BackgroundTransparency=1,Size=UDim2.new(1,0,0,24),TextXAlignment=Enum.TextXAlignment.Center,ZIndex=7,Visible=true,Parent=ls})
@@ -439,6 +469,8 @@ local bns={"Autoload","Load","Save","Delete"} local bw=1/#bns local refreshCfg
 for i,bn in ipairs(bns) do
 local ab=C("TextButton",{Text=bn,Font=Enum.Font.GothamMedium,TextSize=10,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(bw,-3,0,28),Position=UDim2.new(bw*(i-1),1,0,2),BorderSizePixel=0,ZIndex=6,Parent=ah})
 C("UICorner",{CornerRadius=T.CornerSm,Parent=ab})
+table.insert(win.UIElements,{obj=ab,prop="BackgroundColor3",key="Surface"})
+table.insert(win.UIElements,{obj=ab,prop="TextColor3",key="Text"})
 if bn=="Delete" then ab.MouseEnter:Connect(function() Tw(ab,0.1,{BackgroundColor3=Color3.fromRGB(60,20,20)}) end)
 else ab.MouseEnter:Connect(function() Tw(ab,0.1,{BackgroundColor3=T.SurfHover}) end) end
 ab.MouseLeave:Connect(function() Tw(ab,0.1,{BackgroundColor3=T.Surface}) end)
@@ -474,16 +506,26 @@ local data={} for flag,info in pairs(win.Flags) do data[flag]=info.Value end
 if SW("Lynoria/configs/"..cn..".json",HS:JSONEncode(data)) then win:Notify("Config","Created: "..cn,"success") ci.Text="" refreshCfg()
 else win:Notify("Config","Error","error") end
 end)
-
-self:AddSeparator()
-self:AddToggle("Auto-load on inject",false,function(v) if v and selCfg then win:_SetAutoLoad(selCfg) elseif not v then win:_SetAutoLoad(nil) end end,"Loads selected config on inject")
 task.defer(refreshCfg)
 end
 
+-- Personalization: Click=Load+AutoSave, Save/Delete, Color Palette
 function Tab:AddPersonalizationSection()
 local win=self.Window
-local selTheme=nil
+local presetNames={PureBlack=true,Carbon=true,Snow=true}
 
+-- THEME MANAGER
+self:AddSeparator("Theme Manager")
+
+-- Theme list (click = load + auto-save)
+local thContainer=C("Frame",{Size=UDim2.new(1,0,0,130),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=thContainer})
+table.insert(win.UIElements,{obj=thContainer,prop="BackgroundColor3",key="Bg2"})
+local ts=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=thContainer})
+C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ts})
+C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ts})
+
+local refreshThemes
 local function getThemeColors(name)
 if Presets[name] then return Presets[name] end
 local ok,raw=SR("Lynoria/themes/"..name..".json")
@@ -492,130 +534,120 @@ if s then local t={} for k,v in pairs(d) do if type(v)=="table" and v.R then t[k
 return nil
 end
 
--- THEME MANAGER
-self:AddSeparator("Theme Manager")
-local thInput=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.Corner,Parent=thInput})
-local thName=C("TextBox",{Text="",PlaceholderText="Theme name...",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.63,-8,0,26),Position=UDim2.new(0,8,0,6),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=thInput})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=thName}) C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=thName})
-
-local thSl=C("TextLabel",{Text="No theme selected",Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,20),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
-
-local thContainer=C("Frame",{Size=UDim2.new(1,0,0,120),BackgroundColor3=T.Bg2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=thContainer})
-local ts=C("ScrollingFrame",{Size=UDim2.new(1,-4,1,-4),Position=UDim2.new(0,2,0,2),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=6,Parent=thContainer})
-C("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,2),Parent=ts})
-C("UIPadding",{PaddingTop=UDim.new(0,2),PaddingLeft=UDim.new(0,2),PaddingRight=UDim.new(0,2),Parent=ts})
-
-local presetNames={PureBlack=true,Carbon=true,Snow=true}
-local refreshThemes
 refreshThemes=function()
 for _,c in ipairs(ts:GetChildren()) do if c:IsA("Frame") and c.Name~="UIListLayout" and c.Name~="UIPadding" then c:Destroy() end end
 local themes=win:_GetThemes()
 for idx,tn in ipairs(themes) do
 if idx==4 and #themes>3 then C("Frame",{Name="div",Size=UDim2.new(1,0,0,1),BackgroundColor3=T.Border,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10-5,Parent=ts}) end
 local tc=getThemeColors(tn)
-local row=C("Frame",{Name="t_"..tn,Size=UDim2.new(1,0,0,30),BackgroundColor3=T.Surface,BackgroundTransparency=0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10,Parent=ts})
+local isCurrent=win.CurrentTheme==tn
+local row=C("Frame",{Name="t_"..tn,Size=UDim2.new(1,0,0,30),BackgroundColor3=isCurrent and T.SurfActive or T.Surface,BackgroundTransparency=isCurrent and 0 or 0.5,BorderSizePixel=0,ZIndex=7,LayoutOrder=idx*10,Parent=ts})
 C("UICorner",{CornerRadius=UDim.new(0,4),Parent=row})
-if win.CurrentTheme==tn then C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,2,0.25,0),BackgroundColor3=T.Green,BorderSizePixel=0,ZIndex=8,Parent=row}) end
-C("TextLabel",{Text="  "..tn,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=win.CurrentTheme==tn and T.Text or T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-60,1,0),Position=UDim2.new(0,6,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=8,Parent=row})
+if isCurrent then C("Frame",{Size=UDim2.new(0,3,0.5,0),Position=UDim2.new(0,2,0.25,0),BackgroundColor3=T.Green,BorderSizePixel=0,ZIndex=8,Parent=row}) end
+C("TextLabel",{Text="  "..tn,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=isCurrent and T.Text or T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,-60,1,0),Position=UDim2.new(0,6,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=8,Parent=row})
 if tc then
 local px=C("Frame",{Size=UDim2.new(0,44,0,14),Position=UDim2.new(1,-52,0.5,-7),BackgroundTransparency=1,ZIndex=8,Parent=row})
-for ci2,col in ipairs({tc.Bg,tc.Text,tc.ToggleOn}) do
+for ci2,col in ipairs({tc.Bg or T.Bg,tc.Text or T.Text,tc.ToggleOn or T.ToggleOn}) do
 local dot=C("Frame",{Size=UDim2.new(0,10,0,10),Position=UDim2.new(0,(ci2-1)*14,0.5,-5),BackgroundColor3=col,BorderSizePixel=0,ZIndex=9,Parent=px})
 C("UICorner",{CornerRadius=UDim.new(1,0),Parent=dot})
 end
 end
+-- Click = load immediately + auto-save
 local rbtn=C("TextButton",{Text="",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ZIndex=10,Parent=row})
-rbtn.MouseEnter:Connect(function() Tw(row,0.1,{BackgroundTransparency=0.2}) end)
-rbtn.MouseLeave:Connect(function() Tw(row,0.1,{BackgroundTransparency=0.5}) end)
-rbtn.MouseButton1Click:Connect(function() selTheme=tn thSl.Text="Selected: "..tn
-for _,c2 in ipairs(ts:GetChildren()) do if c2:IsA("Frame") and c2.Name:sub(1,2)=="t_" then Tw(c2,0.1,{BackgroundTransparency=0.5}) end end
-Tw(row,0.1,{BackgroundTransparency=0.1}) end)
+rbtn.MouseEnter:Connect(function() if not isCurrent then Tw(row,0.1,{BackgroundTransparency=0.2}) end end)
+rbtn.MouseLeave:Connect(function() if not isCurrent then Tw(row,0.1,{BackgroundTransparency=0.5}) end end)
+rbtn.MouseButton1Click:Connect(function()
+win:SetTheme(tn) -- SetTheme already saves to active_theme.json
+win:Notify("Theme","Loaded: "..tn,"success")
+task.defer(refreshThemes)
+end)
 end
 end
 task.defer(refreshThemes)
 
--- 4 action buttons
-local thBtnRow=C("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
-local thBns={"Auto Load","Load","Create","Delete"} local tbw=1/#thBns
-for i,bn in ipairs(thBns) do
-local tb=C("TextButton",{Text=bn,Font=Enum.Font.GothamMedium,TextSize=10,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(tbw,-3,0,28),Position=UDim2.new(tbw*(i-1),1,0,2),BorderSizePixel=0,ZIndex=6,Parent=thBtnRow})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=tb})
-if bn=="Delete" then tb.MouseEnter:Connect(function() Tw(tb,0.1,{BackgroundColor3=Color3.fromRGB(60,20,20)}) end)
-else tb.MouseEnter:Connect(function() Tw(tb,0.1,{BackgroundColor3=T.SurfHover}) end) end
-tb.MouseLeave:Connect(function() Tw(tb,0.1,{BackgroundColor3=T.Surface}) end)
-tb.MouseButton1Click:Connect(function()
-if bn=="Create" then
+-- Save + Delete buttons only
+local thBtnRow=C("Frame",{Size=UDim2.new(1,0,0,38),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
+C("UICorner",{CornerRadius=T.Corner,Parent=thBtnRow})
+table.insert(win.UIElements,{obj=thBtnRow,prop="BackgroundColor3",key="Surface"})
+local thName=C("TextBox",{Text="",PlaceholderText="New theme name...",PlaceholderColor3=T.TextMuted,Font=Enum.Font.Gotham,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0.5,-8,0,26),Position=UDim2.new(0,8,0,6),BorderSizePixel=0,ClearTextOnFocus=false,ZIndex=7,Parent=thBtnRow})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=thName}) C("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8),Parent=thName})
+local saveBtn=C("TextButton",{Text="Save",Font=Enum.Font.GothamBold,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.SurfActive,Size=UDim2.new(0.23,-4,0,26),Position=UDim2.new(0.51,2,0,6),BorderSizePixel=0,ZIndex=7,Parent=thBtnRow})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=saveBtn})
+saveBtn.MouseEnter:Connect(function() Tw(saveBtn,0.1,{BackgroundColor3=T.SurfHover}) end)
+saveBtn.MouseLeave:Connect(function() Tw(saveBtn,0.1,{BackgroundColor3=T.SurfActive}) end)
+saveBtn.MouseButton1Click:Connect(function()
 local nm=thName.Text:gsub("[^%w%s_-]",""):gsub("^%s+",""):gsub("%s+$","")
 if nm=="" then win:Notify("Theme","Enter a name","warning") return end
 local colors={} for k,v in pairs(T) do if typeof(v)=="Color3" then colors[k]=v end end
-win:SaveTheme(nm,colors) thName.Text="" refreshThemes() return
-end
-if not selTheme then win:Notify("Theme","Select a theme first","warning") return end
-if bn=="Auto Load" then SW("Lynoria/active_theme.json",HS:JSONEncode({theme=selTheme})) win:Notify("Theme","Auto-load: "..selTheme,"success")
-elseif bn=="Load" then win:SetTheme(selTheme) win:Notify("Theme","Applied: "..selTheme,"success") refreshThemes()
-elseif bn=="Delete" then
-if presetNames[selTheme] then win:Notify("Theme","Can't delete presets","warning") return end
-win:_DeleteTheme(selTheme) selTheme=nil thSl.Text="No theme selected" refreshThemes()
-end
+win:SaveTheme(nm,colors) thName.Text="" refreshThemes()
 end)
-end
-
--- COLOR EDITOR
-self:AddSeparator("Colors")
-local colorKeys={{"Bg","Background"},{"Surface","Surface"},{"Border","Border"},{"Text","Text"},{"TextDim","Text Dim"},{"ToggleOn","Toggle"}}
-local colorInputs={}
-for _,ck in ipairs(colorKeys) do
-local key,label=ck[1],ck[2]
-local row=C("Frame",{Size=UDim2.new(1,0,0,30),BackgroundColor3=T.Surface,BorderSizePixel=0,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.CornerSm,Parent=row})
-C("TextLabel",{Text=label,Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(0,70,1,0),Position=UDim2.new(0,8,0,0),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=row})
-local prev=C("Frame",{Size=UDim2.new(0,14,0,14),Position=UDim2.new(0,80,0.5,-7),BackgroundColor3=T[key],BorderSizePixel=0,ZIndex=6,Parent=row})
-C("UICorner",{CornerRadius=UDim.new(0,3),Parent=prev}) C("UIStroke",{Color=T.Border,Thickness=1,Parent=prev})
-local inputs={}
-local col=T[key]
-for ci2,ch in ipairs({"R","G","B"}) do
-local v=ci2==1 and math.floor(col.R*255) or ci2==2 and math.floor(col.G*255) or math.floor(col.B*255)
-local tb=C("TextBox",{Text=tostring(v),Font=Enum.Font.Gotham,TextSize=10,TextColor3=T.Text,BackgroundColor3=T.SurfHover,Size=UDim2.new(0,36,0,20),Position=UDim2.new(0,100+(ci2-1)*42,0.5,-10),BorderSizePixel=0,ClearTextOnFocus=true,ZIndex=7,Parent=row})
-C("UICorner",{CornerRadius=UDim.new(0,4),Parent=tb}) C("UIPadding",{PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4),Parent=tb})
-inputs[ch]=tb
-end
-colorInputs[key]={inputs=inputs,preview=prev}
-end
-
--- Apply button
-local applyBtn=C("TextButton",{Text="Apply Colors Live",Font=Enum.Font.GothamBold,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.Surface,Size=UDim2.new(1,0,0,32),BorderSizePixel=0,ZIndex=5,Parent=self.Page})
-C("UICorner",{CornerRadius=T.Corner,Parent=applyBtn})
-applyBtn.MouseEnter:Connect(function() Tw(applyBtn,0.1,{BackgroundColor3=T.SurfHover}) end)
-applyBtn.MouseLeave:Connect(function() Tw(applyBtn,0.1,{BackgroundColor3=T.Surface}) end)
-applyBtn.MouseButton1Click:Connect(function()
-for key,data in pairs(colorInputs) do
-local r=tonumber(data.inputs.R.Text) or 0
-local g=tonumber(data.inputs.G.Text) or 0
-local b=tonumber(data.inputs.B.Text) or 0
-r=math.clamp(r,0,255) g=math.clamp(g,0,255) b=math.clamp(b,0,255)
-local col=Color3.fromRGB(r,g,b)
-T[key]=col data.preview.BackgroundColor3=col
--- Also set related keys
-if key=="Bg" then T.Bg2=Color3.fromRGB(math.min(r+10,255),math.min(g+10,255),math.min(b+10,255)) end
-if key=="ToggleOn" then T.SliderFill=col end
-if key=="Text" then T.SliderFill=col end
-end
-for _,e in ipairs(win.UIElements) do if e.obj and e.obj.Parent and e.key and T[e.key] then pcall(function() Tw(e.obj,0.3,{[e.prop]=T[e.key]}) end) end end
-win:Notify("Theme","Colors applied","success")
+local delBtn=C("TextButton",{Text="Delete",Font=Enum.Font.GothamBold,TextSize=11,TextColor3=T.Text,BackgroundColor3=T.SurfActive,Size=UDim2.new(0.23,-4,0,26),Position=UDim2.new(0.75,2,0,6),BorderSizePixel=0,ZIndex=7,Parent=thBtnRow})
+C("UICorner",{CornerRadius=T.CornerSm,Parent=delBtn})
+delBtn.MouseEnter:Connect(function() Tw(delBtn,0.1,{BackgroundColor3=Color3.fromRGB(60,20,20)}) end)
+delBtn.MouseLeave:Connect(function() Tw(delBtn,0.1,{BackgroundColor3=T.SurfActive}) end)
+delBtn.MouseButton1Click:Connect(function()
+local cur=win.CurrentTheme
+if presetNames[cur] then win:Notify("Theme","Can't delete presets","warning") return end
+win:_DeleteTheme(cur) refreshThemes()
 end)
 
--- WINDOW OPACITY
-self:AddSeparator("Window")
-self:AddSlider("Opacity",30,100,win._persOpacity,function(v)
-win._persOpacity=v local tr=1-(v/100)
-win.Main.BackgroundTransparency=tr
-win.TitleBar.BackgroundTransparency=tr*0.5
-win.Sidebar.BackgroundTransparency=tr*0.5
-win.BottomBar.BackgroundTransparency=tr*0.5
-win:_SavePersonalization()
+-- COLOR PALETTE
+self:AddSeparator("Color Palette")
+
+local palettes={
+{label="Background",keys={"Bg","Bg2"},colors={
+{n="Black",c=Color3.fromRGB(0,0,0)},{n="Dark",c=Color3.fromRGB(18,18,18)},{n="Charcoal",c=Color3.fromRGB(32,32,32)},
+{n="Navy",c=Color3.fromRGB(12,12,28)},{n="Deep Purple",c=Color3.fromRGB(18,8,28)},{n="Forest",c=Color3.fromRGB(8,18,12)},
+{n="Light",c=Color3.fromRGB(232,232,237)},{n="White",c=Color3.fromRGB(246,246,248)}}},
+{label="Text",keys={"Text","TextDim","TextMuted"},colors={
+{n="White",c=Color3.fromRGB(255,255,255)},{n="Light",c=Color3.fromRGB(235,235,235)},{n="Warm",c=Color3.fromRGB(255,248,230)},
+{n="Cool",c=Color3.fromRGB(220,230,255)},{n="Dark",c=Color3.fromRGB(28,28,30)},{n="Charcoal",c=Color3.fromRGB(60,60,65)}}},
+{label="Accent",keys={"ToggleOn","SliderFill"},colors={
+{n="Green",c=Color3.fromRGB(50,215,75)},{n="Blue",c=Color3.fromRGB(14,165,233)},{n="Purple",c=Color3.fromRGB(124,58,237)},
+{n="Red",c=Color3.fromRGB(255,69,58)},{n="Orange",c=Color3.fromRGB(245,158,11)},{n="Pink",c=Color3.fromRGB(236,72,153)},
+{n="Cyan",c=Color3.fromRGB(6,182,212)},{n="White",c=Color3.fromRGB(255,255,255)}}},
+}
+
+for _,pal in ipairs(palettes) do
+local plbl=C("TextLabel",{Text=pal.label,Font=Enum.Font.GothamMedium,TextSize=11,TextColor3=T.TextDim,BackgroundTransparency=1,Size=UDim2.new(1,0,0,18),TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5,Parent=self.Page})
+table.insert(win.UIElements,{obj=plbl,prop="TextColor3",key="TextDim"})
+local prow=C("Frame",{Size=UDim2.new(1,0,0,30),BackgroundTransparency=1,ZIndex=5,Parent=self.Page})
+for i,pc in ipairs(pal.colors) do
+local sz=24
+local sw=C("Frame",{Size=UDim2.new(0,sz,0,sz),Position=UDim2.new(0,(i-1)*(sz+6),0,3),BackgroundColor3=pc.c,BorderSizePixel=0,ZIndex=6,Parent=prow})
+C("UICorner",{CornerRadius=UDim.new(0,5),Parent=sw})
+C("UIStroke",{Color=T.Border,Thickness=1,Transparency=0.5,Parent=sw})
+local sbtn=C("TextButton",{Text="",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ZIndex=7,Parent=sw})
+sbtn.MouseEnter:Connect(function() Tw(sw,0.1,{Size=UDim2.new(0,sz+4,0,sz+4)}) end)
+sbtn.MouseLeave:Connect(function() Tw(sw,0.1,{Size=UDim2.new(0,sz,0,sz)}) end)
+sbtn.MouseButton1Click:Connect(function()
+for _,key in ipairs(pal.keys) do T[key]=pc.c end
+-- Derive related colors for Background palette
+if pal.label=="Background" then
+local r,g,b=math.floor(pc.c.R*255),math.floor(pc.c.G*255),math.floor(pc.c.B*255)
+T.Bg2=Color3.fromRGB(math.min(r+10,255),math.min(g+10,255),math.min(b+10,255))
+T.Surface=Color3.fromRGB(math.min(r+18,255),math.min(g+18,255),math.min(b+18,255))
+T.SurfHover=Color3.fromRGB(math.min(r+28,255),math.min(g+28,255),math.min(b+28,255))
+T.SurfActive=Color3.fromRGB(math.min(r+36,255),math.min(g+36,255),math.min(b+36,255))
+T.Border=Color3.fromRGB(math.min(r+34,255),math.min(g+34,255),math.min(b+34,255))
+T.SliderTrack=Color3.fromRGB(math.min(r+40,255),math.min(g+40,255),math.min(b+40,255))
+T.ToggleOff=Color3.fromRGB(math.min(r+40,255),math.min(g+40,255),math.min(b+40,255))
+end
+if pal.label=="Text" then
+local r,g,b=math.floor(pc.c.R*255),math.floor(pc.c.G*255),math.floor(pc.c.B*255)
+T.TextDim=Color3.fromRGB(math.max(r-60,0),math.max(g-60,0),math.max(b-60,0))
+T.TextMuted=Color3.fromRGB(math.max(r-110,0),math.max(g-110,0),math.max(b-110,0))
+end
+-- Apply to all registered elements
+for _,e in ipairs(win.UIElements) do
+if e.obj and e.obj.Parent and e.key and T[e.key] then
+pcall(function() Tw(e.obj,0.3,{[e.prop]=T[e.key]}) end)
+end
+end
+win:Notify("Palette",pal.label..": "..pc.n,"success")
 end)
+end
+end
 
 end -- end AddPersonalizationSection
 
