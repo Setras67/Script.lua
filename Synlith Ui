@@ -23,8 +23,8 @@ local DC_URL    = "https://raw.githubusercontent.com/Setras67/Script.lua/main/di
 local DC_INVITE = "https://discord.gg/2q69gGWEcj"
 
 -- Fonts — use Enum.Font for max executor compatibility
-local FN = Enum.Font.Gotham
-local FB = Enum.Font.GothamBold
+local FN = Enum.Font.SourceSans
+local FB = Enum.Font.SourceSansBold
 local FC = Enum.Font.Code
 
 -- ══════════════════════════════════════════════════════════
@@ -94,13 +94,13 @@ local function Tw(o, p, ti) if not o or not o.Parent then return end return Twee
 local function Crn(p, r) return I("UICorner", {CornerRadius = UDim.new(0, r or 4), Parent = p}) end
 local function Pad(p, t, b, l, r) return I("UIPadding", {PaddingTop=UDim.new(0,t or 0), PaddingBottom=UDim.new(0,b or 0), PaddingLeft=UDim.new(0,l or 0), PaddingRight=UDim.new(0,r or 0), Parent=p}) end
 local function Lst(p, g, d) return I("UIListLayout", {Padding=UDim.new(0,g or 4), FillDirection=d or Enum.FillDirection.Vertical, SortOrder=Enum.SortOrder.LayoutOrder, Parent=p}) end
-local function Stk(p, clr, th, tr) local s = I("UIStroke", {Thickness=th or 1, Transparency=tr or 0.6, Parent=p}) if clr then Thm(s, "Color", clr) end return s end
 
 local function Thm(inst, prop, key)
     if not inst then return end
     pcall(function() inst[prop] = Library.Theme[key] end)
     table.insert(Library._themed, {inst=inst, prop=prop, key=key})
 end
+local function Stk(p, clr, th, tr) local s = I("UIStroke", {Thickness=th or 1, Transparency=tr or 0.6, Parent=p}) if clr then Thm(s, "Color", clr) end return s end
 local function Cn(sig, fn) local c = sig:Connect(fn) table.insert(Library._conn, c) return c end
 local function CB(cb, ...) if cb then pcall(cb, ...) end end
 local function SF(f, v) if f then Library.Flags[f] = v end end
