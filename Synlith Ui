@@ -128,23 +128,22 @@ function Library:CreateWindow(opts)
     local header=Create("Frame",{Size=UDim2.new(1,0,0,IS_MOBILE and 50 or 68),BackgroundTransparency=1,Parent=sidebar,ZIndex=3})
     if useLogo then
         local logoImg=""
-        if type(opts.Logo)=="string" then
-            if opts.Logo:find("rbxassetid://") then
-                logoImg=opts.Logo
-            elseif opts.Logo:find("http") then
-                pcall(function()
-                    local fname=opts.Logo:match("([^/]+)$") or "logo.png"
-                    local fpath="Synlith.hub/"..fname
-                    EnsureDir()
-                    if not isfile(fpath) then writefile(fpath,game:HttpGet(opts.Logo)) end
-                    if isfile(fpath) then logoImg=getcustomasset(fpath) end
-                end)
-            else
-                pcall(function() if isfile(opts.Logo) then logoImg=getcustomasset(opts.Logo) end end)
-            end
-        else
-            pcall(function() if isfile and isfile(LPATH) then logoImg=getcustomasset(LPATH) end end)
+        local LPATH = "Synlith.hub/logo.png"
+        local LOGO_URL = "https://raw.githubusercontent.com/Setras67/Script.lua/refs/heads/main/Synlith%20Logo%20No%20background.png"
+        
+        if type(opts.Logo) == "string" and opts.Logo:find("http") then
+            LOGO_URL = opts.Logo
         end
+        
+        pcall(function()
+            EnsureDir()
+            if not isfile(LPATH) then
+                writefile(LPATH, game:HttpGet(LOGO_URL))
+            end
+            if isfile(LPATH) then
+                logoImg = getcustomasset(LPATH)
+            end
+        end)
 
         local logoSz=IS_MOBILE and 26 or 30
         local logoLabel=Create("ImageLabel",{Position=UDim2.new(0,IS_MOBILE and 13 or 14,0,IS_MOBILE and 12 or 16),Size=UDim2.new(0,logoSz,0,logoSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=header,ZIndex=4})
