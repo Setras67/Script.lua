@@ -95,15 +95,15 @@ function Library:Notify(title,msg,dur)
     local s=I("UIStroke",{Thickness=1,Transparency=0,Parent=card}) Thm(s,"Color","Border")
     local inCard=I("Frame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=card,ZIndex=502})
     
-    local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,16),Size=UDim2.new(0,22,0,22),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=inCard,ZIndex=503}) 
+    local icon=I("ImageLabel",{Position=UDim2.new(0,12,0,10),Size=UDim2.new(0,40,0,40),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=inCard,ZIndex=503}) 
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) 
     Thm(icon,"ImageColor3","Accent") 
     table.insert(Library._logos,icon)
     
-    local tL=I("TextLabel",{Position=UDim2.new(0,48,0,12),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) 
+    local tL=I("TextLabel",{Position=UDim2.new(0,62,0,12),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) 
     Thm(tL,"TextColor3","Text")
     
-    local mL=I("TextLabel",{Position=UDim2.new(0,48,0,30),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) 
+    local mL=I("TextLabel",{Position=UDim2.new(0,62,0,30),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) 
     Thm(mL,"TextColor3","TextD")
     
     local pBg=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-6),Size=UDim2.new(1,-24,0,3),BorderSizePixel=0,Parent=inCard,ZIndex=502}) 
