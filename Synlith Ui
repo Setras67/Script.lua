@@ -34,7 +34,7 @@ local I_MISC="rbxassetid://131511708379760"
 
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
-local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico,Logo=logo or acc} end
+local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=acc,Logo=logo or acc} end
 local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(255,255,255), Color3.fromRGB(160,160,160), Color3.fromRGB(25,25,25), Color3.fromRGB(255,255,255)
 
 Library.Themes["Pure Black"]=T(bBg,bEl,bElH,Color3.fromRGB(255,255,255),bTxt,bTxtD,bBrd,bIco)
@@ -314,6 +314,7 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
     end})
     cthmSec:CreateColorPicker({Name="Accent Color", Default=cTheme.Accent, Callback=function(v)
         cTheme.Accent = v
+        cTheme.Icon = v
         Library:SetTheme("Custom")
         Library:SaveCustomTheme()
     end})
@@ -324,7 +325,6 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
     end})
     cthmSec:CreateColorPicker({Name="Text Color", Default=cTheme.Text, Callback=function(v)
         cTheme.Text = v
-        cTheme.Icon = v
         local h,s,val = Color3.toHSV(v)
         cTheme.TextD = Color3.fromHSV(h, s, math.clamp(val-0.2,0,1))
         Library:SetTheme("Custom")
