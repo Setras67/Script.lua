@@ -44,7 +44,6 @@ local function MakeElem(parent,h)
     return f,wrap
 end
 local function MakeDrag(frame,handle) local dr,ds,sp Cn(handle.InputBegan,function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dr=true ds=input.Position sp=frame.Position input.Changed:Connect(function() if input.UserInputState==Enum.UserInputState.End then dr=false end end) end end) Cn(UIS.InputChanged,function(input) if dr and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then local d=input.Position-ds frame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end) end
-local function MakeResize(frame,handle) local dr,ds,ss local min=Vector2.new(450,350) local max=Vector2.new(1000,800) Cn(handle.InputBegan,function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dr=true ds=input.Position ss=frame.AbsoluteSize input.Changed:Connect(function() if input.UserInputState==Enum.UserInputState.End then dr=false end end) end end) Cn(UIS.InputChanged,function(input) if dr and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then local d=input.Position-ds local nS=Vector2.new(math.clamp(ss.X+d.X,min.X,max.X),math.clamp(ss.Y+d.Y,min.Y,max.Y)) frame.Size=UDim2.new(0,nS.X,0,nS.Y) end end) end
 local function FetchAsset(url,path) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfile(path) then writefile(path,game:HttpGet(url)) task.wait(0.1) end end) local img="" pcall(function() if isfile(path) then img=getcustomasset(path) end end) return img end
 local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfolder(CDIR) then makefolder(CDIR) end end) end
 local function UpdateLogos() local c=Library.Theme.Accent for _,r in ipairs(Library._logos) do if r and r.Parent then pcall(function() r.ImageColor3=c end) end end end
@@ -157,9 +156,6 @@ function Library:CreateWindow(opts)
     
     local fpsCnt,fpsLast=0,tick() Cn(Run.Heartbeat,function() fpsCnt=fpsCnt+1 if tick()-fpsLast>=0.5 then local f=math.floor(fpsCnt/(tick()-fpsLast)) fpsCnt=0 fpsLast=tick() if wmFps and wmFps.Parent then wmFps.Text=f.." fps" end end end)
     Cn(UIS.InputBegan,function(input) if input.KeyCode==self.ToggleKey then ToggleUI(not self.Open) end end)
-    
-    local rzH=I("ImageLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-4,1,-4),Size=UDim2.new(0,16,0,16),BackgroundTransparency=1,Image="rbxassetid://138435165922384",Parent=main,ZIndex=50}) Thm(rzH,"ImageColor3","Icon") rzH.ImageTransparency=0.6 MakeResize(main,rzH)
-    Cn(rzH.MouseEnter,function() Tw(rzH,{ImageTransparency=0},TF) end) Cn(rzH.MouseLeave,function() Tw(rzH,{ImageTransparency=0.6},TF) end)
     
     main.Position=UDim2.new(0.5,0,1.5,0) ToggleUI(true)
     
