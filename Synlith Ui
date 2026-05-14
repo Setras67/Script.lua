@@ -1,4 +1,4 @@
---[[ Synlith UI Library v7.1 - Huge Overhaul ]]
+--[[ Synlith UI Library v7.2 - Bug Fixes & Premium Slide ]]
 local Players=game:GetService("Players") local TS=game:GetService("TweenService") local UIS=game:GetService("UserInputService") local Http=game:GetService("HttpService") local Run=game:GetService("RunService") local CG=game:GetService("CoreGui") local LP=Players.LocalPlayer
 local MOB=UIS.TouchEnabled and not UIS.MouseEnabled
 local TF=TweenInfo.new(0.15,Enum.EasingStyle.Quad) local TM=TweenInfo.new(0.25,Enum.EasingStyle.Quad) local TL=TweenInfo.new(0.4,Enum.EasingStyle.Quad)
@@ -15,7 +15,6 @@ local FC=Font.new("rbxasset://fonts/families/RobotoMono.json",Enum.FontWeight.Me
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil,_glowStroke=nil}
 
 local function T(bg,el,elH,acc,txt,txtD,brd) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd} end
--- Obsidian Base: Bg=12,12,12 / Panel=12,12,12 / Elem=18,18,18 / ElemH=26,26,26
 local bBg,bEl,bElH,bTxt,bTxtD,bBrd = Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(26,26,26), Color3.fromRGB(240,240,240), Color3.fromRGB(150,150,150), Color3.fromRGB(35,35,35)
 
 Library.Themes["Light"]=T(Color3.fromRGB(245,247,250),Color3.fromRGB(255,255,255),Color3.fromRGB(240,240,255),Color3.fromRGB(130,70,255),Color3.fromRGB(20,20,30),Color3.fromRGB(90,90,100),Color3.fromRGB(220,220,230))
@@ -25,7 +24,7 @@ Library.Themes["Crimson"]=T(bBg,bEl,bElH,Color3.fromRGB(255,60,70),bTxt,bTxtD,bB
 Library.Themes["Phantom"]=T(bBg,bEl,bElH,Color3.fromRGB(0,255,170),bTxt,bTxtD,bBrd)
 Library.Theme=Library.Themes["Dark"]
 
-local function I(c,p) local i=Instance.new(c) for k,v in pairs(p or{}) do if k~="Parent" then pcall(function() i[k]=v end) end end if p and p.Parent then i.Parent=p.Parent end return i end
+local function I(c,p) local i=Instance.new(c) pcall(function() i.BorderSizePixel=0 end) pcall(function() i.AutoButtonColor=false end) for k,v in pairs(p or{}) do if k~="Parent" then pcall(function() i[k]=v end) end end if p and p.Parent then i.Parent=p.Parent end return i end
 local function Tw(o,p,ti) if not o or not o.Parent then return end TS:Create(o,ti or TM,p):Play() end
 local function Crn(p,r) return I("UICorner",{CornerRadius=UDim.new(0,r or 6),Parent=p}) end
 local function Pad(p,t,b,l,r) return I("UIPadding",{PaddingTop=UDim.new(0,t or 0),PaddingBottom=UDim.new(0,b or 0),PaddingLeft=UDim.new(0,l or 0),PaddingRight=UDim.new(0,r or 0),Parent=p}) end
@@ -96,7 +95,6 @@ function Library:CreateWindow(opts)
     pcall(function() gui.Parent=CG end) if not gui.Parent then gui.Parent=LP:WaitForChild("PlayerGui") end self.ScreenGui=gui
     
     local main=I("Frame",{Name="Main",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=size,ClipsDescendants=false,Parent=gui,ZIndex=1})
-    local mScale=I("UIScale",{Scale=0.85,Parent=main})
     Thm(main,"BackgroundColor3","Bg") Crn(main,8) self.Window=main
     local mainStk=I("UIStroke",{Thickness=1,Transparency=0.3,Parent=main}) Thm(mainStk,"Color","Border")
     local glowS=I("UIStroke",{Thickness=2,Transparency=0.6,Parent=main}) glowS.Color=self.Theme.Accent self._glowStroke=glowS
@@ -120,8 +118,6 @@ function Library:CreateWindow(opts)
         if isClose then Cn(b.MouseEnter,function() Tw(bgC,{BackgroundColor3=Color3.fromRGB(255,60,70),BackgroundTransparency=0},TF) Tw(b,{TextColor3=Color3.new(1,1,1)},TF) Tw(s,{Color=Color3.fromRGB(255,60,70)},TF) end) Cn(b.MouseLeave,function() Tw(bgC,{BackgroundTransparency=1},TF) Tw(b,{TextColor3=Library.Theme.Text},TF) Tw(s,{Color=Library.Theme.Accent},TF) end) else Cn(b.MouseEnter,function() Tw(bgC,{BackgroundColor3=Library.Theme.Accent,BackgroundTransparency=0},TF) Tw(b,{TextColor3=Color3.new(1,1,1)},TF) end) Cn(b.MouseLeave,function() Tw(bgC,{BackgroundTransparency=1},TF) Tw(b,{TextColor3=Library.Theme.Text},TF) end) end 
         table.insert(Library._refreshFn,function() if b.Parent then s.Color=Library.Theme.Accent end end) return b end
     local minBtn=CtrlBtn("-",false) local closeBtn=CtrlBtn("x",true)
-    Cn(minBtn.MouseButton1Click,function() self.Open=false Tw(mScale,{Scale=0.9},TM) Tw(main,{BackgroundTransparency=1},TM) for _,ch in ipairs(main:GetDescendants()) do if ch:IsA("UIStroke") or ch:IsA("TextLabel") or ch:IsA("ImageLabel") or ch:IsA("Frame") or ch:IsA("ScrollingFrame") then Tw(ch,{Transparency=1},TM) pcall(function() Tw(ch,{BackgroundTransparency=1},TM) end) pcall(function() Tw(ch,{TextTransparency=1},TM) end) pcall(function() Tw(ch,{ImageTransparency=1},TM) end) end end task.wait(0.25) main.Visible=false if self.ShowWatermark and self._wm then self._wm.Visible=true end end)
-    Cn(closeBtn.MouseButton1Click,function() self.Open=false Tw(mScale,{Scale=0.9},TM) Tw(main,{BackgroundTransparency=1},TM) for _,ch in ipairs(main:GetDescendants()) do pcall(function() Tw(ch,{BackgroundTransparency=1},TM) end) pcall(function() Tw(ch,{TextTransparency=1},TM) end) pcall(function() Tw(ch,{ImageTransparency=1},TM) end) end task.wait(0.25) self:Unload() end)
     
     -- SIDEBAR
     local sbW=MOB and 50 or 170
@@ -140,20 +136,23 @@ function Library:CreateWindow(opts)
     local wmOpen=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-6,0.5,0),Size=UDim2.new(0,24,0,24),Text=">",TextSize=12,FontFace=FB,AutoButtonColor=false,Parent=wm,ZIndex=152}) Thm(wmOpen,"BackgroundColor3","Elem") Thm(wmOpen,"TextColor3","Accent") Crn(wmOpen,6) Stk(wmOpen,"Border",1,0.5)
     
     local function ToggleUI(state)
-        if state then self.Open=true main.Visible=true wm.Visible=false
-            Tw(mScale,{Scale=1},TM) Tw(main,{BackgroundTransparency=0},TM)
-            for _,ch in ipairs(main:GetDescendants()) do if ch:IsA("UIStroke") then Tw(ch,{Transparency=ch:GetAttribute("OrigTr") or 0.3},TM) elseif ch:IsA("TextLabel") or ch:IsA("ImageLabel") or ch:IsA("Frame") or ch:IsA("ScrollingFrame") then pcall(function() Tw(ch,{BackgroundTransparency=ch:GetAttribute("OrigBgTr") or 0},TM) end) pcall(function() Tw(ch,{TextTransparency=0},TM) end) pcall(function() Tw(ch,{ImageTransparency=0},TM) end) end end
-        else self.Open=false wm.Visible=self.ShowWatermark
-            Tw(mScale,{Scale=0.9},TM) Tw(main,{BackgroundTransparency=1},TM)
-            for _,ch in ipairs(main:GetDescendants()) do if ch:IsA("UIStroke") then ch:SetAttribute("OrigTr",ch.Transparency) Tw(ch,{Transparency=1},TM) elseif ch:IsA("TextLabel") or ch:IsA("ImageLabel") or ch:IsA("Frame") or ch:IsA("ScrollingFrame") then pcall(function() ch:SetAttribute("OrigBgTr",ch.BackgroundTransparency) Tw(ch,{BackgroundTransparency=1},TM) end) pcall(function() Tw(ch,{TextTransparency=1},TM) end) pcall(function() Tw(ch,{ImageTransparency=1},TM) end) end end
-            task.wait(0.25) main.Visible=false
+        if state then 
+            self.Open=true main.Visible=true wm.Visible=false
+            Tw(main,{Position=UDim2.new(0.5,0,0.5,0)},TM)
+        else 
+            self.Open=false wm.Visible=self.ShowWatermark
+            Tw(main,{Position=UDim2.new(0.5,0,1.5,0)},TM)
+            task.delay(0.25, function() if not self.Open then main.Visible=false end end)
         end
     end
     Cn(wmOpen.MouseButton1Click,function() ToggleUI(true) end)
+    Cn(minBtn.MouseButton1Click,function() ToggleUI(false) end)
+    Cn(closeBtn.MouseButton1Click,function() ToggleUI(false) task.wait(0.25) self:Unload() end)
+    
     local fpsCnt,fpsLast=0,tick() Cn(Run.Heartbeat,function() fpsCnt=fpsCnt+1 if tick()-fpsLast>=0.5 then local f=math.floor(fpsCnt/(tick()-fpsLast)) fpsCnt=0 fpsLast=tick() if wmFps and wmFps.Parent then wmFps.Text=f.." fps" end end end)
     Cn(UIS.InputBegan,function(input) if input.KeyCode==self.ToggleKey then ToggleUI(not self.Open) end end)
     
-    main.BackgroundTransparency=1 mScale.Scale=0.9 ToggleUI(true)
+    main.Position=UDim2.new(0.5,0,1.5,0) ToggleUI(true)
     
     local WO={_main=main,_sidebar=sidebar,_content=content,_tabScroll=tabScroll,_tabs={},_to=0}
     function WO:CreateTab(tO) tO=tO or{} local tName=tO.Name or"Tab" local tIcon=tO.Icon or"" local order=WO._to WO._to=order+1 local btnH=MOB and 40 or 34
