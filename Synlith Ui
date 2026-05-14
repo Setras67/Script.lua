@@ -34,7 +34,7 @@ local I_MISC="rbxassetid://131511708379760"
 
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
-local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico,Logo=logo or ico} end
+local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=acc,Logo=logo or acc} end
 local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(255,255,255), Color3.fromRGB(160,160,160), Color3.fromRGB(25,25,25), Color3.fromRGB(255,255,255)
 
 Library.Themes["Pure Black"]=T(bBg,bEl,bElH,Color3.fromRGB(255,255,255),bTxt,bTxtD,bBrd,bIco)
@@ -79,13 +79,13 @@ function Library:GetAutoConfig() local n="" pcall(function() if isfile(CDIR.."_a
 function Library:PersistTheme(n) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end writefile(TDIR.."_theme.txt",n) end) end
 function Library:GetPersistedTheme() local n="" pcall(function() if isfile(TDIR.."_theme.txt") then n=readfile(TDIR.."_theme.txt"):gsub("%s+","") end end) return n end
 
-function Library:SaveCustomTheme() local cthm=self.Themes["Custom"] local d={Bg={R=cthm.Bg.R,G=cthm.Bg.G,B=cthm.Bg.B},Acc={R=cthm.Accent.R,G=cthm.Accent.G,B=cthm.Accent.B},Txt={R=cthm.Text.R,G=cthm.Text.G,B=cthm.Text.B},Logo={R=cthm.Logo.R,G=cthm.Logo.G,B=cthm.Logo.B},Ico={R=cthm.Icon.R,G=cthm.Icon.G,B=cthm.Icon.B}} pcall(function() EnsureDir() writefile(TDIR.."_custom.json",Http:JSONEncode(d)) end) end
-function Library:LoadCustomTheme() local ok,res=pcall(function() return Http:JSONDecode(readfile(TDIR.."_custom.json")) end) if ok and type(res)=="table" then pcall(function() local bg=Color3.new(res.Bg.R,res.Bg.G,res.Bg.B) local acc=Color3.new(res.Acc.R,res.Acc.G,res.Acc.B) local txt=Color3.new(res.Txt.R,res.Txt.G,res.Txt.B) local logo=res.Logo and Color3.new(res.Logo.R,res.Logo.G,res.Logo.B) or acc local ico=res.Ico and Color3.new(res.Ico.R,res.Ico.G,res.Ico.B) or Color3.fromRGB(255,255,255) local h,s,v=Color3.toHSV(bg) local el=Color3.fromHSV(h,s,math.clamp(v+0.03,0,1)) local elH=Color3.fromHSV(h,s,math.clamp(v+0.06,0,1)) local brd=Color3.fromHSV(h,s,math.clamp(v+0.08,0,1)) local th,ts,tv=Color3.toHSV(txt) local txtD=Color3.fromHSV(th,ts,math.clamp(tv-0.2,0,1)) self.Themes["Custom"]=T(bg,el,elH,acc,txt,txtD,brd,ico,logo) end) end end
+function Library:SaveCustomTheme() local cthm=self.Themes["Custom"] local d={Bg={R=cthm.Bg.R,G=cthm.Bg.G,B=cthm.Bg.B},Acc={R=cthm.Accent.R,G=cthm.Accent.G,B=cthm.Accent.B},Txt={R=cthm.Text.R,G=cthm.Text.G,B=cthm.Text.B},Logo={R=cthm.Logo.R,G=cthm.Logo.G,B=cthm.Logo.B}} pcall(function() EnsureDir() writefile(TDIR.."_custom.json",Http:JSONEncode(d)) end) end
+function Library:LoadCustomTheme() local ok,res=pcall(function() return Http:JSONDecode(readfile(TDIR.."_custom.json")) end) if ok and type(res)=="table" then pcall(function() local bg=Color3.new(res.Bg.R,res.Bg.G,res.Bg.B) local acc=Color3.new(res.Acc.R,res.Acc.G,res.Acc.B) local txt=Color3.new(res.Txt.R,res.Txt.G,res.Txt.B) local logo=res.Logo and Color3.new(res.Logo.R,res.Logo.G,res.Logo.B) or acc local h,s,v=Color3.toHSV(bg) local el=Color3.fromHSV(h,s,math.clamp(v+0.03,0,1)) local elH=Color3.fromHSV(h,s,math.clamp(v+0.06,0,1)) local brd=Color3.fromHSV(h,s,math.clamp(v+0.08,0,1)) local th,ts,tv=Color3.toHSV(txt) local txtD=Color3.fromHSV(th,ts,math.clamp(tv-0.2,0,1)) self.Themes["Custom"]=T(bg,el,elH,acc,txt,txtD,brd,txt,logo) end) end end
 
 function Library:SetTheme(name) 
     if name=="Dark" then name="Deep Purple" end if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
     for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() t.inst[t.prop]=self.Theme[t.key] end) else table.remove(self._themed,i) end end 
-    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
+    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Accent end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end 
 end
 
@@ -213,7 +213,7 @@ function Library:CreateWindow(opts)
             tPage.Visible=true Tw(indicator,{BackgroundTransparency=0},TF) Tw(tBtn,{BackgroundTransparency=0,BackgroundColor3=Library.Theme.Elem},TF)
             for _,ch in ipairs(tBtn:GetChildren()) do 
                 if ch:IsA("TextLabel") then Thm(ch,"TextColor3","Text") end 
-                if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Icon") end 
+                if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Accent") end 
             end 
             Library._activeTab=TO 
         end
@@ -314,10 +314,6 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
     end})
     cthmSec:CreateColorPicker({Name="Accent Color", Default=cTheme.Accent, Callback=function(v)
         cTheme.Accent = v
-        Library:SetTheme("Custom")
-        Library:SaveCustomTheme()
-    end})
-    cthmSec:CreateColorPicker({Name="Icon Color", Default=cTheme.Icon, Callback=function(v)
         cTheme.Icon = v
         Library:SetTheme("Custom")
         Library:SaveCustomTheme()
