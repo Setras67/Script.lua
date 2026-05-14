@@ -98,11 +98,11 @@ function Library:Notify(title,msg,dur)
     Thm(icon,"ImageColor3","Accent") 
     table.insert(Library._logos,icon)
     
-    I("TextLabel",{Position=UDim2.new(0,48,0,12),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) 
-    Thm(inCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
+    local tL=I("TextLabel",{Position=UDim2.new(0,48,0,12),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) 
+    Thm(tL,"TextColor3","Text")
     
-    I("TextLabel",{Position=UDim2.new(0,48,0,30),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) 
-    Thm(inCard:FindFirstChildWhichIsA("TextLabel",true),"TextColor3","TextD")
+    local mL=I("TextLabel",{Position=UDim2.new(0,48,0,30),Size=UDim2.new(1,-60,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) 
+    Thm(mL,"TextColor3","TextD")
     
     local pBg=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-6),Size=UDim2.new(1,-24,0,3),BorderSizePixel=0,Parent=inCard,ZIndex=502}) 
     Thm(pBg,"BackgroundColor3","ElemH") Crn(pBg,2)
@@ -413,17 +413,17 @@ end
 local function CreateAboutTab(WO) local tab=WO:CreateTab({Name="About",Icon=I_INFO}) tab._btn.LayoutOrder=9999
     local aboutSec=tab:CreateSection("Synlith.hub") local iCard,iw=MakeElem(aboutSec._c,150) 
     local logoImg=FetchAsset(LURL,LPATH) local logoSz=84 local logoShow=I("ImageLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,16),Size=UDim2.new(0,logoSz,0,logoSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=iCard,ZIndex=7}) if logoImg~="" then logoShow.Image=logoImg end logoShow.ImageColor3=Library.Theme.Accent table.insert(Library._logos,logoShow)
-    I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,108),Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text="Synlith.hub",TextSize=19,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=7}) Thm(iCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
-    I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,130),Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text="Premium Universal Script",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=7}) Thm(iCard:FindFirstChildWhichIsA("TextLabel",true),"TextColor3","TextD")
+    local titleL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,108),Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text="Synlith.hub",TextSize=19,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=7}) Thm(titleL,"TextColor3","Text")
+    local subL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,130),Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text="Premium Script",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=7}) Thm(subL,"TextColor3","TextD")
     
     local oCard,ow=MakeElem(aboutSec._c,46)
     local crown=I("ImageLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,-55,0.5,0),Size=UDim2.new(0,20,0,20),BackgroundTransparency=1,Image=I_CRWN,Parent=oCard,ZIndex=7}) Thm(crown,"ImageColor3","Accent")
     I("TextLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,15,0.5,0),Size=UDim2.new(0,100,0,20),BackgroundTransparency=1,Text="Owner | Setras",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=oCard,ZIndex=7}) Thm(oCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
     
     local dcSec=tab:CreateSection("Discord") local dcCard,dw=MakeElem(dcSec._c,64) local dcImg=FetchAsset(DURL,DPATH) local dcSz=24 local dcLogo=I("ImageLabel",{Position=UDim2.new(0,16,0.5,-(dcSz/2)),Size=UDim2.new(0,dcSz,0,dcSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=dcCard,ZIndex=7}) if dcImg~="" then dcLogo.Image=dcImg end dcLogo.ImageColor3=Library.Theme.Accent table.insert(Library._logos,dcLogo)
-    I("TextLabel",{Position=UDim2.new(0,50,0,12),Size=UDim2.new(1,-140,0,20),BackgroundTransparency=1,Text="Join our Official Community",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
-    I("TextLabel",{Position=UDim2.new(0,50,0,32),Size=UDim2.new(1,-140,0,16),BackgroundTransparency=1,Text="Click COPY to get the invite link.",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcCard:FindFirstChildWhichIsA("TextLabel",true),"TextColor3","TextD")
-    local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-16,0.5,0),Size=UDim2.new(0,60,0,24),Text="COPY",TextSize=11,FontFace=FB,TextColor3=Color3.new(1,1,1),AutoButtonColor=false,Parent=dcCard,ZIndex=8}) Thm(cpBtn,"BackgroundColor3","Accent") Crn(cpBtn,6) Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundTransparency=0.2},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundTransparency=0},TF) end)
+    local dcTitle=I("TextLabel",{Position=UDim2.new(0,50,0,12),Size=UDim2.new(1,-140,0,20),BackgroundTransparency=1,Text="Join our Official Community",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcTitle,"TextColor3","Text")
+    local dcDesc=I("TextLabel",{Position=UDim2.new(0,50,0,32),Size=UDim2.new(1,-140,0,16),BackgroundTransparency=1,Text="Click COPY to get the invite link.",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcDesc,"TextColor3","TextD")
+    local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-16,0.5,0),Size=UDim2.new(0,50,0,20),Text="COPY",TextSize=10,FontFace=FB,TextColor3=Color3.new(1,1,1),AutoButtonColor=false,Parent=dcCard,ZIndex=8}) Thm(cpBtn,"BackgroundColor3","Accent") Crn(cpBtn,4) Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundTransparency=0.2},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundTransparency=0},TF) end)
 end
 
 local _origCW=Library.CreateWindow function Library:CreateWindow(opts) local w=_origCW(self,opts) CreateSettingsTab(w) CreateAboutTab(w) return w end
