@@ -37,13 +37,14 @@ local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_lo
 local function T(bg,el,elH,acc,txt,txtD,brd,ico) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico} end
 local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(240,240,245), Color3.fromRGB(150,150,150), Color3.fromRGB(25,25,25), Color3.fromRGB(200,200,210)
 
-Library.Themes["Light"]=T(Color3.fromRGB(245,247,250),Color3.fromRGB(255,255,255),Color3.fromRGB(240,240,255),Color3.fromRGB(130,70,255),Color3.fromRGB(20,20,30),Color3.fromRGB(110,110,120),Color3.fromRGB(220,220,230),Color3.fromRGB(50,50,60))
+Library.Themes["Pure Black"]=T(bBg,bEl,bElH,Color3.fromRGB(255,255,255),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Purple"]=T(bBg,bEl,bElH,Color3.fromRGB(140,80,255),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Obsidian"]=T(bBg,bEl,bElH,Color3.fromRGB(0,170,255),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Crimson"]=T(bBg,bEl,bElH,Color3.fromRGB(255,60,70),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Phantom"]=T(bBg,bEl,bElH,Color3.fromRGB(0,255,170),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Cosmic"]=T(bBg,bEl,bElH,Color3.fromRGB(255,0,150),bTxt,bTxtD,bBrd,bIco)
-Library.Themes["Pure Black"]=T(Color3.fromRGB(0,0,0),Color3.fromRGB(8,8,8),Color3.fromRGB(15,15,15),Color3.fromRGB(255,255,255),bTxt,bTxtD,Color3.fromRGB(25,25,25),bIco)
+Library.Themes["Gold"]=T(bBg,bEl,bElH,Color3.fromRGB(255,200,0),bTxt,bTxtD,bBrd,bIco)
+Library.Themes["Sunset"]=T(bBg,bEl,bElH,Color3.fromRGB(255,120,0),bTxt,bTxtD,bBrd,bIco)
 Library.Theme=Library.Themes["Pure Black"]
 
 local function I(c,p) local i=Instance.new(c) pcall(function() i.BorderSizePixel=0 end) pcall(function() i.AutoButtonColor=false end) for k,v in pairs(p or{}) do if k~="Parent" then pcall(function() i[k]=v end) end end if p and p.Parent then i.Parent=p.Parent end return i end
@@ -285,7 +286,7 @@ end
 
 local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Icon=I_SETT}) tab._btn.LayoutOrder=9998
     local thmSec=tab:CreateSection("Theme") local tGrid=I("Frame",{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,Parent=thmSec._c,ZIndex=5}) I("UIGridLayout",{CellSize=UDim2.new(0.5,-6,0,34),CellPadding=UDim2.new(0,10,0,8),SortOrder=Enum.SortOrder.LayoutOrder,Parent=tGrid})
-    local tNames={"Pure Black","Purple","Obsidian","Crimson","Phantom","Cosmic","Light"} for i,tn in ipairs(tNames) do local td=Library.Themes[tn] if td then local tb=I("TextButton",{Text="",LayoutOrder=i,Parent=tGrid,ZIndex=7,AutoButtonColor=false}) Thm(tb,"BackgroundColor3","Elem") Crn(tb,6) Stk(tb,"Border",1,0) local cSq=I("Frame",{Position=UDim2.new(0,14,0.5,-6),Size=UDim2.new(0,12,0,12),BackgroundColor3=td.Bg,BorderSizePixel=0,Parent=tb,ZIndex=20}) Crn(cSq,16) I("UIStroke",{Color=td.Accent,Thickness=1,Parent=cSq}) I("TextLabel",{Position=UDim2.new(0,38,0,0),Size=UDim2.new(1,-42,1,0),BackgroundTransparency=1,Text=tn,TextSize=13,FontFace=FS,TextXAlignment=Enum.TextXAlignment.Left,Parent=tb,ZIndex=8}) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","Text") Cn(tb.MouseButton1Click,function() Library:SetTheme(tn) end) Cn(tb.MouseEnter,function() Tw(tb,{BackgroundColor3=Library.Theme.ElemH},TF) end) Cn(tb.MouseLeave,function() Tw(tb,{BackgroundColor3=Library.Theme.Elem},TF) end) end end
+    local tNames={"Pure Black","Purple","Obsidian","Crimson","Phantom","Cosmic","Gold","Sunset"} for i,tn in ipairs(tNames) do local td=Library.Themes[tn] if td then local tb=I("TextButton",{Text="",LayoutOrder=i,Parent=tGrid,ZIndex=7,AutoButtonColor=false}) Thm(tb,"BackgroundColor3","Elem") Crn(tb,6) Stk(tb,"Border",1,0) local cSq=I("Frame",{Position=UDim2.new(0,14,0.5,-6),Size=UDim2.new(0,12,0,12),BackgroundColor3=td.Bg,BorderSizePixel=0,Parent=tb,ZIndex=20}) Crn(cSq,16) I("UIStroke",{Color=td.Accent,Thickness=1,Parent=cSq}) I("TextLabel",{Position=UDim2.new(0,38,0,0),Size=UDim2.new(1,-42,1,0),BackgroundTransparency=1,Text=tn,TextSize=13,FontFace=FS,TextXAlignment=Enum.TextXAlignment.Left,Parent=tb,ZIndex=8}) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","Text") Cn(tb.MouseButton1Click,function() Library:SetTheme(tn) end) Cn(tb.MouseEnter,function() Tw(tb,{BackgroundColor3=Library.Theme.ElemH},TF) end) Cn(tb.MouseLeave,function() Tw(tb,{BackgroundColor3=Library.Theme.Elem},TF) end) end end
     
     local cfgSec = tab:CreateSection("Configuration")
     local cWrap = I("Frame", {Size=UDim2.new(1,0,0,260), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=5})
