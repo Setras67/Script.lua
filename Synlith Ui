@@ -34,7 +34,7 @@ local I_MISC="rbxassetid://131511708379760"
 
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
-local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico,Logo=logo or acc} end
+local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico,Logo=logo or ico} end
 local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(255,255,255), Color3.fromRGB(160,160,160), Color3.fromRGB(25,25,25), Color3.fromRGB(255,255,255)
 
 Library.Themes["Pure Black"]=T(bBg,bEl,bElH,Color3.fromRGB(255,255,255),bTxt,bTxtD,bBrd,bIco)
@@ -85,7 +85,7 @@ function Library:LoadCustomTheme() local ok,res=pcall(function() return Http:JSO
 function Library:SetTheme(name) 
     if name=="Dark" then name="Deep Purple" end if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
     for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() t.inst[t.prop]=self.Theme[t.key] end) else table.remove(self._themed,i) end end 
-    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Accent end end end) end
+    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end 
 end
 
@@ -213,7 +213,7 @@ function Library:CreateWindow(opts)
             tPage.Visible=true Tw(indicator,{BackgroundTransparency=0},TF) Tw(tBtn,{BackgroundTransparency=0,BackgroundColor3=Library.Theme.Elem},TF)
             for _,ch in ipairs(tBtn:GetChildren()) do 
                 if ch:IsA("TextLabel") then Thm(ch,"TextColor3","Text") end 
-                if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Accent") end 
+                if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Icon") end 
             end 
             Library._activeTab=TO 
         end
