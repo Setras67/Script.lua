@@ -57,7 +57,7 @@ function Library:PersistTheme(n) pcall(function() if not isfolder("Synlith.hub")
 function Library:GetPersistedTheme() local n="" pcall(function() if isfile(TDIR.."_theme.txt") then n=readfile(TDIR.."_theme.txt"):gsub("%s+","") end end) return n end
 
 function Library:SetTheme(name) 
-    if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
+    if name=="Dark" then name="Purple" end if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
     for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() t.inst[t.prop]=self.Theme[t.key] end) else table.remove(self._themed,i) end end 
     if self._glowStroke then pcall(function() self._glowStroke.Color=self.Theme.Accent end) end 
     UpdateLogos() 
@@ -73,7 +73,7 @@ function Library:Notify(title,msg,dur)
     I("TextLabel",{Position=UDim2.new(0,14,0,10),Size=UDim2.new(1,-28,0,18),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=503}) Thm(card:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
     I("TextLabel",{Position=UDim2.new(0,14,0,28),Size=UDim2.new(1,-28,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=503}) Thm(card:FindFirstChildWhichIsA("TextLabel",true),"TextColor3","TextD")
     local pBar=I("Frame",{AnchorPoint=Vector2.new(0,1),Position=UDim2.new(0,0,1,0),Size=UDim2.new(1,0,0,2),BorderSizePixel=0,Parent=card,ZIndex=504}) Thm(pBar,"BackgroundColor3","Accent")
-    Tw(card,{Size=UDim2.new(1,0,0,65)},TM) Tw(pBar,{Size=UDim2.new(0,0,1,0)},TweenInfo.new(dur,Enum.EasingStyle.Linear))
+    Tw(card,{Size=UDim2.new(1,0,0,65)},TM) Tw(pBar,{Size=UDim2.new(0,0,0,2)},TweenInfo.new(dur,Enum.EasingStyle.Linear))
     task.delay(dur,function() Tw(card,{Size=UDim2.new(1,0,0,0),BackgroundTransparency=1},TM) task.wait(0.3) if card.Parent then card:Destroy() end end)
 end
 
