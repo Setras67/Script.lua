@@ -13,13 +13,13 @@ local FS=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Sem
 local FC=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Regular,Enum.FontStyle.Normal)
 
 -- Icons
-local I_USER="rbxassetid://139537090544689"
-local I_SETT="rbxassetid://137137089149628"
-local I_SCRL="rbxassetid://110293823638921"
-local I_REPT="rbxassetid://82781866508417"
+local I_USER="rbxassetid://116070594890671"
+local I_SETT="rbxassetid://120430283300999"
+local I_SCRL="rbxassetid://115138257082534"
+local I_REPT="rbxassetid://93909261748852"
 local I_LYRS="rbxassetid://99601926374917"
 local I_CROS="rbxassetid://104253654474049"
-local I_INFO="rbxassetid://104036254449461"
+local I_INFO="rbxassetid://76599581383443"
 local I_FILE="rbxassetid://140183805408329"
 local I_TRSH="rbxassetid://107204540306204"
 local I_UPLD="rbxassetid://77775222497478"
@@ -27,7 +27,10 @@ local I_SAVE="rbxassetid://131750140033283"
 local I_MINI="rbxassetid://99413996399691"
 local I_CLOS="rbxassetid://104702025154594"
 local I_MAXI="rbxassetid://85544553786618"
-local I_CRWN="rbxassetid://105553534037998"
+local I_CRWN="rbxassetid://129433637837769"
+local I_COMB="rbxassetid://88807814832832"
+local I_VISL="rbxassetid://116070594890671"
+local I_MISC="rbxassetid://131511708379760"
 
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
@@ -47,7 +50,7 @@ local function Tw(o,p,ti) if not o or not o.Parent then return end TS:Create(o,t
 local function Crn(p,r) return I("UICorner",{CornerRadius=UDim.new(0,r or 6),Parent=p}) end
 local function Pad(p,t,b,l,r) return I("UIPadding",{PaddingTop=UDim.new(0,t or 0),PaddingBottom=UDim.new(0,b or 0),PaddingLeft=UDim.new(0,l or 0),PaddingRight=UDim.new(0,r or 0),Parent=p}) end
 local function Lst(p,g,d) return I("UIListLayout",{Padding=UDim.new(0,g or 6),FillDirection=d or Enum.FillDirection.Vertical,SortOrder=Enum.SortOrder.LayoutOrder,Parent=p}) end
-local function Thm(inst,prop,key) if not inst then return end pcall(function() inst[prop]=Library.Theme[key] end) table.insert(Library._themed,{inst=inst,prop=prop,key=key}) end
+local function Thm(inst,prop,key) if not inst then return end for _,t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key pcall(function() inst[prop]=Library.Theme[key] end) return end end pcall(function() inst[prop]=Library.Theme[key] end) table.insert(Library._themed,{inst=inst,prop=prop,key=key}) end
 local function Stk(p,key,th,tr) local s=I("UIStroke",{Thickness=th or 1,Transparency=tr or 0,Parent=p}) if key then Thm(s,"Color",key) end return s end
 local function Cn(sig,fn) local c=sig:Connect(fn) table.insert(Library._conn,c) return c end
 local function CB(cb,...) if cb then pcall(cb,...) end end
@@ -78,7 +81,7 @@ function Library:SetTheme(name)
     if name=="Dark" then name="Purple" end if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
     for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() t.inst[t.prop]=self.Theme[t.key] end) else table.remove(self._themed,i) end end 
     UpdateLogos() 
-    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Accent end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Accent end end end) end
+    if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent self._activeTab._btn.BackgroundColor3=self.Theme.Elem for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end if ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Accent end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end 
 end
 
@@ -192,9 +195,21 @@ function Library:CreateWindow(opts)
         else I("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=tName:sub(1,1),TextSize=14,FontFace=FB,Parent=tBtn,ZIndex=5}) Thm(tBtn:FindFirstChildOfClass("TextLabel"),"TextColor3","TextD") end
         local tPage=I("ScrollingFrame",{Name=tName.."_Page",Size=UDim2.new(1,-4,1,0),BackgroundTransparency=1,ScrollBarThickness=1,CanvasSize=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false,Parent=content,ZIndex=3}) Thm(tPage,"ScrollBarImageColor3","TextD") tPage.ScrollBarImageTransparency=0.8 Pad(tPage,16,16,16,20) Lst(tPage,10)
         local TO={_page=tPage,_btn=tBtn,_indicator=indicator,_icon=iconElem,Name=tName,_secs={}}
-        local function Activate() for _,t in ipairs(WO._tabs) do t._page.Visible=false Tw(t._indicator,{BackgroundTransparency=1},TF) Tw(t._btn,{BackgroundTransparency=1},TF) for _,ch in ipairs(t._btn:GetChildren()) do if ch:IsA("TextLabel") then Tw(ch,{TextColor3=Library.Theme.TextD},TF) end if ch:IsA("ImageLabel") then Tw(ch,{ImageColor3=Library.Theme.Icon},TF) end end end
+        local function Activate() 
+            for _,t in ipairs(WO._tabs) do 
+                t._page.Visible=false Tw(t._indicator,{BackgroundTransparency=1},TF) Tw(t._btn,{BackgroundTransparency=1},TF) 
+                for _,ch in ipairs(t._btn:GetChildren()) do 
+                    if ch:IsA("TextLabel") then Thm(ch,"TextColor3","TextD") end 
+                    if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Icon") end 
+                end 
+            end
             tPage.Visible=true Tw(indicator,{BackgroundTransparency=0},TF) Tw(tBtn,{BackgroundTransparency=0,BackgroundColor3=Library.Theme.Elem},TF)
-            for _,ch in ipairs(tBtn:GetChildren()) do if ch:IsA("TextLabel") then Tw(ch,{TextColor3=Library.Theme.Text},TF) end if ch:IsA("ImageLabel") then Tw(ch,{ImageColor3=Library.Theme.Accent},TF) end end Library._activeTab=TO end
+            for _,ch in ipairs(tBtn:GetChildren()) do 
+                if ch:IsA("TextLabel") then Thm(ch,"TextColor3","Text") end 
+                if ch:IsA("ImageLabel") then Thm(ch,"ImageColor3","Accent") end 
+            end 
+            Library._activeTab=TO 
+        end
         Cn(tBtn.MouseButton1Click,function() Activate() end) Cn(tBtn.MouseEnter,function() if Library._activeTab~=TO then Tw(tBtn,{BackgroundTransparency=0.5,BackgroundColor3=Library.Theme.ElemH},TF) end end) Cn(tBtn.MouseLeave,function() if Library._activeTab~=TO then Tw(tBtn,{BackgroundTransparency=1},TF) end end)
         function TO:CreateSection(sName) if sName and sName~="" then local sep=I("Frame",{Size=UDim2.new(1,0,0,24),BackgroundTransparency=1,Parent=tPage,ZIndex=5}) local sT=I("TextLabel",{Position=UDim2.new(0,0,0,0),Size=UDim2.new(1,0,0,18),BackgroundTransparency=1,Text=string.upper(sName),TextSize=12,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=sep,ZIndex=6}) Thm(sT,"TextColor3","TextD") local sL=I("Frame",{Position=UDim2.new(0,0,1,-2),Size=UDim2.new(1,0,0,1),BorderSizePixel=0,Parent=sep,ZIndex=5}) Thm(sL,"BackgroundColor3","Border") sL.BackgroundTransparency=0.3 end
             local container=I("Frame",{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,Parent=tPage,ZIndex=4}) Lst(container,6)
@@ -408,7 +423,7 @@ local function CreateAboutTab(WO) local tab=WO:CreateTab({Name="About",Icon=I_IN
     local dcSec=tab:CreateSection("Discord") local dcCard,dw=MakeElem(dcSec._c,64) local dcImg=FetchAsset(DURL,DPATH) local dcSz=24 local dcLogo=I("ImageLabel",{Position=UDim2.new(0,16,0.5,-(dcSz/2)),Size=UDim2.new(0,dcSz,0,dcSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=dcCard,ZIndex=7}) if dcImg~="" then dcLogo.Image=dcImg end dcLogo.ImageColor3=Library.Theme.Accent table.insert(Library._logos,dcLogo)
     I("TextLabel",{Position=UDim2.new(0,50,0,12),Size=UDim2.new(1,-140,0,20),BackgroundTransparency=1,Text="Join our Official Community",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
     I("TextLabel",{Position=UDim2.new(0,50,0,32),Size=UDim2.new(1,-140,0,16),BackgroundTransparency=1,Text="Click COPY to get the invite link.",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=7}) Thm(dcCard:FindFirstChildWhichIsA("TextLabel",true),"TextColor3","TextD")
-    local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-16,0.5,0),Size=UDim2.new(0,76,0,32),Text="COPY",TextSize=13,FontFace=FB,TextColor3=Color3.new(1,1,1),AutoButtonColor=false,Parent=dcCard,ZIndex=8}) Thm(cpBtn,"BackgroundColor3","Accent") Crn(cpBtn,6) Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundTransparency=0.2},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundTransparency=0},TF) end)
+    local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-16,0.5,0),Size=UDim2.new(0,60,0,24),Text="COPY",TextSize=11,FontFace=FB,TextColor3=Color3.new(1,1,1),AutoButtonColor=false,Parent=dcCard,ZIndex=8}) Thm(cpBtn,"BackgroundColor3","Accent") Crn(cpBtn,6) Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundTransparency=0.2},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundTransparency=0},TF) end)
 end
 
 local _origCW=Library.CreateWindow function Library:CreateWindow(opts) local w=_origCW(self,opts) CreateSettingsTab(w) CreateAboutTab(w) return w end
