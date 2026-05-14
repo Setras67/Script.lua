@@ -35,7 +35,7 @@ local I_MISC="rbxassetid://131511708379760"
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
 local function T(bg,el,elH,acc,txt,txtD,brd,ico) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico} end
-local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(240,240,245), Color3.fromRGB(150,150,150), Color3.fromRGB(25,25,25), Color3.fromRGB(200,200,210)
+local bBg,bEl,bElH,bTxt,bTxtD,bBrd,bIco = Color3.fromRGB(0,0,0), Color3.fromRGB(8,8,8), Color3.fromRGB(15,15,15), Color3.fromRGB(255,255,255), Color3.fromRGB(160,160,160), Color3.fromRGB(25,25,25), Color3.fromRGB(255,255,255)
 
 Library.Themes["Pure Black"]=T(bBg,bEl,bElH,Color3.fromRGB(255,255,255),bTxt,bTxtD,bBrd,bIco)
 Library.Themes["Purple"]=T(bBg,bEl,bElH,Color3.fromRGB(140,80,255),bTxt,bTxtD,bBrd,bIco)
