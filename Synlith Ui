@@ -335,19 +335,19 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
         Library:SaveCustomTheme()
     end})
 
-    local cfgSec = tab:CreateSection("Configuration")
+    local cfgSec = tab:CreateSection("Config Manager")
     local function GetC() local c=Library:GetConfigs() if #c==0 then return {"None"} else return c end end
     
     local cName = ""
     local cfgDrop
     local cBox
     
-    cfgDrop = cfgSec:CreateDropdown({Name="Select Config", Options=GetC(), Callback=function(v)
+    cfgDrop = cfgSec:CreateDropdown({Name="Selected Config", Options=GetC(), Callback=function(v)
         cName = v=="None" and "" or v
         if cBox then pcall(function() cBox:SetText(cName) end) end
     end})
     
-    cBox = cfgSec:CreateTextbox({Name="Config Name", Placeholder="Name...", Callback=function(v)
+    cBox = cfgSec:CreateTextbox({Name="Config Name", Placeholder="Type a name...", Callback=function(v)
         cName = v
     end})
     
@@ -359,26 +359,49 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
     end
     Library._refreshCfg = rC
     
-    cfgSec:CreateButton({Name="Refresh List", Callback=function()
-        rC()
-        Library:Notify("Config", "List Refreshed")
-    end})
-    cfgSec:CreateButton({Name="Save / Overwrite", Callback=function()
-        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
-        if n ~= "" and n ~= "None" then Library:SaveConfig(n) cName = n rC() else Library:Notify("Error", "Invalid name") end
-    end})
-    cfgSec:CreateButton({Name="Load", Callback=function()
+    local btnWrap = I("Frame", {Size=UDim2.new(1, 0, 0, 72), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=5})
+    I("UIGridLayout", {CellSize=UDim2.new(0.3333, -6, 0, 32), CellPadding=UDim2.new(0, 9, 0, 8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=btnWrap})
+    
+    local function CBtn(txt, ord, cb)
+        local b = I("TextButton", {Text="", LayoutOrder=ord, Parent=btnWrap, ZIndex=7, AutoButtonColor=false})
+        Thm(b, "BackgroundColor3", "Elem") Crn(b, 4) Stk(b, "Border", 1)
+        I("TextLabel", {Size=UDim2.new(1, 0, 1, 0), BackgroundTransparency=1, Text=txt, TextSize=12, FontFace=FB, Parent=b, ZIndex=8})
+        Thm(b:FindFirstChildOfClass("TextLabel"), "TextColor3", "Text")
+        local hi = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.new(1,1,1), BackgroundTransparency=1, Parent=b, ZIndex=7}) Crn(hi,4)
+        Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
+        Cn(b.MouseEnter, function() Tw(hi, {BackgroundTransparency=0.92}, TF) end)
+        Cn(b.MouseLeave, function() Tw(hi, {BackgroundTransparency=1}, TF) end)
+    end
+
+    CBtn("Load", 1, function()
         local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
         if n ~= "" and n ~= "None" then Library:LoadConfig(n, false) else Library:Notify("Error", "Invalid name") end
-    end})
-    cfgSec:CreateButton({Name="Delete", Callback=function()
+    end)
+    CBtn("Save (New)", 2, function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then 
+            if table.find(GetC(), n) then Library:Notify("Error", "Config exists! Use Overwrite.") return end
+            Library:SaveConfig(n) cName = n rC()
+        else Library:Notify("Error", "Invalid name") end
+    end)
+    CBtn("Overwrite", 3, function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then 
+            if not table.find(GetC(), n) then Library:Notify("Error", "Config not found! Use Save.") return end
+            Library:SaveConfig(n) cName = n rC()
+        else Library:Notify("Error", "Invalid name") end
+    end)
+    CBtn("Delete", 4, function()
         local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
         if n ~= "" and n ~= "None" then Library:DeleteConfig(n) cName="" rC() else Library:Notify("Error", "Invalid name") end
-    end})
-    cfgSec:CreateButton({Name="Set Autoload", Callback=function()
+    end)
+    CBtn("Autoload", 5, function()
         local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
         if n ~= "" and n ~= "None" then Library:SetAutoConfig(n) else Library:Notify("Error", "Invalid name") end
-    end})
+    end)
+    CBtn("Refresh", 6, function()
+        rC() Library:Notify("Config", "List Refreshed")
+    end)
     
     local uiSec=tab:CreateSection("Interface") uiSec:CreateKeybind({Name="Toggle UI",Default=Library.ToggleKey,Flag="_SynTK",Callback=function() end}) Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library._tkLbl then Library._tkLbl.Text="["..tk.Name.."] Toggle UI" end end end) uiSec:CreateToggle({Name="Show Watermark",Default=Library.ShowWatermark,Flag="_SynWM",Callback=function(v) Library.ShowWatermark=v if Library._wm then Library._wm.Visible=v and not Library.Open end end})
     local ulSec=tab:CreateSection("Script") ulSec:CreateButton({Name="Unload Script",Callback=function() Library:Unload() end})
