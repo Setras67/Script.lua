@@ -209,7 +209,7 @@ function Library:CreateWindow(opts)
     -- CONTENT AREA
     local contentWrap = I("Frame", {Position=UDim2.new(0, sWidth, 0, 0), Size=UDim2.new(1, -sWidth, 1, 0), BackgroundTransparency=1, Parent=main, ZIndex=2})
     local topBar = I("Frame", {Size=UDim2.new(1, 0, 0, 36), BackgroundTransparency=1, Parent=contentWrap, ZIndex=10})
-    MakeDrag(main, topBar) MakeDrag(main, sidebar)
+    MakeDrag(outerMain, topBar) MakeDrag(outerMain, sidebar)
     
     local ctrlWrap = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,0), Size=UDim2.new(0,50,1,0), BackgroundTransparency=1, Parent=topBar, ZIndex=11})
     local minBtn = I("ImageButton", {Position=UDim2.new(0,0,0.5,-8), Size=UDim2.new(0,16,0,16), BackgroundTransparency=1, Image=ICONS.Minimize, Parent=ctrlWrap})
@@ -451,7 +451,7 @@ function Library:CreateWindow(opts)
         local lF = I("Frame", {Size=UDim2.new(1,0,0,130), BackgroundTransparency=1, Parent=aSec._c, ZIndex=15})
         local lI = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,10), Size=UDim2.new(0,70,0,70), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=lF, ZIndex=16}) pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then lI.Image=li end end) Thm(lI, "ImageColor3", "Logo")
         local lT = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,90), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="SYNLITH.HUB", TextSize=18, FontFace=F_TITLE, Parent=lF, ZIndex=16}) Thm(lT, "TextColor3", "Text")
-        local lS = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,112), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Ultimate Edition", TextSize=12, FontFace=F_TEXT, Parent=lF, ZIndex=16}) Thm(lS, "TextColor3", "Accent")
+        local lS = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,112), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Premium Script", TextSize=12, FontFace=F_TEXT, Parent=lF, ZIndex=16}) Thm(lS, "TextColor3", "Accent")
         
         local oSec = abtTab:CreateSection("Credits", "Right")
         local oF = I("Frame", {Size=UDim2.new(1,0,0,36), BackgroundTransparency=1, Parent=oSec._c, ZIndex=15})
