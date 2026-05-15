@@ -1,4 +1,4 @@
---[[ Synlith UI Library v10.0 -  ]]
+--[[ Synlith UI Library v11.0 - The Ultimate Framework Rework ]]
 local Players=game:GetService("Players") local TS=game:GetService("TweenService") local UIS=game:GetService("UserInputService") local Http=game:GetService("HttpService") local Run=game:GetService("RunService") local CG=game:GetService("CoreGui") local LP=Players.LocalPlayer
 local MOB=UIS.TouchEnabled and not UIS.MouseEnabled
 local TF=TweenInfo.new(0.15,Enum.EasingStyle.Quad) local TM=TweenInfo.new(0.25,Enum.EasingStyle.Quad) local TL=TweenInfo.new(0.4,Enum.EasingStyle.Quad)
@@ -7,28 +7,50 @@ local LPATH="Synlith.hub/logo_w.png" local LURL="https://raw.githubusercontent.c
 local DPATH="Synlith.hub/dc_w2.png" local DURL="https://raw.githubusercontent.com/Setras67/Script.lua/main/discord%20logo%20white(1).png"
 local DINV="https://discord.gg/2q69gGWEcj"
 
-local FN=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal) 
-local FB=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Bold,Enum.FontStyle.Normal) 
+local FM=Font.new("rbxasset://fonts/families/Montserrat.json",Enum.FontWeight.SemiBold,Enum.FontStyle.Normal) 
+local FB=Font.new("rbxasset://fonts/families/Montserrat.json",Enum.FontWeight.Bold,Enum.FontStyle.Normal) 
+local F_MONO=Font.new("rbxasset://fonts/families/RobotoMono.json",Enum.FontWeight.Bold,Enum.FontStyle.Normal) 
 
 local Library={Flags={},_elems={},_themed={},_conn={},_tabs={},_refreshFn={},_logos={},_unloads={},_activeTab=nil,ScreenGui=nil,Window=nil,Open=true,ToggleKey=Enum.KeyCode.RightShift,Theme=nil,Themes={},ShowWatermark=true,_wm=nil,_tkLbl=nil}
 
 local function T(bg,el,elH,acc,txt,txtD,brd,ico,logo) return{Bg=bg,Panel=bg,Elem=el,ElemH=elH,Accent=acc,Text=txt,TextD=txtD,Border=brd,Icon=ico,Logo=logo or ico} end
-Library.Themes["Pure Black"]=T(Color3.fromRGB(8,8,8), Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(255,255,255), Color3.fromRGB(240,240,240), Color3.fromRGB(140,140,140), Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255))
+Library.Themes["Dark"]=T(Color3.fromRGB(8,8,8), Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(255,255,255), Color3.fromRGB(240,240,240), Color3.fromRGB(140,140,140), Color3.fromRGB(30,30,30), Color3.fromRGB(255,255,255))
 Library.Themes["Neverlose"]=T(Color3.fromRGB(5,8,14), Color3.fromRGB(9,14,24), Color3.fromRGB(15,22,38), Color3.fromRGB(0,170,255), Color3.fromRGB(255,255,255), Color3.fromRGB(120,150,180), Color3.fromRGB(20,30,50), Color3.fromRGB(255,255,255))
 Library.Themes["Fatality"]=T(Color3.fromRGB(12,8,16), Color3.fromRGB(18,12,24), Color3.fromRGB(26,18,34), Color3.fromRGB(190,0,100), Color3.fromRGB(255,255,255), Color3.fromRGB(150,130,170), Color3.fromRGB(40,25,50), Color3.fromRGB(255,255,255))
 Library.Themes["Skeet"]=T(Color3.fromRGB(18,18,18), Color3.fromRGB(25,25,25), Color3.fromRGB(35,35,35), Color3.fromRGB(150,200,60), Color3.fromRGB(255,255,255), Color3.fromRGB(160,160,160), Color3.fromRGB(45,45,45), Color3.fromRGB(255,255,255))
 Library.Themes["Aimware"]=T(Color3.fromRGB(20,10,10), Color3.fromRGB(30,15,15), Color3.fromRGB(45,22,22), Color3.fromRGB(255,50,50), Color3.fromRGB(255,255,255), Color3.fromRGB(180,120,120), Color3.fromRGB(60,30,30), Color3.fromRGB(255,255,255))
-Library.Themes["Primordial"]=T(Color3.fromRGB(10,12,10), Color3.fromRGB(16,20,16), Color3.fromRGB(24,30,24), Color3.fromRGB(180,255,100), Color3.fromRGB(255,255,255), Color3.fromRGB(130,160,130), Color3.fromRGB(35,45,35), Color3.fromRGB(255,255,255))
+Library.Themes["Monarch"]=T(Color3.fromRGB(10,8,14), Color3.fromRGB(16,12,22), Color3.fromRGB(24,18,32), Color3.fromRGB(255,180,0), Color3.fromRGB(255,255,255), Color3.fromRGB(160,150,180), Color3.fromRGB(36,28,48), Color3.fromRGB(255,255,255))
 Library.Themes["Abyss"]=T(Color3.fromRGB(4,6,10), Color3.fromRGB(8,12,20), Color3.fromRGB(12,18,30), Color3.fromRGB(0,255,200), Color3.fromRGB(255,255,255), Color3.fromRGB(100,140,160), Color3.fromRGB(16,24,40), Color3.fromRGB(255,255,255))
-Library.Themes["Custom"]=T(Color3.fromRGB(8,8,8), Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(80,160,255), Color3.fromRGB(240,240,240), Color3.fromRGB(140,140,140), Color3.fromRGB(30,30,30), Color3.fromRGB(80,160,255))
-Library.Theme=Library.Themes["Pure Black"]
+Library.Themes["Custom"]=T(Color3.fromRGB(12,12,12), Color3.fromRGB(16,16,16), Color3.fromRGB(22,22,22), Color3.fromRGB(0,255,204), Color3.fromRGB(255,255,255), Color3.fromRGB(140,140,140), Color3.fromRGB(32,32,32), Color3.fromRGB(0,255,204))
+Library.Theme=Library.Themes["Dark"]
 
 local function I(c,p) local i=Instance.new(c) pcall(function() i.BorderSizePixel=0 end) pcall(function() i.AutoButtonColor=false end) for k,v in pairs(p or{}) do if k~="Parent" then pcall(function() i[k]=v end) end end if p and p.Parent then i.Parent=p.Parent end return i end
 local function Tw(o,p,ti) if not o or not o.Parent then return end TS:Create(o,ti or TM,p):Play() end
 local function Crn(p,r) return I("UICorner",{CornerRadius=UDim.new(0,r or 6),Parent=p}) end
 local function Pad(p,t,b,l,r) return I("UIPadding",{PaddingTop=UDim.new(0,t or 0),PaddingBottom=UDim.new(0,b or 0),PaddingLeft=UDim.new(0,l or 0),PaddingRight=UDim.new(0,r or 0),Parent=p}) end
 local function Lst(p,g,d) return I("UIListLayout",{Padding=UDim.new(0,g or 6),FillDirection=d or Enum.FillDirection.Vertical,SortOrder=Enum.SortOrder.LayoutOrder,Parent=p}) end
-local function Thm(inst,prop,key) if not inst then return end for _,t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key pcall(function() inst[prop]=Library.Theme[key] end) return end end pcall(function() inst[prop]=Library.Theme[key] end) table.insert(Library._themed,{inst=inst,prop=prop,key=key}) end
+
+local function Thm(inst,prop,key,special) 
+    if not inst then return end 
+    local function apply()
+        if special=="Gradient" then
+            inst[prop]=ColorSequence.new({
+                ColorSequenceKeypoint.new(0,Library.Theme[key]),
+                ColorSequenceKeypoint.new(0.5,Color3.fromRGB(255,255,255)),
+                ColorSequenceKeypoint.new(1,Library.Theme[key])
+            })
+        else
+            inst[prop]=Library.Theme[key] 
+        end
+    end
+    for _,t in ipairs(Library._themed) do 
+        if t.inst==inst and t.prop==prop then 
+            t.key=key t.special=special pcall(apply) return 
+        end 
+    end 
+    pcall(apply) table.insert(Library._themed,{inst=inst,prop=prop,key=key,special=special}) 
+end
+
 local function Stk(p,key,th,tr) local s=I("UIStroke",{Thickness=th or 1,Transparency=tr or 0,Parent=p}) if key then Thm(s,"Color",key) end return s end
 local function Cn(sig,fn) local c=sig:Connect(fn) table.insert(Library._conn,c) return c end
 local function CB(cb,...) if cb then pcall(cb,...) end end
@@ -53,7 +75,7 @@ function Library:LoadCustomTheme() local ok,res=pcall(function() return Http:JSO
 
 function Library:SetTheme(name) 
     if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end 
-    for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() t.inst[t.prop]=self.Theme[t.key] end) else table.remove(self._themed,i) end end 
+    for i=#self._themed,1,-1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() if t.special=="Gradient" then t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,self.Theme[t.key]),ColorSequenceKeypoint.new(0.5,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,self.Theme[t.key])}) else t.inst[t.prop]=self.Theme[t.key] end end) else table.remove(self._themed,i) end end 
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end 
 end
@@ -63,25 +85,22 @@ function Library:Notify(title,msg,dur)
     if not self._notifH then self._notifH=I("Frame",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-20,1,-20),Size=UDim2.new(0,320,1,-40),BackgroundTransparency=1,Parent=self.ScreenGui,ZIndex=500}) local l=Lst(self._notifH,12) l.VerticalAlignment=Enum.VerticalAlignment.Bottom end
     local card=I("Frame",{Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Parent=self._notifH,ZIndex=501})
     Thm(card,"BackgroundColor3","Panel") card.BackgroundTransparency=0 Crn(card,4)
-    local s=I("UIStroke",{Thickness=1,Transparency=0,Parent=card}) Thm(s,"Color","Border")
+    local s=I("UIStroke",{Thickness=1,Transparency=0,Color=Color3.new(1,1,1),Parent=card}) 
+    local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
+    Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 120) % 360 end)
+    
     local inCard=I("Frame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=card,ZIndex=502})
+    local icon=I("ImageLabel",{Position=UDim2.new(0,12,0,12),Size=UDim2.new(0,40,0,40),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=inCard,ZIndex=503}) 
+    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) Thm(icon,"ImageColor3","Logo") 
     
-    local icon=I("ImageLabel",{Position=UDim2.new(0,12,0,10),Size=UDim2.new(0,40,0,40),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=inCard,ZIndex=503}) 
-    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) 
-    Thm(icon,"ImageColor3","Logo") 
+    local tL=I("TextLabel",{Position=UDim2.new(0,62,0,12),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) Thm(tL,"TextColor3","Text")
+    local mL=I("TextLabel",{Position=UDim2.new(0,62,0,30),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) Thm(mL,"TextColor3","TextD")
     
-    local tL=I("TextLabel",{Position=UDim2.new(0,62,0,12),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=inCard,ZIndex=503}) 
-    Thm(tL,"TextColor3","Text")
+    local pBg=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-6),Size=UDim2.new(1,-24,0,2),BorderSizePixel=0,Parent=inCard,ZIndex=502}) Thm(pBg,"BackgroundColor3","ElemH") Crn(pBg,2)
+    local pBar=I("Frame",{Size=UDim2.new(1,0,1,0),BorderSizePixel=0,Parent=pBg,ZIndex=504}) Thm(pBar,"BackgroundColor3","Accent") Crn(pBar,2)
     
-    local mL=I("TextLabel",{Position=UDim2.new(0,62,0,30),Size=UDim2.new(1,-74,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=13,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=inCard,ZIndex=503}) 
-    Thm(mL,"TextColor3","TextD")
-    
-    local pBg=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-6),Size=UDim2.new(1,-24,0,2),BorderSizePixel=0,Parent=inCard,ZIndex=502}) 
-    Thm(pBg,"BackgroundColor3","ElemH") Crn(pBg,2)
-    local pBar=I("Frame",{Size=UDim2.new(1,0,1,0),BorderSizePixel=0,Parent=pBg,ZIndex=504}) 
-    Thm(pBar,"BackgroundColor3","Accent") Crn(pBar,2)
-    
-    Tw(card,{Size=UDim2.new(1,0,0,65)},TM) Tw(pBar,{Size=UDim2.new(0,0,1,0)},TweenInfo.new(dur,Enum.EasingStyle.Linear))
+    Tw(card,{Size=UDim2.new(1,0,0,65)},TM) 
+    task.delay(0.25, function() Tw(pBar,{Size=UDim2.new(0,0,1,0)},TweenInfo.new(dur-0.25,Enum.EasingStyle.Linear)) end)
     task.delay(dur,function() Tw(card,{Size=UDim2.new(1,0,0,0),BackgroundTransparency=1},TM) Tw(s,{Transparency=1},TM) task.wait(0.3) if card.Parent then card:Destroy() end end)
 end
 
@@ -90,7 +109,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 function Library:Destroy() self.Open=false for _,c in ipairs(self._conn) do pcall(function() c:Disconnect() end) end self._conn={} self._themed={} self._elems={} self._logos={} self._refreshFn={} self._unloads={} if self.ScreenGui then self.ScreenGui:Destroy() end end
 
 function Library:CreateWindow(opts)
-    opts=opts or{} local title=opts.Title or"Synlith.hub" local gameLabel=opts.Game or"Universal" local useLogo=opts.Logo~=false
+    opts=opts or{} local title=opts.Title or"Synlith.hub" local useLogo=opts.Logo~=false
     local size=opts.Size or UDim2.new(0,MOB and 380 or 410,0,MOB and 480 or 600)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
@@ -105,19 +124,32 @@ function Library:CreateWindow(opts)
     
     local outStk=I("UIStroke",{Thickness=1,Transparency=0,Parent=main}) Thm(outStk,"Color","Border")
     local glowFrame=I("Frame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=main,ZIndex=0}) Crn(glowFrame,4)
-    local glowStk=I("UIStroke",{Thickness=2,Transparency=0.6,Parent=glowFrame}) Thm(glowStk,"Color","Accent")
+    local glowStk=I("UIStroke",{Thickness=2,Transparency=0,Color=Color3.new(1,1,1),Parent=glowFrame})
+    local mGrad=I("UIGradient",{Parent=glowStk}) Thm(mGrad,"Color","Accent","Gradient")
+    Cn(Run.RenderStepped, function() mGrad.Rotation = (tick() * 80) % 360 end)
     
     local topBar=I("Frame",{Size=UDim2.new(1,0,0,50),BackgroundTransparency=1,Parent=main,ZIndex=5})
     MakeDrag(main,topBar)
+    
+    local logoOffset = 16
     if useLogo then
         local logoImg=FetchAsset(LURL,LPATH)
-        local logo=I("ImageLabel",{Position=UDim2.new(0,16,0,11),Size=UDim2.new(0,28,0,28),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=topBar,ZIndex=6})
+        local logo=I("ImageLabel",{Position=UDim2.new(0,16,0,10),Size=UDim2.new(0,30,0,30),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=topBar,ZIndex=6})
         if logoImg~="" then logo.Image=logoImg end Thm(logo,"ImageColor3","Logo") table.insert(Library._logos,logo)
-        local tLbl=I("TextLabel",{Position=UDim2.new(0,54,0,0),Size=UDim2.new(1,-64,1,0),BackgroundTransparency=1,Text=title:upper(),TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=topBar,ZIndex=6}) Thm(tLbl,"TextColor3","Text")
-    else
-        local tLbl=I("TextLabel",{Position=UDim2.new(0,16,0,0),Size=UDim2.new(1,-32,1,0),BackgroundTransparency=1,Text=title:upper(),TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=topBar,ZIndex=6}) Thm(tLbl,"TextColor3","Text")
+        logoOffset = 56
     end
-    local topLine=I("Frame",{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BorderSizePixel=0,Parent=topBar,ZIndex=6}) Thm(topLine,"BackgroundColor3","Border") topLine.BackgroundTransparency=0.5
+    local tLbl=I("TextLabel",{Position=UDim2.new(0,logoOffset,0,0),Size=UDim2.new(1,-120,1,0),BackgroundTransparency=1,Text=title:upper(),TextSize=15,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=topBar,ZIndex=6}) Thm(tLbl,"TextColor3","Text")
+    
+    local ctrlWrap = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,0), Size=UDim2.new(0,50,1,0), BackgroundTransparency=1, Parent=topBar, ZIndex=10})
+    local minBtn = I("TextButton", {Position=UDim2.new(0,0,0,0), Size=UDim2.new(0,20,1,0), BackgroundTransparency=1, Text="-", TextSize=22, FontFace=FM, AutoButtonColor=false, Parent=ctrlWrap})
+    local clsBtn = I("TextButton", {Position=UDim2.new(0,30,0,0), Size=UDim2.new(0,20,1,0), BackgroundTransparency=1, Text="X", TextSize=14, FontFace=FB, AutoButtonColor=false, Parent=ctrlWrap})
+    Thm(minBtn, "TextColor3", "TextD") Thm(clsBtn, "TextColor3", "TextD")
+    Cn(minBtn.MouseEnter, function() Thm(minBtn, "TextColor3", "Accent") end)
+    Cn(minBtn.MouseLeave, function() Thm(minBtn, "TextColor3", "TextD") end)
+    Cn(clsBtn.MouseEnter, function() Tw(clsBtn, {TextColor3=Color3.new(1,0.2,0.2)}, TF) end)
+    Cn(clsBtn.MouseLeave, function() Thm(clsBtn, "TextColor3", "TextD") end)
+    
+    local topLine=I("Frame",{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BorderSizePixel=0,Parent=topBar,ZIndex=6}) Thm(topLine,"BackgroundColor3","Border") topLine.BackgroundTransparency=0.3
     
     local tabWrap=I("Frame",{Position=UDim2.new(0,0,0,50),Size=UDim2.new(1,0,0,36),BackgroundTransparency=1,Parent=main,ZIndex=5})
     local tabScroll=I("ScrollingFrame",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ScrollBarThickness=0,CanvasSize=UDim2.new(0,0,0,0),Parent=tabWrap,ZIndex=6})
@@ -127,46 +159,72 @@ function Library:CreateWindow(opts)
     
     local content=I("Frame",{Position=UDim2.new(0,0,0,86),Size=UDim2.new(1,0,1,-86),BackgroundTransparency=1,Parent=main,ZIndex=2})
     
-    local wm=I("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,12),Size=UDim2.new(0,220,0,28),BackgroundTransparency=0,Visible=false,Parent=gui,ZIndex=150}) Thm(wm,"BackgroundColor3","Panel") Crn(wm,4) self._wm=wm MakeDrag(wm,wm)
-    local wmStk=I("UIStroke",{Thickness=1,Transparency=0,Parent=wm}) Thm(wmStk,"Color","Border")
-    local wmLine=I("Frame",{Position=UDim2.new(0,0,0,0),Size=UDim2.new(1,0,0,2),BorderSizePixel=0,Parent=wm,ZIndex=151}) Thm(wmLine,"BackgroundColor3","Accent") Crn(wmLine,2)
-    local wmLogo=I("ImageLabel",{Position=UDim2.new(0,10,0.5,-7),Size=UDim2.new(0,14,0,14),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=wm,ZIndex=151}) pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) Thm(wmLogo,"ImageColor3","Logo")
-    I("TextLabel",{Position=UDim2.new(0,30,0,0),Size=UDim2.new(1,-40,1,0),BackgroundTransparency=1,Text=title.." | "..gameLabel.." | "..LP.Name,TextSize=11,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wm,ZIndex=151}) Thm(wm:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
+    local wm=I("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,12),Size=UDim2.new(0,220,0,32),BackgroundTransparency=0,Visible=self.ShowWatermark,Parent=gui,ZIndex=150}) 
+    Thm(wm,"BackgroundColor3","Panel") Crn(wm,4) self._wm=wm MakeDrag(wm,wm)
+    
+    local wmStk=I("UIStroke",{Thickness=1,Transparency=0,Color=Color3.new(1,1,1),Parent=wm}) 
+    local wGrad=I("UIGradient",{Parent=wmStk}) Thm(wGrad,"Color","Accent","Gradient")
+    Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 100) % 360 end)
+    
+    local wmLogo=I("ImageLabel",{Position=UDim2.new(0,10,0.5,-9),Size=UDim2.new(0,18,0,18),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=wm,ZIndex=151}) 
+    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) Thm(wmLogo,"ImageColor3","Logo")
+    
+    local wmLbl=I("TextLabel",{Position=UDim2.new(0,36,0,0),Size=UDim2.new(1,-46,1,0),BackgroundTransparency=1,Text=title:upper().." | 0 FPS | 0 MS",TextSize=12,FontFace=F_MONO,TextXAlignment=Enum.TextXAlignment.Left,Parent=wm,ZIndex=151}) Thm(wmLbl,"TextColor3","Text")
+    
+    local frames, lastTick = 0, tick()
+    Cn(Run.RenderStepped, function()
+        frames = frames + 1
+        if tick() - lastTick >= 1 then
+            local fps = frames frames = 0 lastTick = tick()
+            local ping = 0 pcall(function() ping = math.floor(LP:GetNetworkPing() * 1000) end)
+            if ping == 0 then pcall(function() ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) end) end
+            wmLbl.Text = string.format("%s | %d FPS | %d MS", title:upper(), fps, ping)
+            Tw(wm, {Size=UDim2.new(0, wmLbl.TextBounds.X + 50, 0, 32)}, TF)
+        end
+    end)
     
     local function ToggleUI(state)
         if state then 
-            self.Open=true main.Visible=true wm.Visible=false
+            self.Open=true main.Visible=true 
             Tw(main,{Position=UDim2.new(0.5,0,0.5,0), Size=size},TM)
         else 
-            self.Open=false wm.Visible=self.ShowWatermark
+            self.Open=false 
             Tw(main,{Position=UDim2.new(0.5,0,0.48,0), Size=UDim2.new(0,size.X.Offset,0,0)},TM)
             task.delay(0.25, function() if not self.Open then main.Visible=false end end)
         end
     end
-    Cn(UIS.InputBegan,function(input,gpe) if not gpe and input.KeyCode==self.ToggleKey then ToggleUI(not self.Open) end end)
+    Cn(UIS.InputBegan,function(input,gpe) 
+        local typing = UIS:GetFocusedTextBox() ~= nil
+        if input.KeyCode==self.ToggleKey then 
+            if typing then return end
+            ToggleUI(not self.Open) 
+        end 
+    end)
+    Cn(minBtn.MouseButton1Click, function() ToggleUI(false) end)
+    Cn(clsBtn.MouseButton1Click, function() Library:Unload() end)
     main.Position=UDim2.new(0.5,0,0.48,0); main.Size=UDim2.new(0,size.X.Offset,0,0); ToggleUI(true)
     
     local WO={_main=main,_content=content,_tabs={}}
     function WO:CreateTab(tO) tO=tO or{} local tName=tO.Name or"Tab"
-        local tBtn=I("TextButton",{Name=tName,Size=UDim2.new(0,74,1,0),BackgroundTransparency=1,Text="",Parent=tabScroll,ZIndex=10,AutoButtonColor=false})
+        local tBtn=I("TextButton",{Name=tName,Size=UDim2.new(0,80,1,0),BackgroundTransparency=1,Text="",Parent=tabScroll,ZIndex=10,AutoButtonColor=false})
         local tLbl=I("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=tName:upper(),TextSize=11,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=tBtn,ZIndex=11}) Thm(tLbl,"TextColor3","TextD")
         local indicator=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,0),Size=UDim2.new(0,0,0,2),BackgroundTransparency=1,BorderSizePixel=0,Parent=tBtn,ZIndex=12}) Thm(indicator,"BackgroundColor3","Accent") Crn(indicator,2)
         
-        local tPage=I("ScrollingFrame",{Name=tName.."_Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ScrollBarThickness=2,CanvasSize=UDim2.new(0,0,0,0),Visible=false,Parent=content,ZIndex=10}) 
-        Thm(tPage,"ScrollBarImageColor3","Accent") tPage.ScrollBarImageTransparency=0.5 Pad(tPage,12,12,12,12) 
+        local tPage=I("ScrollingFrame",{Name=tName.."_Page",Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ScrollBarThickness=1,CanvasSize=UDim2.new(0,0,0,0),Visible=false,Parent=content,ZIndex=10}) 
+        Thm(tPage,"ScrollBarImageColor3","Border") tPage.ScrollBarImageTransparency=0.3 Pad(tPage,12,12,12,12) 
         local pageLayout=Lst(tPage,10)
         Cn(pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function() tPage.CanvasSize=UDim2.new(0,0,0,pageLayout.AbsoluteContentSize.Y+24) end)
         
         local TO={_page=tPage,_btn=tBtn,_indicator=indicator,_lbl=tLbl,Name=tName}
         
-        local function Activate() 
+        function TO:Activate() 
             for _,t in ipairs(WO._tabs) do 
                 t._page.Visible=false Tw(t._indicator,{Size=UDim2.new(0,0,0,2),BackgroundTransparency=1},TF) Thm(t._lbl,"TextColor3","TextD")
             end
             tPage.Visible=true Tw(indicator,{Size=UDim2.new(1,-20,0,2),BackgroundTransparency=0},TF) Thm(tLbl,"TextColor3","Text")
             Library._activeTab=TO 
         end
-        Cn(tBtn.MouseButton1Click,function() Activate() end) 
+        Cn(tBtn.MouseButton1Click,function() TO:Activate() end) 
         Cn(tBtn.MouseEnter,function() if Library._activeTab~=TO then Tw(tLbl,{TextColor3=Library.Theme.Text},TF) end end) 
         Cn(tBtn.MouseLeave,function() if Library._activeTab~=TO then Tw(tLbl,{TextColor3=Library.Theme.TextD},TF) end end)
         
@@ -188,48 +246,48 @@ function Library:CreateWindow(opts)
             local SO={_c=container}
             
             function SO:CreateToggle(opts) opts=opts or{} local name=opts.Name or"Toggle" local value=opts.Default or false local flag=opts.Flag local cb=opts.Callback
-                local wrap=I("Frame",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(1,-40,1,0),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local wrap=I("Frame",{Size=UDim2.new(1,0,0,24),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(1,-40,1,0),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
                 
-                local box=I("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,32,0,14),Parent=wrap,ZIndex=19}) Thm(box,"BackgroundColor3","ElemH") Crn(box,7) Stk(box,"Border",1,0)
-                local check=I("Frame",{AnchorPoint=Vector2.new(0,0.5),Position=UDim2.new(0,2,0.5,0),Size=UDim2.new(0,10,0,10),BackgroundColor3=Color3.new(1,1,1),Parent=box,ZIndex=20}) Crn(check,5)
+                local box=I("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,34,0,16),Parent=wrap,ZIndex=19}) Thm(box,"BackgroundColor3","ElemH") Crn(box,8) Stk(box,"Border",1,0)
+                local check=I("Frame",{AnchorPoint=Vector2.new(0,0.5),Position=UDim2.new(0,2,0.5,0),Size=UDim2.new(0,12,0,12),BackgroundColor3=Color3.new(1,1,1),Parent=box,ZIndex=20}) Crn(check,6)
                 
                 local hit=I("TextButton",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=25})
-                local function upd(v) if v then Tw(box,{BackgroundColor3=Library.Theme.Accent},TF) Tw(check,{Position=UDim2.new(1,-12,0.5,0)},TF) Thm(lbl,"TextColor3","Text") else Tw(box,{BackgroundColor3=Library.Theme.ElemH},TF) Tw(check,{Position=UDim2.new(0,2,0.5,0)},TF) Thm(lbl,"TextColor3","TextD") end end
+                local function upd(v) if v then Tw(box,{BackgroundColor3=Library.Theme.Accent},TF) Tw(check,{Position=UDim2.new(1,-14,0.5,0)},TF) Thm(lbl,"TextColor3","Text") else Tw(box,{BackgroundColor3=Library.Theme.ElemH},TF) Tw(check,{Position=UDim2.new(0,2,0.5,0)},TF) Thm(lbl,"TextColor3","TextD") end end
                 Cn(hit.MouseButton1Click,function() value=not value upd(value) SF(flag,value) CB(cb,value) end)
                 upd(value) SF(flag,value) table.insert(Library._refreshFn,function() upd(value) end)
                 if flag then Library._elems[flag]={set=function(v) value=v upd(v) SF(flag,v) end,get=function() return value end} end 
             end
             
             function SO:CreateSlider(opts) opts=opts or{} local name=opts.Name or"Slider" local mn=opts.Min or 0 local mx=opts.Max or 100 local value=opts.Default or mn local inc=opts.Increment or 1 local suffix=opts.Suffix or"" local flag=opts.Flag local cb=opts.Callback
-                local wrap=I("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(0.7,0,0,14),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
-                local valLbl=I("TextLabel",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,0),Size=UDim2.new(0.3,0,0,14),BackgroundTransparency=1,Text=tostring(value)..suffix,TextSize=11,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Right,Parent=wrap,ZIndex=19}) Thm(valLbl,"TextColor3","Text")
+                local wrap=I("Frame",{Size=UDim2.new(1,0,0,36),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(0.7,0,0,16),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local valLbl=I("TextLabel",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,0),Size=UDim2.new(0.3,0,0,16),BackgroundTransparency=1,Text=tostring(value)..suffix,TextSize=11,FontFace=F_MONO,TextXAlignment=Enum.TextXAlignment.Right,Parent=wrap,ZIndex=19}) Thm(valLbl,"TextColor3","Text")
                 
-                local bgBar=I("Frame",{Position=UDim2.new(0,0,1,-4),Size=UDim2.new(1,0,0,4),Parent=wrap,ZIndex=19}) Thm(bgBar,"BackgroundColor3","ElemH") Crn(bgBar,2) Stk(bgBar,"Border",1,0)
-                local fillBar=I("Frame",{Size=UDim2.new(math.clamp((value-mn)/(mx-mn),0,1),0,1,0),Parent=bgBar,ZIndex=20}) Thm(fillBar,"BackgroundColor3","Accent") Crn(fillBar,2)
-                local thumb=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,10,0,10),BackgroundColor3=Color3.new(1,1,1),Parent=fillBar,ZIndex=21}) Crn(thumb,5) Stk(thumb,"Border",1,0)
+                local bgBar=I("Frame",{Position=UDim2.new(0,0,1,-6),Size=UDim2.new(1,0,0,6),Parent=wrap,ZIndex=19}) Thm(bgBar,"BackgroundColor3","ElemH") Crn(bgBar,3) Stk(bgBar,"Border",1,0)
+                local fillBar=I("Frame",{Size=UDim2.new(math.clamp((value-mn)/(mx-mn),0,1),0,1,0),Parent=bgBar,ZIndex=20}) Thm(fillBar,"BackgroundColor3","Accent") Crn(fillBar,3)
+                local thumb=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,12,0,12),BackgroundColor3=Color3.new(1,1,1),Parent=fillBar,ZIndex=21}) Crn(thumb,6) Stk(thumb,"Border",1,0)
                 
-                local hit=I("TextButton",{Position=UDim2.new(0,0,1,-12),Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=25})
+                local hit=I("TextButton",{Position=UDim2.new(0,0,1,-12),Size=UDim2.new(1,0,0,18),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=25})
                 local function setV(v) v=math.clamp(v,mn,mx) v=math.floor(v/inc+0.5)*inc value=v local pct=math.clamp((v-mn)/(mx-mn),0,1) Tw(fillBar,{Size=UDim2.new(pct,0,1,0)},TF) valLbl.Text=tostring(v)..suffix SF(flag,v) CB(cb,v) end
                 local dr=false Cn(hit.InputBegan,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=true local r=math.clamp((i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X,0,1) setV(mn+r*(mx-mn)) Thm(lbl,"TextColor3","Text") end end) Cn(hit.InputEnded,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=false Thm(lbl,"TextColor3","TextD") end end) Cn(UIS.InputChanged,function(i) if dr and(i.UserInputType==Enum.UserInputType.MouseMovement) then local r=math.clamp((i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X,0,1) setV(mn+r*(mx-mn)) end end)
                 setV(value) if flag then Library._elems[flag]={set=function(v) setV(v) end,get=function() return value end} end 
             end
             
             function SO:CreateDropdown(opts) opts=opts or{} local name=opts.Name or"Dropdown" local options=opts.Options or{} local value=opts.Default or options[1] local flag=opts.Flag local cb=opts.Callback local isOpen=false
-                local wrap=I("Frame",{Size=UDim2.new(1,0,0,42),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,14),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local wrap=I("Frame",{Size=UDim2.new(1,0,0,46),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
                 
-                local btn=I("TextButton",{Position=UDim2.new(0,0,1,-24),Size=UDim2.new(1,0,0,24),Text="",AutoButtonColor=false,Parent=wrap,ZIndex=19}) Thm(btn,"BackgroundColor3","ElemH") Crn(btn,4) Stk(btn,"Border",1,0)
-                local valLbl=I("TextLabel",{Position=UDim2.new(0,8,0,0),Size=UDim2.new(1,-30,1,0),BackgroundTransparency=1,Text=tostring(value or"..."),TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=btn,ZIndex=20}) Thm(valLbl,"TextColor3","Text")
+                local btn=I("TextButton",{Position=UDim2.new(0,0,1,-26),Size=UDim2.new(1,0,0,26),Text="",AutoButtonColor=false,Parent=wrap,ZIndex=19}) Thm(btn,"BackgroundColor3","ElemH") Crn(btn,4) Stk(btn,"Border",1,0)
+                local valLbl=I("TextLabel",{Position=UDim2.new(0,8,0,0),Size=UDim2.new(1,-30,1,0),BackgroundTransparency=1,Text=tostring(value or"..."),TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=btn,ZIndex=20}) Thm(valLbl,"TextColor3","Text")
                 local arrow=I("TextLabel",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-6,0.5,0),Size=UDim2.new(0,14,0,14),BackgroundTransparency=1,Text="+",TextSize=14,FontFace=FB,Parent=btn,ZIndex=20}) Thm(arrow,"TextColor3","TextD")
                 
                 local lF=I("ScrollingFrame",{Position=UDim2.new(0,0,1,2),Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false,BackgroundTransparency=0,ScrollBarThickness=2,Parent=wrap,ZIndex=30}) Thm(lF,"BackgroundColor3","Panel") Thm(lF,"ScrollBarImageColor3","Border") Crn(lF,4) Stk(lF,"Border",1,0) Pad(lF,4,4,4,4) Lst(lF,2)
                 
-                local function rebuild(newOpts) options=newOpts or{} if not table.find(options,value) then value=options[1] valLbl.Text=tostring(value or"...") end for _,c in ipairs(lF:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end for _,opt in ipairs(options) do local ob=I("TextButton",{Size=UDim2.new(1,0,0,22),Text=tostring(opt),TextSize=12,FontFace=FN,Parent=lF,ZIndex=31,AutoButtonColor=false,BackgroundTransparency=1}) Thm(ob,"TextColor3","TextD") Cn(ob.MouseEnter,function() Tw(ob,{BackgroundTransparency=0.8},TF) Thm(ob,"BackgroundColor3","ElemH") Thm(ob,"TextColor3","Text") end) Cn(ob.MouseLeave,function() Tw(ob,{BackgroundTransparency=1},TF) Thm(ob,"TextColor3","TextD") end) Cn(ob.MouseButton1Click,function() value=opt valLbl.Text=tostring(opt) SF(flag,value) CB(cb,value) isOpen=false Tw(lF,{Size=UDim2.new(1,0,0,0)},TF) task.delay(0.15,function() lF.Visible=false end) Tw(wrap,{Size=UDim2.new(1,0,0,42)},TF) arrow.Text="+" end) end if isOpen then local tH=math.min(#options*24+8,120) lF.CanvasSize=UDim2.new(0,0,0,#options*24+8) Tw(lF,{Size=UDim2.new(1,0,0,tH)},TM) Tw(wrap,{Size=UDim2.new(1,0,0,42+tH+2)},TM) end end
+                local function rebuild(newOpts) options=newOpts or{} if not table.find(options,value) then value=options[1] valLbl.Text=tostring(value or"...") end for _,c in ipairs(lF:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end for _,opt in ipairs(options) do local ob=I("TextButton",{Size=UDim2.new(1,0,0,22),Text=tostring(opt),TextSize=12,FontFace=FM,Parent=lF,ZIndex=31,AutoButtonColor=false,BackgroundTransparency=1}) Thm(ob,"TextColor3","TextD") Cn(ob.MouseEnter,function() Tw(ob,{BackgroundTransparency=0.8},TF) Thm(ob,"BackgroundColor3","ElemH") Thm(ob,"TextColor3","Text") end) Cn(ob.MouseLeave,function() Tw(ob,{BackgroundTransparency=1},TF) Thm(ob,"TextColor3","TextD") end) Cn(ob.MouseButton1Click,function() value=opt valLbl.Text=tostring(opt) SF(flag,value) CB(cb,value) isOpen=false Tw(lF,{Size=UDim2.new(1,0,0,0)},TF) task.delay(0.15,function() lF.Visible=false end) Tw(wrap,{Size=UDim2.new(1,0,0,46)},TF) arrow.Text="+" end) end if isOpen then local tH=math.min(#options*24+8,120) lF.CanvasSize=UDim2.new(0,0,0,#options*24+8) Tw(lF,{Size=UDim2.new(1,0,0,tH)},TM) Tw(wrap,{Size=UDim2.new(1,0,0,46+tH+2)},TM) end end
                 rebuild(options)
                 
-                Cn(btn.MouseButton1Click,function() isOpen=not isOpen if isOpen then lF.Visible=true local tH=math.min(#options*24+8,120) lF.CanvasSize=UDim2.new(0,0,0,#options*24+8) Tw(lF,{Size=UDim2.new(1,0,0,tH)},TM) Tw(wrap,{Size=UDim2.new(1,0,0,42+tH+2)},TM) arrow.Text="-" Thm(lbl,"TextColor3","Text") else Tw(lF,{Size=UDim2.new(1,0,0,0)},TF) task.delay(0.15,function() lF.Visible=false end) Tw(wrap,{Size=UDim2.new(1,0,0,42)},TF) arrow.Text="+" Thm(lbl,"TextColor3","TextD") end end)
+                Cn(btn.MouseButton1Click,function() isOpen=not isOpen if isOpen then lF.Visible=true local tH=math.min(#options*24+8,120) lF.CanvasSize=UDim2.new(0,0,0,#options*24+8) Tw(lF,{Size=UDim2.new(1,0,0,tH)},TM) Tw(wrap,{Size=UDim2.new(1,0,0,46+tH+2)},TM) arrow.Text="-" Thm(lbl,"TextColor3","Text") else Tw(lF,{Size=UDim2.new(1,0,0,0)},TF) task.delay(0.15,function() lF.Visible=false end) Tw(wrap,{Size=UDim2.new(1,0,0,46)},TF) arrow.Text="+" Thm(lbl,"TextColor3","TextD") end end)
                 SF(flag,value) if flag then Library._elems[flag]={set=function(v) value=v valLbl.Text=tostring(v) SF(flag,v) end,get=function() return value end} end return{Refresh=function(_,nO) rebuild(nO) end} 
             end
             
@@ -241,19 +299,19 @@ function Library:CreateWindow(opts)
             end
             
             function SO:CreateTextbox(opts) opts=opts or{} local name=opts.Name or"Input" local ph=opts.Placeholder or"..." local flag=opts.Flag local cb=opts.Callback local value=opts.Default or""
-                local wrap=I("Frame",{Size=UDim2.new(1,0,0,42),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,14),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
-                local bg=I("Frame",{Position=UDim2.new(0,0,1,-24),Size=UDim2.new(1,0,0,24),Parent=wrap,ZIndex=19}) Thm(bg,"BackgroundColor3","ElemH") Crn(bg,4) Stk(bg,"Border",1,0)
-                local box=I("TextBox",{Size=UDim2.new(1,-16),Position=UDim2.new(0,8,0,0),BackgroundTransparency=1,Text=value,PlaceholderText=ph,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,ClearTextOnFocus=false,Parent=bg,ZIndex=20}) Thm(box,"TextColor3","Text") Thm(box,"PlaceholderColor3","TextD")
+                local wrap=I("Frame",{Size=UDim2.new(1,0,0,46),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local bg=I("Frame",{Position=UDim2.new(0,0,1,-26),Size=UDim2.new(1,0,0,26),Parent=wrap,ZIndex=19}) Thm(bg,"BackgroundColor3","ElemH") Crn(bg,4) Stk(bg,"Border",1,0)
+                local box=I("TextBox",{Size=UDim2.new(1,-16),Position=UDim2.new(0,8,0,0),BackgroundTransparency=1,Text=value,PlaceholderText=ph,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,ClearTextOnFocus=false,Parent=bg,ZIndex=20}) Thm(box,"TextColor3","Text") Thm(box,"PlaceholderColor3","TextD")
                 Cn(box.FocusLost,function() value=box.Text SF(flag,value) CB(cb,value) end)
                 SF(flag,value) if flag then Library._elems[flag]={set=function(v) value=v box.Text=tostring(v) SF(flag,v) end,get=function() return value end} end return{SetText=function(_,t) value=t box.Text=tostring(t) end, Get=function() return value end}
             end
             
             function SO:CreateColorPicker(opts) opts=opts or{} local name=opts.Name or"Color" local value=opts.Default or Color3.fromRGB(255,255,255) local flag=opts.Flag local cb=opts.Callback local pickerOpen=false local hV,sV,vV=Color3.toHSV(value)
-                local ch=22 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(1,-30,0,22),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
-                local preview=I("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,3),Size=UDim2.new(0,24,0,16),BackgroundColor3=value,Parent=wrap,ZIndex=19}) Crn(preview,4) I("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=0.6,Parent=preview})
-                local hdrBtn=I("TextButton",{Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=20})
+                local ch=24 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(1,-30,0,24),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local preview=I("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,4),Size=UDim2.new(0,24,0,16),BackgroundColor3=value,Parent=wrap,ZIndex=19}) Crn(preview,4) I("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=0.6,Parent=preview})
+                local hdrBtn=I("TextButton",{Size=UDim2.new(1,0,0,24),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=20})
                 
                 local panelH=150 local panel=I("Frame",{Position=UDim2.new(0,0,0,ch+6),Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false,Parent=wrap,ZIndex=35}) Thm(panel,"BackgroundColor3","Panel") Crn(panel,4) Stk(panel,"Border",1,0)
                 local svMap=I("TextButton",{Position=UDim2.new(0,8,0,8),Size=UDim2.new(1,-36,0,100),AutoButtonColor=false,Text="",Parent=panel,ZIndex=36}) Crn(svMap,4)
@@ -280,99 +338,102 @@ function Library:CreateWindow(opts)
             end
             
             function SO:CreateKeybind(opts) opts=opts or{} local name=opts.Name or"Keybind" local value=opts.Default or Enum.KeyCode.Unknown local flag=opts.Flag local cb=opts.Callback local listening=false
-                local wrap=I("Frame",{Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
-                local lbl=I("TextLabel",{Size=UDim2.new(1,-80,1,0),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
-                local bBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,60,0,20),Text="["..(value.Name or"None").."]",TextSize=11,FontFace=FB,Parent=wrap,ZIndex=20,AutoButtonColor=false}) Thm(bBtn,"BackgroundColor3","ElemH") Thm(bBtn,"TextColor3","Accent") Crn(bBtn,4) Stk(bBtn,"Border",1,0)
+                local wrap=I("Frame",{Size=UDim2.new(1,0,0,26),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
+                local lbl=I("TextLabel",{Size=UDim2.new(1,-80,1,0),BackgroundTransparency=1,Text=name,TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextD")
+                local bBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,60,0,22),Text="["..(value.Name or"None").."]",TextSize=12,FontFace=F_MONO,Parent=wrap,ZIndex=20,AutoButtonColor=false}) Thm(bBtn,"BackgroundColor3","ElemH") Thm(bBtn,"TextColor3","Accent") Crn(bBtn,4) Stk(bBtn,"Border",1,0)
                 Cn(bBtn.MouseButton1Click,function() listening=true bBtn.Text="[...]" Thm(lbl,"TextColor3","Text") end)
                 Cn(UIS.InputBegan,function(input,gpe) if listening then if input.UserInputType==Enum.UserInputType.Keyboard then value=input.KeyCode bBtn.Text="["..input.KeyCode.Name.."]" listening=false SF(flag,value) Thm(lbl,"TextColor3","TextD") end elseif not gpe and input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==value then CB(cb) end end)
                 SF(flag,value) if flag then Library._elems[flag]={set=function(v) if typeof(v)=="EnumItem" then value=v bBtn.Text="["..v.Name.."]" SF(flag,v) end end,get=function() return value end} end 
             end
             
-            function SO:CreateLabel(text) local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=text or"",TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=SO._c,ZIndex=18}) Thm(lbl,"TextColor3","TextD") return{SetText=function(_,t) lbl.Text=t end} end
+            function SO:CreateLabel(text) local lbl=I("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=text or"",TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=SO._c,ZIndex=18}) Thm(lbl,"TextColor3","TextD") return{SetText=function(_,t) lbl.Text=t end} end
             return SO 
         end
-        table.insert(WO._tabs,TO) table.insert(Library._tabs,TO) if #WO._tabs==1 then task.defer(Activate) end return TO 
+        table.insert(WO._tabs,TO) table.insert(Library._tabs,TO) return TO 
     end
+    
+    local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings"})
+        local thmSec=tab:CreateSection("Theme System") 
+        local tGrid=I("Frame",{Size=UDim2.new(1,0,0,132),BackgroundTransparency=1,Parent=thmSec._c,ZIndex=18}) I("UIGridLayout",{CellSize=UDim2.new(0.5,-4,0,28),CellPadding=UDim2.new(0,8,0,6),SortOrder=Enum.SortOrder.LayoutOrder,Parent=tGrid})
+        local tNames={"Dark","Neverlose","Fatality","Skeet","Aimware","Monarch","Abyss","Custom"} 
+        for i,tn in ipairs(tNames) do local td=Library.Themes[tn] if td then local tb=I("TextButton",{Text="",LayoutOrder=i,Parent=tGrid,ZIndex=19,AutoButtonColor=false}) Thm(tb,"BackgroundColor3","ElemH") Crn(tb,4) Stk(tb,"Border",1,0) local cSq=I("Frame",{Position=UDim2.new(0,8,0.5,-4),Size=UDim2.new(0,8,0,8),BackgroundColor3=td.Bg,BorderSizePixel=0,Parent=tb,ZIndex=20}) Crn(cSq,8) local stk=I("UIStroke",{Color=td.Accent,Thickness=1,Parent=cSq}) I("TextLabel",{Position=UDim2.new(0,24,0,0),Size=UDim2.new(1,-26,1,0),BackgroundTransparency=1,Text=tn:upper(),TextSize=11,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=tb,ZIndex=20}) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","TextD") Cn(tb.MouseButton1Click,function() Library:SetTheme(tn) end) Cn(tb.MouseEnter,function() Tw(tb,{BackgroundColor3=Library.Theme.Panel},TF) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","Text") end) Cn(tb.MouseLeave,function() Tw(tb,{BackgroundColor3=Library.Theme.ElemH},TF) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","TextD") end) end end
+        table.insert(Library._refreshFn,function() pcall(function() for _,ch in ipairs(tGrid:GetChildren()) do if ch:IsA("TextButton") then local lbl=ch:FindFirstChildOfClass("TextLabel") if lbl and lbl.Text=="CUSTOM" then local sq=ch:FindFirstChild("Frame") if sq then sq.BackgroundColor3=Library.Themes["Custom"].Bg local stk=sq:FindFirstChildOfClass("UIStroke") if stk then stk.Color=Library.Themes["Custom"].Accent end end end end end end) end)
+
+        local cthmSec=tab:CreateSection("Custom Theme Builder")
+        local cTheme = Library.Themes["Custom"]
+        cthmSec:CreateColorPicker({Name="Background Color", Default=cTheme.Bg, Callback=function(v) cTheme.Bg = v cTheme.Panel = v local h,s,val = Color3.toHSV(v) cTheme.Elem = Color3.fromHSV(h, s, math.clamp(val+0.03,0,1)) cTheme.ElemH = Color3.fromHSV(h, s, math.clamp(val+0.06,0,1)) cTheme.Border = Color3.fromHSV(h, s, math.clamp(val+0.08,0,1)) Library:SetTheme("Custom") Library:SaveCustomTheme() end})
+        cthmSec:CreateColorPicker({Name="Accent Color", Default=cTheme.Accent, Callback=function(v) cTheme.Accent = v cTheme.Icon = v Library:SetTheme("Custom") Library:SaveCustomTheme() end})
+        cthmSec:CreateColorPicker({Name="Logo Color", Default=cTheme.Logo, Callback=function(v) cTheme.Logo = v Library:SetTheme("Custom") Library:SaveCustomTheme() end})
+        cthmSec:CreateColorPicker({Name="Text Color", Default=cTheme.Text, Callback=function(v) cTheme.Text = v local h,s,val = Color3.toHSV(v) cTheme.TextD = Color3.fromHSV(h, s, math.clamp(val-0.2,0,1)) Library:SetTheme("Custom") Library:SaveCustomTheme() end})
+
+        local cfgSec = tab:CreateSection("Config Manager")
+        local function GetC() local c=Library:GetConfigs() if #c==0 then return {} else return c end end
+        local cfgDrop = cfgSec:CreateDropdown({Name="Saved Configs", Options=GetC(), Default=""})
+        local cfgBox = cfgSec:CreateTextbox({Name="Config Name", Placeholder="Enter name...", Default=""})
+        cfgDrop.Callback = function(v) if v and v~="" then cfgBox:SetText(v) end end
+        
+        local btnWrap = I("Frame", {Size=UDim2.new(1,0,0,94), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=18})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,26), CellPadding=UDim2.new(0,8,0,8), SortOrder=Enum.SortOrder.LayoutOrder, Parent=btnWrap})
+        
+        local function CBtn(txt, p, cb)
+            local b = I("TextButton", {Text="", Parent=p, ZIndex=21, AutoButtonColor=false})
+            Thm(b, "BackgroundColor3", "ElemH") Crn(b, 4) Stk(b, "Border", 1)
+            I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=11, FontFace=FB, Parent=b, ZIndex=22})
+            Thm(b:FindFirstChildOfClass("TextLabel"), "TextColor3", "Text")
+            local hi = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.new(1,1,1), BackgroundTransparency=1, Parent=b, ZIndex=21}) Crn(hi,4)
+            Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
+            Cn(b.MouseEnter, function() Tw(hi, {BackgroundTransparency=0.92}, TF) end)
+            Cn(b.MouseLeave, function() Tw(hi, {BackgroundTransparency=1}, TF) end)
+        end
+        
+        local function GetN() return cfgBox:Get() or "" end
+        CBtn("Load", btnWrap, function() local n=GetN() if n~="" then Library:LoadConfig(n,false) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
+        CBtn("Save", btnWrap, function() local n=GetN() if n~="" then if table.find(GetC(),n) then Library:Notify("Error","Config exists") return end Library:SaveConfig(n) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
+        CBtn("Overwrite", btnWrap, function() local n=GetN() if n~="" then if not table.find(GetC(),n) then Library:Notify("Error","Not found") return end Library:SaveConfig(n) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
+        CBtn("Delete", btnWrap, function() local n=GetN() if n~="" then Library:DeleteConfig(n) cfgBox:SetText("") cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
+        CBtn("Autoload", btnWrap, function() local n=GetN() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error","Invalid") end end)
+        CBtn("Refresh", btnWrap, function() cfgDrop:Refresh(GetC()) end)
+        Library._refreshCfg = function() cfgDrop:Refresh(GetC()) end
+
+        local uiSec=tab:CreateSection("Interface") 
+        uiSec:CreateKeybind({Name="Toggle UI",Default=Library.ToggleKey,Flag="_SynTK",Callback=function() end}) 
+        Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk end end) 
+        uiSec:CreateToggle({Name="Show Watermark",Default=Library.ShowWatermark,Flag="_SynWM",Callback=function(v) Library.ShowWatermark=v if Library._wm then Library._wm.Visible=v end end})
+        local ulSec=tab:CreateSection("Script") ulSec:CreateButton({Name="Unload Script",Callback=function() Library:Unload() end})
+    end
+
+    local function CreateAboutTab(WO) local tab=WO:CreateTab({Name="About"})
+        local aboutSec=tab:CreateSection("Synlith.hub")
+        local iCard=I("Frame",{Size=UDim2.new(1,0,0,120),BackgroundTransparency=1,Parent=aboutSec._c,ZIndex=15})
+        local logoImg=FetchAsset(LURL,LPATH) local logoSz=64 local logoShow=I("ImageLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0,logoSz,0,logoSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=iCard,ZIndex=16}) if logoImg~="" then logoShow.Image=logoImg end Thm(logoShow,"ImageColor3","Logo")
+        local titleL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text="SYNLITH.HUB",TextSize=18,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=16}) Thm(titleL,"TextColor3","Text")
+        local subL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,102),Size=UDim2.new(1,0,0,14),BackgroundTransparency=1,Text="Premium Script",TextSize=12,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=16}) Thm(subL,"TextColor3","TextD")
+        
+        local oSec=tab:CreateSection("Credits")
+        local oCard=I("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1,Parent=oSec._c,ZIndex=15})
+        I("TextLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text="OWNER | SETRAS",TextSize=14,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=oCard,ZIndex=16}) Thm(oCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
+        
+        local dcSec=tab:CreateSection("Discord")
+        local dcCard=I("Frame",{Size=UDim2.new(1,0,0,52),BackgroundTransparency=1,Parent=dcSec._c,ZIndex=15})
+        local dcImg=FetchAsset(DURL,DPATH) local dcSz=20 local dcLogo=I("ImageLabel",{Position=UDim2.new(0,8,0.5,-(dcSz/2)),Size=UDim2.new(0,dcSz,0,dcSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=dcCard,ZIndex=16}) if dcImg~="" then dcLogo.Image=dcImg end Thm(dcLogo,"ImageColor3","Logo")
+        local dcTitle=I("TextLabel",{Position=UDim2.new(0,36,0,8),Size=UDim2.new(1,-90,0,16),BackgroundTransparency=1,Text="Join our Official Community",TextSize=12,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=16}) Thm(dcTitle,"TextColor3","Text")
+        local dcDesc=I("TextLabel",{Position=UDim2.new(0,36,0,26),Size=UDim2.new(1,-90,0,14),BackgroundTransparency=1,Text="Click COPY to get the invite link.",TextSize=11,FontFace=FM,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=16}) Thm(dcDesc,"TextColor3","TextD")
+        local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,44,0,22),Text="COPY",TextSize=11,FontFace=FB,AutoButtonColor=false,Parent=dcCard,ZIndex=17}) Thm(cpBtn,"BackgroundColor3","ElemH") Thm(cpBtn,"TextColor3","Text") Crn(cpBtn,4) Stk(cpBtn,"Border",1,0)
+        Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundColor3=Library.Theme.Panel},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundColor3=Library.Theme.ElemH},TF) end)
+    end
+    
+    task.defer(function()
+        CreateSettingsTab(WO)
+        CreateAboutTab(WO)
+        local found = false
+        for _, t in ipairs(WO._tabs) do
+            if t.Name == "About" then t:Activate() found=true break end
+        end
+        if not found and #WO._tabs > 0 then WO._tabs[1]:Activate() end
+    end)
+    
     pcall(function() local ac=self:GetAutoConfig() if ac~="" then task.delay(0.5,function() self:LoadConfig(ac,true) end) end end)
     Library._wo=WO return WO
 end
 
-local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings"})
-    local thmSec=tab:CreateSection("Theme System") 
-    local tGrid=I("Frame",{Size=UDim2.new(1,0,0,132),BackgroundTransparency=1,Parent=thmSec._c,ZIndex=18}) I("UIGridLayout",{CellSize=UDim2.new(0.5,-4,0,28),CellPadding=UDim2.new(0,8,0,6),SortOrder=Enum.SortOrder.LayoutOrder,Parent=tGrid})
-    local tNames={"Pure Black","Neverlose","Fatality","Skeet","Aimware","Primordial","Abyss","Custom"} 
-    for i,tn in ipairs(tNames) do local td=Library.Themes[tn] if td then local tb=I("TextButton",{Text="",LayoutOrder=i,Parent=tGrid,ZIndex=19,AutoButtonColor=false}) Thm(tb,"BackgroundColor3","ElemH") Crn(tb,4) Stk(tb,"Border",1,0) local cSq=I("Frame",{Position=UDim2.new(0,8,0.5,-4),Size=UDim2.new(0,8,0,8),BackgroundColor3=td.Bg,BorderSizePixel=0,Parent=tb,ZIndex=20}) Crn(cSq,8) local stk=I("UIStroke",{Color=td.Accent,Thickness=1,Parent=cSq}) I("TextLabel",{Position=UDim2.new(0,24,0,0),Size=UDim2.new(1,-26,1,0),BackgroundTransparency=1,Text=tn,TextSize=11,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=tb,ZIndex=20}) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","TextD") Cn(tb.MouseButton1Click,function() Library:SetTheme(tn) end) Cn(tb.MouseEnter,function() Tw(tb,{BackgroundColor3=Library.Theme.Panel},TF) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","Text") end) Cn(tb.MouseLeave,function() Tw(tb,{BackgroundColor3=Library.Theme.ElemH},TF) Thm(tb:FindFirstChildOfClass("TextLabel"),"TextColor3","TextD") end) end end
-
-    table.insert(Library._refreshFn,function() pcall(function() for _,ch in ipairs(tGrid:GetChildren()) do if ch:IsA("TextButton") then local lbl=ch:FindFirstChildOfClass("TextLabel") if lbl and lbl.Text=="Custom" then local sq=ch:FindFirstChild("Frame") if sq then sq.BackgroundColor3=Library.Themes["Custom"].Bg local stk=sq:FindFirstChildOfClass("UIStroke") if stk then stk.Color=Library.Themes["Custom"].Accent end end end end end end) end)
-
-    local cthmSec=tab:CreateSection("Custom Theme Builder")
-    local cTheme = Library.Themes["Custom"]
-    cthmSec:CreateColorPicker({Name="Background Color", Default=cTheme.Bg, Callback=function(v) cTheme.Bg = v cTheme.Panel = v local h,s,val = Color3.toHSV(v) cTheme.Elem = Color3.fromHSV(h, s, math.clamp(val+0.03,0,1)) cTheme.ElemH = Color3.fromHSV(h, s, math.clamp(val+0.06,0,1)) cTheme.Border = Color3.fromHSV(h, s, math.clamp(val+0.08,0,1)) Library:SetTheme("Custom") Library:SaveCustomTheme() end})
-    cthmSec:CreateColorPicker({Name="Accent Color", Default=cTheme.Accent, Callback=function(v) cTheme.Accent = v cTheme.Icon = v Library:SetTheme("Custom") Library:SaveCustomTheme() end})
-    cthmSec:CreateColorPicker({Name="Logo Color", Default=cTheme.Logo, Callback=function(v) cTheme.Logo = v Library:SetTheme("Custom") Library:SaveCustomTheme() end})
-    cthmSec:CreateColorPicker({Name="Text Color", Default=cTheme.Text, Callback=function(v) cTheme.Text = v local h,s,val = Color3.toHSV(v) cTheme.TextD = Color3.fromHSV(h, s, math.clamp(val-0.2,0,1)) Library:SetTheme("Custom") Library:SaveCustomTheme() end})
-
-    local cfgSec = tab:CreateSection("Config Manager")
-    local function GetC() local c=Library:GetConfigs() if #c==0 then return {} else return c end end
-    
-    local cfgDrop = cfgSec:CreateDropdown({Name="Saved Configs", Options=GetC(), Default=""})
-    local cfgBox = cfgSec:CreateTextbox({Name="Config Name", Placeholder="Enter name...", Default=""})
-    
-    cfgDrop.Callback = function(v) if v and v~="" then cfgBox:SetText(v) end end
-    
-    local actionWrap = I("Frame", {Size=UDim2.new(1,0,0,26), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=18})
-    Lst(actionWrap, 6, Enum.FillDirection.Horizontal)
-    
-    local actionWrap2 = I("Frame", {Size=UDim2.new(1,0,0,26), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=18})
-    Lst(actionWrap2, 6, Enum.FillDirection.Horizontal)
-    
-    local function CBtn(txt, p, cb)
-        local b = I("TextButton", {Size=UDim2.new(0.25, -4.5, 1, 0), Text="", Parent=p, ZIndex=21, AutoButtonColor=false})
-        if p == actionWrap2 then b.Size = UDim2.new(0.5, -3, 1, 0) end
-        Thm(b, "BackgroundColor3", "ElemH") Crn(b, 4) Stk(b, "Border", 1)
-        I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=FB, Parent=b, ZIndex=22})
-        Thm(b:FindFirstChildOfClass("TextLabel"), "TextColor3", "Text")
-        local hi = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.new(1,1,1), BackgroundTransparency=1, Parent=b, ZIndex=21}) Crn(hi,4)
-        Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
-        Cn(b.MouseEnter, function() Tw(hi, {BackgroundTransparency=0.92}, TF) end)
-        Cn(b.MouseLeave, function() Tw(hi, {BackgroundTransparency=1}, TF) end)
-    end
-    
-    local function GetN() return cfgBox:Get() or "" end
-    
-    CBtn("Load", actionWrap, function() local n=GetN() if n~="" then Library:LoadConfig(n,false) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
-    CBtn("Save", actionWrap, function() local n=GetN() if n~="" then if table.find(GetC(),n) then Library:Notify("Error","Config exists") return end Library:SaveConfig(n) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
-    CBtn("Overwt", actionWrap, function() local n=GetN() if n~="" then if not table.find(GetC(),n) then Library:Notify("Error","Not found") return end Library:SaveConfig(n) cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
-    CBtn("Delete", actionWrap, function() local n=GetN() if n~="" then Library:DeleteConfig(n) cfgBox:SetText("") cfgDrop:Refresh(GetC()) else Library:Notify("Error","Invalid") end end)
-    
-    CBtn("Autoload", actionWrap2, function() local n=GetN() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error","Invalid") end end)
-    CBtn("Refresh", actionWrap2, function() cfgDrop:Refresh(GetC()) end)
-    
-    Library._refreshCfg = function() cfgDrop:Refresh(GetC()) end
-
-    local uiSec=tab:CreateSection("Interface") uiSec:CreateKeybind({Name="Toggle UI",Default=Library.ToggleKey,Flag="_SynTK",Callback=function() end}) Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library._tkLbl then Library._tkLbl.Text="["..tk.Name.."] Toggle UI" end end end) uiSec:CreateToggle({Name="Show Watermark",Default=Library.ShowWatermark,Flag="_SynWM",Callback=function(v) Library.ShowWatermark=v if Library._wm then Library._wm.Visible=v and not Library.Open end end})
-    local ulSec=tab:CreateSection("Script") ulSec:CreateButton({Name="Unload Script",Callback=function() Library:Unload() end})
-end
-
-local function CreateAboutTab(WO) local tab=WO:CreateTab({Name="About"})
-    local aboutSec=tab:CreateSection("Synlith.hub")
-    local iCard=I("Frame",{Size=UDim2.new(1,0,0,120),BackgroundTransparency=1,Parent=aboutSec._c,ZIndex=15})
-    local logoImg=FetchAsset(LURL,LPATH) local logoSz=64 local logoShow=I("ImageLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,8),Size=UDim2.new(0,logoSz,0,logoSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=iCard,ZIndex=16}) if logoImg~="" then logoShow.Image=logoImg end Thm(logoShow,"ImageColor3","Logo")
-    local titleL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text="SYNLITH.HUB",TextSize=16,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=16}) Thm(titleL,"TextColor3","Text")
-    local subL=I("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,100),Size=UDim2.new(1,0,0,14),BackgroundTransparency=1,Text="Premium Script",TextSize=12,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Center,Parent=iCard,ZIndex=16}) Thm(subL,"TextColor3","TextD")
-    
-    local oSec=tab:CreateSection("Author")
-    local oCard=I("Frame",{Size=UDim2.new(1,0,0,32),BackgroundTransparency=1,Parent=oSec._c,ZIndex=15})
-    I("TextLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(1,0,0,16),BackgroundTransparency=1,Text="OWNER | Setras",TextSize=12,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Center,Parent=oCard,ZIndex=16}) Thm(oCard:FindFirstChildOfClass("TextLabel"),"TextColor3","Text")
-    
-    local dcSec=tab:CreateSection("Discord")
-    local dcCard=I("Frame",{Size=UDim2.new(1,0,0,52),BackgroundTransparency=1,Parent=dcSec._c,ZIndex=15})
-    local dcImg=FetchAsset(DURL,DPATH) local dcSz=20 local dcLogo=I("ImageLabel",{Position=UDim2.new(0,8,0.5,-(dcSz/2)),Size=UDim2.new(0,dcSz,0,dcSz),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=dcCard,ZIndex=16}) if dcImg~="" then dcLogo.Image=dcImg end Thm(dcLogo,"ImageColor3","Logo")
-    local dcTitle=I("TextLabel",{Position=UDim2.new(0,36,0,8),Size=UDim2.new(1,-90,0,16),BackgroundTransparency=1,Text="Join our Official Community",TextSize=12,FontFace=FB,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=16}) Thm(dcTitle,"TextColor3","Text")
-    local dcDesc=I("TextLabel",{Position=UDim2.new(0,36,0,26),Size=UDim2.new(1,-90,0,14),BackgroundTransparency=1,Text="Click COPY to get the invite link.",TextSize=11,FontFace=FN,TextXAlignment=Enum.TextXAlignment.Left,Parent=dcCard,ZIndex=16}) Thm(dcDesc,"TextColor3","TextD")
-    local cpBtn=I("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,44,0,22),Text="COPY",TextSize=11,FontFace=FB,AutoButtonColor=false,Parent=dcCard,ZIndex=17}) Thm(cpBtn,"BackgroundColor3","ElemH") Thm(cpBtn,"TextColor3","Text") Crn(cpBtn,4) Stk(cpBtn,"Border",1,0)
-    Cn(cpBtn.MouseButton1Click,function() pcall(function() if setclipboard then setclipboard(DINV) end end) cpBtn.Text="COPIED" task.delay(1.5,function() cpBtn.Text="COPY" end) Library:Notify("Discord","Invite copied to clipboard") end) Cn(cpBtn.MouseEnter,function() Tw(cpBtn,{BackgroundColor3=Library.Theme.Panel},TF) end) Cn(cpBtn.MouseLeave,function() Tw(cpBtn,{BackgroundColor3=Library.Theme.ElemH},TF) end)
-end
-
-local _origCW=Library.CreateWindow function Library:CreateWindow(opts) local w=_origCW(self,opts) CreateSettingsTab(w) CreateAboutTab(w) return w end
 return Library
