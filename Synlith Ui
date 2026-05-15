@@ -1,4 +1,4 @@
---[[ Synlith UI Library v10.0 - Extreme Portrait Cheat Rework (100% No Overlaps) ]]
+--[[ Synlith UI Library v10.0 -  ]]
 local Players=game:GetService("Players") local TS=game:GetService("TweenService") local UIS=game:GetService("UserInputService") local Http=game:GetService("HttpService") local Run=game:GetService("RunService") local CG=game:GetService("CoreGui") local LP=Players.LocalPlayer
 local MOB=UIS.TouchEnabled and not UIS.MouseEnabled
 local TF=TweenInfo.new(0.15,Enum.EasingStyle.Quad) local TM=TweenInfo.new(0.25,Enum.EasingStyle.Quad) local TL=TweenInfo.new(0.4,Enum.EasingStyle.Quad)
