@@ -70,12 +70,11 @@ local function MakeDrag(frame,handle) local dr,ds,sp Cn(handle.InputBegan,functi
 local function FetchAsset(url,path) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfile(path) then writefile(path,game:HttpGet(url)) task.wait(0.1) end end) local img="" pcall(function() if isfile(path) then img=getcustomasset(path) end end) return img end
 local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfolder(CDIR) then makefolder(CDIR) end end) end
 
-function Library:GetConfigMetadata() return {Version="2.0.0", GameId=game.PlaceId, Timestamp=os.time(), Date=os.date("%Y-%m-%d %H:%M:%S")} end
-function Library:SaveConfig(n) EnsureDir() if not n or n=="" then return false,"Invalid name" end local p=CDIR..n..".json" local d={Metadata=self:GetConfigMetadata(), Flags={}} if isfile(p) then local s,od=pcall(function() return Http:JSONDecode(readfile(p)) end) if s and od and od.Metadata then d.Metadata.Created=od.Metadata.Created or od.Metadata.Timestamp else d.Metadata.Created=d.Metadata.Timestamp end else d.Metadata.Created=d.Metadata.Timestamp end for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d.Flags[f]=v elseif typeof(v)=="Color3" then d.Flags[f]={_t="C3",R=v.R,G=v.G,B=v.B} elseif typeof(v)=="EnumItem" then d.Flags[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end local s,enc=pcall(Http.JSONEncode,Http,d) if not s then return false,"Encode failed" end pcall(writefile,p,enc) if self._refreshCfg then self._refreshCfg() end return true end
-function Library:LoadConfig(n, isAuto) EnsureDir() if not n or n=="" then return false,"Invalid name" end local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error","Config not found") end return false,"Not found" end local s,dec=pcall(function() return Http:JSONDecode(readfile(p)) end) if not s or type(dec)~="table" then self:Notify("Error","Config corrupted") return false,"Corrupted" end local fl=dec.Flags or dec for f,raw in pairs(fl) do local v=raw if type(raw)=="table" then if raw._t=="C3" or raw.Type=="Color3" then v=Color3.new(raw.R,raw.G,raw.B) elseif raw._t=="EI" or raw.Type=="EnumItem" then pcall(function() local e=tostring(raw.E or raw.EnumType):match("%.([^%.]+)$") or raw.E or raw.EnumType v=Enum[e][raw.V or raw.Name] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set,v) end end if not isAuto then self:Notify("Config","Loaded '"..n.."'") end return true end
-function Library:DeleteConfig(n) EnsureDir() local p=CDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Config","Deleted '"..n.."'") if self._refreshCfg then self._refreshCfg() end return true end return false,"Not found" end
-function Library:GetConfigs() EnsureDir() local o={} pcall(function() for _,f in ipairs(listfiles(CDIR)) do if f:match("%.json$") then local n=f:match("([^/\\]+)%.json$") if n then local p=CDIR..n..".json" local m={Name=n, Date="Unknown", Game="Unknown"} pcall(function() local d=Http:JSONDecode(readfile(p)) if d.Metadata then m.Date=d.Metadata.Date or m.Date m.Game=tostring(d.Metadata.GameId) or m.Game end end) table.insert(o,m) end end end end) return o end
-function Library:SetAutoConfig(n) EnsureDir() if n then writefile(CDIR.."_auto.txt",n) self:Notify("Config","Set '"..n.."' to autoload") else if isfile(CDIR.."_auto.txt") then delfile(CDIR.."_auto.txt") end self:Notify("Config","Removed autoload") end if self._refreshCfg then self._refreshCfg() end end
+function Library:SaveConfig(n) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end local ok, err = pcall(function() writefile(CDIR..n..".json",Http:JSONEncode(d)) end) if not ok then Library:Notify("Error", "Failed to save: "..tostring(err)) end if self._refreshCfg then self._refreshCfg() end end
+function Library:LoadConfig(n,isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error","Config not found") end return end local ok,d=pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config file corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set,v) end end self:Notify("Config","'"..n.."' loaded") end
+function Library:DeleteConfig(n) EnsureDir() local p=CDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Config","'"..n.."' deleted") if self._refreshCfg then self._refreshCfg() end else self:Notify("Error", "Config not found") end end
+function Library:GetConfigs() EnsureDir() local o={} pcall(function() for _,f in ipairs(listfiles(CDIR)) do if f:match("%.json$") then local n=f:match("([^/\\]+)%.json$") if n then table.insert(o,n) end end end end) return o end
+function Library:SetAutoConfig(n) EnsureDir() writefile(CDIR.."_auto.txt",n) self:Notify("Config","'"..n.."' auto-load set") if self._refreshCfg then self._refreshCfg() end end
 function Library:GetAutoConfig() local n="" pcall(function() if isfile(CDIR.."_auto.txt") then n=readfile(CDIR.."_auto.txt"):gsub("%s+","") end end) return n end
 function Library:PersistTheme(n) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end writefile(TDIR.."_theme.txt",n) end) end
 function Library:GetPersistedTheme() local n="" pcall(function() if isfile(TDIR.."_theme.txt") then n=readfile(TDIR.."_theme.txt"):gsub("%s+","") end end) return n end
@@ -336,66 +335,50 @@ local function CreateSettingsTab(WO) local tab=WO:CreateTab({Name="Settings",Ico
         Library:SaveCustomTheme()
     end})
 
-    local cfgSec = tab:CreateSection("Config Manager")
-    local container = cfgSec._c
-    local mainCard = I("Frame", {Size = UDim2.new(1, 0, 0, 320), BackgroundTransparency = 1, Parent = container, ZIndex = 5})
-    local bg = I("Frame", {Size = UDim2.new(1, 0, 1, 0), ClipsDescendants = true, Parent = mainCard, ZIndex = 6}) Thm(bg, "BackgroundColor3", "Elem") Crn(bg, 8)
-    local stroke = I("UIStroke", {Thickness = 1, Parent = bg}) Thm(stroke, "Color", "Border")
+    local cfgSec = tab:CreateSection("Configuration")
+    local function GetC() local c=Library:GetConfigs() if #c==0 then return {"None"} else return c end end
     
-    local header = I("Frame", {Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, Parent = bg, ZIndex = 7})
-    local hLine = I("Frame", {Position = UDim2.new(0, 0, 1, -1), Size = UDim2.new(1, 0, 0, 1), Parent = header, ZIndex = 7}) Thm(hLine, "BackgroundColor3", "Border")
-    local nameInput = I("TextBox", {Position = UDim2.new(0, 12, 0.5, -14), Size = UDim2.new(1, -120, 0, 28), Text = "", PlaceholderText = "Config name...", TextSize = 13, FontFace = FN, Parent = header, ZIndex = 8})
-    Thm(nameInput, "BackgroundColor3", "Bg") Thm(nameInput, "TextColor3", "Text") Crn(nameInput, 4)
-    local inStk = I("UIStroke", {Thickness = 1, Parent = nameInput}) Thm(inStk, "Color", "Border")
+    local cName = ""
+    local cfgDrop
+    local cBox
     
-    local createBtn = I("TextButton", {AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.new(0, 85, 0, 28), TextColor3 = Color3.new(1,1,1), Text = "Create", TextSize = 13, FontFace = FB, Parent = header, ZIndex = 8})
-    Thm(createBtn, "BackgroundColor3", "Accent") Crn(createBtn, 4)
+    cfgDrop = cfgSec:CreateDropdown({Name="Select Config", Options=GetC(), Callback=function(v)
+        cName = v=="None" and "" or v
+        if cBox then pcall(function() cBox:SetText(cName) end) end
+    end})
     
-    local listArea = I("ScrollingFrame", {Position = UDim2.new(0, 0, 0, 46), Size = UDim2.new(1, 0, 1, -116), BackgroundTransparency = 1, ScrollBarThickness = 2, Parent = bg, ZIndex = 7})
-    Thm(listArea, "ScrollBarImageColor3", "TextD") Pad(listArea, 8, 8, 8, 8) Lst(listArea, 4)
+    cBox = cfgSec:CreateTextbox({Name="Config Name", Placeholder="Name...", Callback=function(v)
+        cName = v
+    end})
     
-    local footer = I("Frame", {Position = UDim2.new(0, 0, 1, -70), Size = UDim2.new(1, 0, 0, 70), BackgroundTransparency = 1, Parent = bg, ZIndex = 7})
-    local fLine = I("Frame", {Size = UDim2.new(1, 0, 0, 1), Parent = footer, ZIndex = 7}) Thm(fLine, "BackgroundColor3", "Border")
-    local selName = I("TextLabel", {Position = UDim2.new(0, 12, 0, 10), Size = UDim2.new(1, -24, 0, 16), BackgroundTransparency = 1, Text = "No Config Selected", TextSize = 14, FontFace = FB, TextXAlignment = Enum.TextXAlignment.Left, Parent = footer, ZIndex = 8})
-    local selMeta = I("TextLabel", {Position = UDim2.new(0, 12, 0, 26), Size = UDim2.new(1, -24, 0, 14), BackgroundTransparency = 1, Text = "Select a config to manage it.", TextSize = 11, FontFace = FN, TextXAlignment = Enum.TextXAlignment.Left, Parent = footer, ZIndex = 8})
-    Thm(selName, "TextColor3", "Text") Thm(selMeta, "TextColor3", "TextD")
-    
-    local actions = I("Frame", {Position = UDim2.new(0, 12, 0, 46), Size = UDim2.new(1, -24, 0, 24), BackgroundTransparency = 1, Parent = footer, ZIndex = 8}) Lst(actions, 6, Enum.FillDirection.Horizontal)
-    local function MakeBtn(n, w) local b = I("TextButton", {Size = UDim2.new(0, w, 1, 0), Text = n, TextSize = 12, FontFace = FS, Parent = actions, ZIndex = 9}) Thm(b, "BackgroundColor3", "ElemH") Thm(b, "TextColor3", "Text") Crn(b, 4) local st = I("UIStroke", {Thickness = 1, Parent = b}) Thm(st, "Color", "Border") b.MouseEnter:Connect(function() Thm(b, "BackgroundColor3", "Border") end) b.MouseLeave:Connect(function() Thm(b, "BackgroundColor3", "ElemH") end) return b end
-    
-    local loadBtn = MakeBtn("Load", 55) local saveBtn = MakeBtn("Save", 55) local autoBtn = MakeBtn("Autoload", 75) local delBtn = MakeBtn("Delete", 55)
-    
-    local selected = nil
-    local function UpdateFooter()
-        if selected then selName.Text = selected.Name selMeta.Text = "Updated: " .. selected.Date else selName.Text = "No Config Selected" selMeta.Text = "Select a config to manage it." end
+    local function rC()
+        local cfgs = GetC()
+        cfgDrop:Refresh(cfgs)
+        if not table.find(cfgs, cName) and not table.find(Library:GetConfigs(), cName) then cName = "" end
+        if cBox then pcall(function() cBox:SetText(cName) end) end
     end
+    Library._refreshCfg = rC
     
-    function Library._refreshCfg()
-        for _, c in ipairs(listArea:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-        local configs = Library:GetConfigs()
-        local auto = Library:GetAutoConfig()
-        for _, meta in ipairs(configs) do
-            local isSel = (selected and selected.Name == meta.Name)
-            local item = I("TextButton", {Size = UDim2.new(1, 0, 0, 36), Text = "", Parent = listArea, ZIndex = 8}) Crn(item, 4)
-            if isSel then Thm(item, "BackgroundColor3", "Accent") else Thm(item, "BackgroundColor3", "Bg") end
-            local iStk = I("UIStroke", {Thickness = 1, Parent = item}) if isSel then Thm(iStk, "Color", "Accent") else Thm(iStk, "Color", "Border") end
-            local iName = I("TextLabel", {Position = UDim2.new(0, 10, 0, 6), Size = UDim2.new(1, -20, 0, 14), BackgroundTransparency = 1, Text = meta.Name, TextSize = 13, FontFace = FB, TextXAlignment = Enum.TextXAlignment.Left, Parent = item, ZIndex = 9})
-            local iInfo = I("TextLabel", {Position = UDim2.new(0, 10, 0, 20), Size = UDim2.new(1, -20, 0, 12), BackgroundTransparency = 1, Text = (auto == meta.Name and "[AUTOLOAD] " or "") .. meta.Date, TextSize = 10, FontFace = FN, TextXAlignment = Enum.TextXAlignment.Left, Parent = item, ZIndex = 9})
-            if isSel then iName.TextColor3=Color3.new(1,1,1) iInfo.TextColor3=Color3.new(0.9,0.9,0.9) else Thm(iName, "TextColor3", "Text") Thm(iInfo, "TextColor3", "TextD") end
-            item.MouseEnter:Connect(function() if not isSel then Thm(item, "BackgroundColor3", "ElemH") end end)
-            item.MouseLeave:Connect(function() if not isSel then Thm(item, "BackgroundColor3", "Bg") end end)
-            item.MouseButton1Click:Connect(function() selected = meta UpdateFooter() Library._refreshCfg() end)
-        end
-        listArea.CanvasSize = UDim2.new(0, 0, 0, #configs * 40)
-    end
-    
-    createBtn.MouseButton1Click:Connect(function() local n = nameInput.Text:gsub("[^%w_ -]", "") if n == "" then return Library:Notify("Error", "Invalid name") end local s, e = Library:SaveConfig(n) if s then Library:Notify("Config", "Created '" .. n .. "'") nameInput.Text = "" else Library:Notify("Error", e) end end)
-    loadBtn.MouseButton1Click:Connect(function() if not selected then return end local s, e = Library:LoadConfig(selected.Name, false) if not s then Library:Notify("Error", e) end end)
-    saveBtn.MouseButton1Click:Connect(function() if not selected then return end local s, e = Library:SaveConfig(selected.Name) if s then Library:Notify("Config", "Overwritten '" .. selected.Name .. "'") else Library:Notify("Error", e) end end)
-    autoBtn.MouseButton1Click:Connect(function() if not selected then return end local auto = Library:GetAutoConfig() if auto == selected.Name then Library:SetAutoConfig(nil) else Library:SetAutoConfig(selected.Name) end end)
-    delBtn.MouseButton1Click:Connect(function() if not selected then return end local s, e = Library:DeleteConfig(selected.Name) if s then selected = nil UpdateFooter() else Library:Notify("Error", e) end end)
-    
-    Library._refreshCfg()
+    cfgSec:CreateButton({Name="Refresh List", Callback=function()
+        rC()
+        Library:Notify("Config", "List Refreshed")
+    end})
+    cfgSec:CreateButton({Name="Save / Overwrite", Callback=function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then Library:SaveConfig(n) cName = n rC() else Library:Notify("Error", "Invalid name") end
+    end})
+    cfgSec:CreateButton({Name="Load", Callback=function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then Library:LoadConfig(n, false) else Library:Notify("Error", "Invalid name") end
+    end})
+    cfgSec:CreateButton({Name="Delete", Callback=function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then Library:DeleteConfig(n) cName="" rC() else Library:Notify("Error", "Invalid name") end
+    end})
+    cfgSec:CreateButton({Name="Set Autoload", Callback=function()
+        local n = cName:gsub("^%s+", ""):gsub("%s+$", "")
+        if n ~= "" and n ~= "None" then Library:SetAutoConfig(n) else Library:Notify("Error", "Invalid name") end
+    end})
     
     local uiSec=tab:CreateSection("Interface") uiSec:CreateKeybind({Name="Toggle UI",Default=Library.ToggleKey,Flag="_SynTK",Callback=function() end}) Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library._tkLbl then Library._tkLbl.Text="["..tk.Name.."] Toggle UI" end end end) uiSec:CreateToggle({Name="Show Watermark",Default=Library.ShowWatermark,Flag="_SynWM",Callback=function(v) Library.ShowWatermark=v if Library._wm then Library._wm.Visible=v and not Library.Open end end})
     local ulSec=tab:CreateSection("Script") ulSec:CreateButton({Name="Unload Script",Callback=function() Library:Unload() end})
