@@ -176,7 +176,7 @@ function Library:Notify(title, msg, dur)
     Thm(card,"BackgroundColor3","Panel") Crn(card,6)
     local nBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,3,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=card, ZIndex=1001})
     Thm(nBgI, "ImageColor3", "Accent")
-    Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.3 + math.cos(tick()*0.15)*0.03, 0) end end)
+    Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
     
     local s=I("UIStroke",{Thickness=2,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
@@ -209,7 +209,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
-    local size = opts.Size or UDim2.new(0, 800, 0, 500)
+    local size = opts.Size or UDim2.new(0, 850, 0, 500)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
     local persisted=false pcall(function() local pt=self:GetPersistedTheme() if pt~="" and self.Themes[pt] then self.Theme=self.Themes[pt] persisted=true end end)
@@ -222,7 +222,7 @@ function Library:CreateWindow(opts)
     Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 4) self._wm=wm MakeDrag(wm, wm)
     local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     Thm(wmBgI, "ImageColor3", "Accent")
-    Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.4 + math.cos(tick()*0.15)*0.03, 0) end end)
+    Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
