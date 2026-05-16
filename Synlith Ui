@@ -196,12 +196,12 @@ function Library:Notify(title, msg, dur)
     Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
     
-    local s=I("UIStroke",{Thickness=3,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
+    local s=I("UIStroke",{Thickness=2,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
     Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 150) % 360 end)
     
     local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,15),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) Thm(icon,"ImageColor3","Logo")
-    local iconStk=I("UIStroke",{Thickness=2,Transparency=0,Color=Color3.new(1,1,1),ApplyStrokeMode=Enum.ApplyStrokeMode.Contextual,Parent=icon}) local iStkG=I("UIGradient",{Parent=iconStk}) Thm(iStkG,"Color","Accent","Gradient") Cn(Run.RenderStepped,function() if iStkG.Parent then iStkG.Rotation=(tick()*80)%360 end end)
+
     
     local tL=I("TextLabel",{Position=UDim2.new(0,60,0,16),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=F_TITLE,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=1003}) Thm(tL,"TextColor3","Text")
     local mL=I("TextLabel",{Position=UDim2.new(0,60,0,36),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=1003}) Thm(mL,"TextColor3","TextDark")
@@ -243,13 +243,13 @@ function Library:CreateWindow(opts)
     Thm(wmBgI, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
-    local wmStk = I("UIStroke", {Thickness=3, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
+    local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 120) % 360 end)
     
     local wmLogo = I("ImageLabel", {Position=UDim2.new(0,10,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wm, ZIndex=151})
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) Thm(wmLogo, "ImageColor3", "Logo")
-    local wmLStk=I("UIStroke",{Thickness=2,Transparency=0,Color=Color3.new(1,1,1),ApplyStrokeMode=Enum.ApplyStrokeMode.Contextual,Parent=wmLogo}) local wLStkG=I("UIGradient",{Parent=wmLStk}) Thm(wLStkG,"Color","Accent","Gradient") Cn(Run.RenderStepped,function() if wLStkG.Parent then wLStkG.Rotation=(tick()*80)%360 end end)
+
     
     local wmLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-75,1,0), BackgroundTransparency=1, Text=title:upper().." | 0 FPS | 0 MS", TextSize=13, FontFace=F_NUM, TextXAlignment=Enum.TextXAlignment.Left, Parent=wm, ZIndex=151}) Thm(wmLbl, "TextColor3", "Text")
     
@@ -288,7 +288,7 @@ function Library:CreateWindow(opts)
     end)
     
     -- EXCLUSIVE SINGLE UI STROKE
-    local outStk = I("UIStroke", {Thickness=4, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local outStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
     local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() outGrad.Rotation = (tick() * 50) % 360 end)
 
@@ -301,7 +301,7 @@ function Library:CreateWindow(opts)
     -- VERTICAL CLEAN PREMIUM LOGO HIERARCHY
     local logo = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,24), Size=UDim2.new(0,48,0,48), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=sidebar, ZIndex=6})
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then logo.Image=li end end) Thm(logo, "ImageColor3", "Logo")
-    local lStk=I("UIStroke",{Thickness=2,Transparency=0,Color=Color3.new(1,1,1),ApplyStrokeMode=Enum.ApplyStrokeMode.Contextual,Parent=logo}) local lStkG=I("UIGradient",{Parent=lStk}) Thm(lStkG,"Color","Accent","Gradient") Cn(Run.RenderStepped,function() if lStkG.Parent then lStkG.Rotation=(tick()*80)%360 end end)
+
     local cName = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,76), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text=title:upper(), TextSize=13, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Center, Parent=sidebar, ZIndex=6}) Thm(cName, "TextColor3", "Text")
     local sep = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,104), Size=UDim2.new(0.8,0,0,1), BackgroundTransparency=0.5, Parent=sidebar, ZIndex=6}) Thm(sep, "BackgroundColor3", "Border")
     
@@ -672,7 +672,7 @@ function Library:CreateWindow(opts)
         local aSec = abtTab:CreateSection("Synlith", "Left")
         local lF = I("Frame", {Size=UDim2.new(1,0,0,130), BackgroundTransparency=1, Parent=aSec._c, ZIndex=15})
         local lI = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,10), Size=UDim2.new(0,70,0,70), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=lF, ZIndex=16}) pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then lI.Image=li end end) Thm(lI, "ImageColor3", "Logo")
-        local lIStk=I("UIStroke",{Thickness=2,Transparency=0,Color=Color3.new(1,1,1),ApplyStrokeMode=Enum.ApplyStrokeMode.Contextual,Parent=lI}) local lIStkG=I("UIGradient",{Parent=lIStk}) Thm(lIStkG,"Color","Accent","Gradient") Cn(Run.RenderStepped,function() if lIStkG.Parent then lIStkG.Rotation=(tick()*80)%360 end end)
+
         local lT = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,90), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="SYNLITH.HUB", TextSize=18, FontFace=F_TITLE, Parent=lF, ZIndex=16}) Thm(lT, "TextColor3", "Text")
         local lS = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,112), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Premium Script", TextSize=12, FontFace=F_TEXT, Parent=lF, ZIndex=16}) Thm(lS, "TextColor3", "Accent")
         
