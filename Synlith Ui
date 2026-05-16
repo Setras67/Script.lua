@@ -72,16 +72,14 @@ local function Thm(inst, prop, key, special)
             local bright = col:Lerp(Color3.new(1,1,1), 0.65)
             inst[prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col), ColorSequenceKeypoint.new(0.5,bright), ColorSequenceKeypoint.new(1,col)})
         elseif special=="BorderGradient" then
-            local bC = Library.Theme.Border
-            local aC = Library.Theme.Accent
-            local shine = aC:Lerp(Color3.new(1,1,1), 0.3)
-            inst[prop] = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, bC), 
-                ColorSequenceKeypoint.new(0.4, bC),
-                ColorSequenceKeypoint.new(0.5, shine),
-                ColorSequenceKeypoint.new(0.6, bC),
-                ColorSequenceKeypoint.new(1, bC)
-            })
+            local bC = Library.Theme.Border local aC = Library.Theme.Accent local shine = aC:Lerp(Color3.new(1,1,1), 0.5)
+            inst[prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bC), ColorSequenceKeypoint.new(0.35, bC), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.65, bC), ColorSequenceKeypoint.new(1, bC)})
+        elseif special=="LogoFill" then
+            local lC = Library.Theme[key] local bright = lC:Lerp(Color3.new(1,1,1), 0.3)
+            inst[prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bright), ColorSequenceKeypoint.new(1, lC)})
+        elseif special=="LogoStroke" then
+            local lC = Library.Theme[key] local shine = Color3.new(1,1,1) local dark = lC:Lerp(Color3.new(0,0,0), 0.4)
+            inst[prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, dark), ColorSequenceKeypoint.new(0.4, dark), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, dark), ColorSequenceKeypoint.new(1, dark)})
         else inst[prop]=Library.Theme[key] end
     end
     for _, t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key t.special=special pcall(apply) return end end
@@ -91,12 +89,35 @@ end
 local function Cn(sig, fn) local c=sig:Connect(fn) table.insert(Library._conn, c) return c end
 local function CB(cb, ...) if cb then pcall(cb, ...) end end
 local function SF(f, v) if f then Library.Flags[f]=v end end
-local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) if key then if key=="Border" then s.Color=Color3.new(1,1,1) s.Transparency=0.05 local g=I("UIGradient",{Parent=s}) Thm(g,"Color","Border","BorderGradient") Cn(Run.RenderStepped,function() if g.Parent then g.Rotation=(tick()*50)%360 end end) else Thm(s, "Color", key) end end return s end
+local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) if key then if key=="Border" then s.Color=Color3.new(1,1,1) s.Transparency=0.05 local g=I("UIGradient",{Parent=s}) Thm(g,"Color","Border","BorderGradient") Cn(Run.RenderStepped,function() if g.Parent then g.Offset=Vector2.new((tick()*0.6)%2-1,0) end end) else Thm(s, "Color", key) end end return s end
 local function Ripple(btn) local c=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,0,0,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.8,Active=false,Interactable=false,Parent=btn,ZIndex=btn.ZIndex+1}) Crn(c,999) local sz=math.max(btn.AbsoluteSize.X,btn.AbsoluteSize.Y)*2.5 Tw(c,{Size=UDim2.new(0,sz,0,sz),BackgroundTransparency=1},TM) task.delay(0.4,function() c:Destroy() end) end
 
 local function MakeDrag(frame, handle) local dr, ds, sp Cn(handle.InputBegan,function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then dr=true ds=inp.Position sp=frame.Position inp.Changed:Connect(function() if inp.UserInputState==Enum.UserInputState.End then dr=false end end) end end) Cn(UIS.InputChanged,function(inp) if dr and(inp.UserInputType==Enum.UserInputType.MouseMovement or inp.UserInputType==Enum.UserInputType.Touch) then local d=inp.Position-ds frame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end) end
 local function FetchAsset(url, path) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfile(path) then writefile(path, game:HttpGet(url)) end end) local img="" pcall(function() if isfile(path) then img=getcustomasset(path) end end) return img end
 local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfolder(CDIR) then makefolder(CDIR) end end) end
+
+local function PremiumBorder(p)
+    local outStk = I("UIStroke", {Thickness=1, Transparency=0.1, Color=Color3.new(1,1,1), Parent=p, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local outGrad = I("UIGradient", {Parent=outStk}) 
+    Thm(outGrad, "Color", "Border", "BorderGradient")
+    Cn(Run.RenderStepped, function() if outGrad.Parent then outGrad.Offset = Vector2.new((tick()*0.6)%2 - 1, 0) end end)
+    
+    local innerF = I("Frame", {Size=UDim2.new(1,-2,1,-2), Position=UDim2.new(0,1,0,1), BackgroundTransparency=1, Parent=p, ZIndex=p.ZIndex+1})
+    local crn = p:FindFirstChildOfClass("UICorner") if crn then Crn(innerF, math.max(0, crn.CornerRadius.Offset - 1)) end
+    pcall(function() innerF.Interactable=false end)
+    I("UIStroke", {Thickness=1, Transparency=0.85, Color=Color3.new(1,1,1), Parent=innerF, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    
+    local glow = I("ImageLabel", {Name="Glow", BackgroundTransparency=1, Image="rbxassetid://5028857084", ScaleType=Enum.ScaleType.Slice, SliceCenter=Rect.new(24,24,276,276), Size=UDim2.new(1,40,1,40), Position=UDim2.new(0,-20,0,-20), ImageTransparency=0.35, Parent=p, ZIndex=0})
+    pcall(function() glow.Interactable=false end) Thm(glow, "ImageColor3", "Background")
+end
+
+local function PremiumLogo(p)
+    p.ImageColor3 = Color3.new(1,1,1)
+    local fillGrad = I("UIGradient", {Parent=p, Rotation=90}) Thm(fillGrad, "Color", "Logo", "LogoFill")
+    local stk = I("UIStroke", {Thickness=1.2, Transparency=0.15, Color=Color3.new(1,1,1), Parent=p})
+    local stkGrad = I("UIGradient", {Parent=stk}) Thm(stkGrad, "Color", "Logo", "LogoStroke")
+    Cn(Run.RenderStepped, function() if stkGrad.Parent then stkGrad.Offset = Vector2.new((tick()*0.8)%2 - 1, 0) end end)
+end
 
 local function MakeParticles(parent, count, minD, maxD)
     minD = minD or 10 maxD = maxD or 25
@@ -173,8 +194,14 @@ function Library:SetTheme(name)
             local col = self.Theme[t.key] local bright = col:Lerp(Color3.new(1,1,1), 0.65)
             t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col),ColorSequenceKeypoint.new(0.5,bright),ColorSequenceKeypoint.new(1,col)}) 
         elseif t.special=="BorderGradient" then
-            local bC = self.Theme.Border local aC = self.Theme.Accent local shine = aC:Lerp(Color3.new(1,1,1), 0.3)
-            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bC), ColorSequenceKeypoint.new(0.4, bC), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, bC), ColorSequenceKeypoint.new(1, bC)})
+            local bC = self.Theme.Border local aC = self.Theme.Accent local shine = aC:Lerp(Color3.new(1,1,1), 0.5)
+            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bC), ColorSequenceKeypoint.new(0.35, bC), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.65, bC), ColorSequenceKeypoint.new(1, bC)})
+        elseif t.special=="LogoFill" then
+            local lC = self.Theme[t.key] local bright = lC:Lerp(Color3.new(1,1,1), 0.3)
+            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bright), ColorSequenceKeypoint.new(1, lC)})
+        elseif t.special=="LogoStroke" then
+            local lC = self.Theme[t.key] local shine = Color3.new(1,1,1) local dark = lC:Lerp(Color3.new(0,0,0), 0.4)
+            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, dark), ColorSequenceKeypoint.new(0.4, dark), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, dark), ColorSequenceKeypoint.new(1, dark)})
         else t.inst[t.prop]=self.Theme[t.key] end 
     end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
@@ -196,12 +223,11 @@ function Library:Notify(title, msg, dur)
     Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
     
-    local s=I("UIStroke",{Thickness=2,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
-    Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 150) % 360 end)
+    PremiumBorder(card)
     
     local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,15),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) 
-    icon.ImageColor3=Color3.new(1,1,1) local iGrad=I("UIGradient",{Parent=icon}) Thm(iGrad,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if iGrad.Parent then iGrad.Offset=Vector2.new((tick()*1.2)%2-1,0) end end)
+    PremiumLogo(icon)
     
     local tL=I("TextLabel",{Position=UDim2.new(0,60,0,16),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=F_TITLE,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=1003}) Thm(tL,"TextColor3","Text")
     local mL=I("TextLabel",{Position=UDim2.new(0,60,0,36),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=1003}) Thm(mL,"TextColor3","TextDark")
@@ -243,13 +269,11 @@ function Library:CreateWindow(opts)
     Thm(wmBgI, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
-    local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
-    local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
-    Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 120) % 360 end)
+    PremiumBorder(wm)
     
     local wmLogo = I("ImageLabel", {Position=UDim2.new(0,10,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wm, ZIndex=151})
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) 
-    wmLogo.ImageColor3=Color3.new(1,1,1) local wGradL=I("UIGradient",{Parent=wmLogo}) Thm(wGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if wGradL.Parent then wGradL.Offset=Vector2.new((tick()*1.2)%2-1,0) end end)
+    PremiumLogo(wmLogo)
     
     local wmLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-75,1,0), BackgroundTransparency=1, Text=title:upper().." | 0 FPS | 0 MS", TextSize=13, FontFace=F_NUM, TextXAlignment=Enum.TextXAlignment.Left, Parent=wm, ZIndex=151}) Thm(wmLbl, "TextColor3", "Text")
     
@@ -287,10 +311,8 @@ function Library:CreateWindow(opts)
         end
     end)
     
-    -- EXCLUSIVE SINGLE UI STROKE
-    local outStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
-    local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "Gradient")
-    Cn(Run.RenderStepped, function() outGrad.Rotation = (tick() * 50) % 360 end)
+    -- PREMIUM UNIFIED BORDER SYSTEM
+    PremiumBorder(main)
 
     MakeParticles(main, 40, 10, 25)
     
@@ -301,7 +323,7 @@ function Library:CreateWindow(opts)
     -- VERTICAL CLEAN PREMIUM LOGO HIERARCHY
     local logo = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,24), Size=UDim2.new(0,48,0,48), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=sidebar, ZIndex=6})
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then logo.Image=li end end) 
-    logo.ImageColor3=Color3.new(1,1,1) local lGradL=I("UIGradient",{Parent=logo}) Thm(lGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if lGradL.Parent then lGradL.Offset=Vector2.new((tick()*1.2)%2-1,0) end end)
+    PremiumLogo(logo)
     local cName = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,76), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text=title:upper(), TextSize=13, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Center, Parent=sidebar, ZIndex=6}) Thm(cName, "TextColor3", "Text")
     local sep = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,104), Size=UDim2.new(0.8,0,0,1), BackgroundTransparency=0.5, Parent=sidebar, ZIndex=6}) Thm(sep, "BackgroundColor3", "Border")
     
@@ -673,7 +695,7 @@ function Library:CreateWindow(opts)
         local lF = I("Frame", {Size=UDim2.new(1,0,0,130), BackgroundTransparency=1, Parent=aSec._c, ZIndex=15})
         local lI = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,10), Size=UDim2.new(0,70,0,70), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=lF, ZIndex=16}) 
         pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then lI.Image=li end end) 
-        lI.ImageColor3=Color3.new(1,1,1) local aGradL=I("UIGradient",{Parent=lI}) Thm(aGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if aGradL.Parent then aGradL.Offset=Vector2.new((tick()*1.2)%2-1,0) end end)
+        PremiumLogo(lI)
         local lT = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,90), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="SYNLITH.HUB", TextSize=18, FontFace=F_TITLE, Parent=lF, ZIndex=16}) Thm(lT, "TextColor3", "Text")
         local lS = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,112), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Premium Script", TextSize=12, FontFace=F_TEXT, Parent=lF, ZIndex=16}) Thm(lS, "TextColor3", "Accent")
         
