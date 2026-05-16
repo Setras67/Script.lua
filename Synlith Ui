@@ -136,7 +136,7 @@ local function MakeParticles(parent, count, minD, maxD)
     return ptcWrap
 end
 
-function Library:SaveConfig(n) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
+function Library:SaveConfig(n, msg) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", msg or "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
 function Library:LoadConfig(n, isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Config not found") end return end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set, v) end end self:Notify("Success", "Config loaded successfully") end
 function Library:DeleteConfig(n) EnsureDir() local p=CDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Info", "Config deleted") else self:Notify("Error", "Config not found") end end
 function Library:GetConfigs() EnsureDir() local o={} pcall(function() for _,f in ipairs(listfiles(CDIR)) do if f:match("%.json$") then local n=f:match("([^/\\]+)%.json$") if n and isfile(CDIR..n..".json") then table.insert(o,n) end end end end) return o end
@@ -548,7 +548,7 @@ function Library:CreateWindow(opts)
         
         cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
-        cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n) else Library:Notify("Error", "Select config") end end)
+        cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n, "Config overwritten") else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Delete", function() 
             local n = cfgDrop:Get() 
             if n~="" then 
@@ -566,7 +566,7 @@ function Library:CreateWindow(opts)
         cBtn(saveWrap, "Create", function() 
             local n = cInp:Get() 
             if n~="" then 
-                Library:SaveConfig(n) 
+                Library:SaveConfig(n, "Config created") 
                 local cfgs = Library:GetConfigs()
                 if not table.find(cfgs, n) then table.insert(cfgs, n) end
                 cfgDrop:Refresh(cfgs)
