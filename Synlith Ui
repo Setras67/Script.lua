@@ -196,7 +196,7 @@ function Library:Notify(title, msg, dur)
     Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
     
-    local s=I("UIStroke",{Thickness=3,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","BorderGradient")
+    local s=I("UIStroke",{Thickness=3,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
     Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 150) % 360 end)
     
     local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,15),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
@@ -245,7 +245,7 @@ function Library:CreateWindow(opts)
     Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=3, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
-    local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "BorderGradient")
+    local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 120) % 360 end)
     
     local wmLogo = I("ImageLabel", {Position=UDim2.new(0,10,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wm, ZIndex=151})
@@ -290,8 +290,8 @@ function Library:CreateWindow(opts)
     end)
     
     -- EXCLUSIVE SINGLE UI STROKE
-    local outStk = I("UIStroke", {Thickness=4, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
-    local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "BorderGradient")
+    local outStk = I("UIStroke", {Thickness=3, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() outGrad.Rotation = (tick() * 50) % 360 end)
 
     MakeParticles(main, 40, 10, 25)
