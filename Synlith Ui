@@ -174,7 +174,7 @@ function Library:Notify(title, msg, dur)
     
     local card=I("CanvasGroup",{Size=UDim2.new(0,320,0,65), Position=UDim2.new(1, 50, 0, 0), GroupTransparency=1, BackgroundTransparency=0.15, Parent=self._notifH, ZIndex=1001}) 
     Thm(card,"BackgroundColor3","Panel") Crn(card,6)
-    local nBgI = I("ImageLabel", {Size=UDim2.new(0.95,0,0.95,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Fit, Parent=card, ZIndex=1001})
+    local nBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,1.04,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=card, ZIndex=1001})
     Thm(nBgI, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.5 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
@@ -220,7 +220,7 @@ function Library:CreateWindow(opts)
     
     local wm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-16,0,16), Size=UDim2.new(0,250,0,36), BackgroundTransparency=0.15, ClipsDescendants=true, Visible=false, Parent=gui, ZIndex=150})
     Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 4) self._wm=wm MakeDrag(wm, wm)
-    local wmBgI = I("ImageLabel", {Size=UDim2.new(0.95,0,0.95,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Fit, Parent=wm, ZIndex=150})
+    local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,1.04,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     Thm(wmBgI, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.5 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
@@ -258,7 +258,7 @@ function Library:CreateWindow(opts)
     Thm(main, "BackgroundColor3", "Background") Crn(main, 4) self.Window=outerMain
     
     local bgContainer = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=main, ZIndex=0}) Crn(bgContainer, 4)
-    local bgImage = I("ImageLabel", {Size=UDim2.new(0.95,0,0.95,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.8, ScaleType=Enum.ScaleType.Fit, Parent=bgContainer, ZIndex=0})
+    local bgImage = I("ImageLabel", {Size=UDim2.new(1.04,0,1.04,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.8, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
     Thm(bgImage, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function()
         if bgImage and bgImage.Parent then
