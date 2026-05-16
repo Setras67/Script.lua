@@ -174,6 +174,9 @@ function Library:Notify(title, msg, dur)
     
     local card=I("CanvasGroup",{Size=UDim2.new(0,320,0,65), Position=UDim2.new(1, 50, 0, 0), GroupTransparency=1, BackgroundTransparency=0.15, Parent=self._notifH, ZIndex=1001}) 
     Thm(card,"BackgroundColor3","Panel") Crn(card,6)
+    local nBgI = I("ImageLabel", {Size=UDim2.new(1.2,0,1.2,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=card, ZIndex=1001})
+    Thm(nBgI, "ImageColor3", "Accent")
+    Cn(Run.RenderStepped, function() if nBgI and nBgI.Parent then nBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.5 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(card, 8, 1.5, 4)
     
     local s=I("UIStroke",{Thickness=2,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
@@ -215,8 +218,11 @@ function Library:CreateWindow(opts)
     local gui = I("ScreenGui", {Name="SynlithUI", ZIndexBehavior=Enum.ZIndexBehavior.Sibling, ResetOnSpawn=false, IgnoreGuiInset=true})
     pcall(function() gui.Parent=CG end) if not gui.Parent then gui.Parent=LP:WaitForChild("PlayerGui") end self.ScreenGui=gui
     
-    local wm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-16,0,16), Size=UDim2.new(0,250,0,36), BackgroundTransparency=0.15, Visible=false, Parent=gui, ZIndex=150})
+    local wm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-16,0,16), Size=UDim2.new(0,250,0,36), BackgroundTransparency=0.15, ClipsDescendants=true, Visible=false, Parent=gui, ZIndex=150})
     Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 4) self._wm=wm MakeDrag(wm, wm)
+    local wmBgI = I("ImageLabel", {Size=UDim2.new(1.2,0,1.2,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
+    Thm(wmBgI, "ImageColor3", "Accent")
+    Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.5 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
@@ -252,11 +258,11 @@ function Library:CreateWindow(opts)
     Thm(main, "BackgroundColor3", "Background") Crn(main, 4) self.Window=outerMain
     
     local bgContainer = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=main, ZIndex=0}) Crn(bgContainer, 4)
-    local bgImage = I("ImageLabel", {Size=UDim2.new(1.2,0,1.2,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
+    local bgImage = I("ImageLabel", {Size=UDim2.new(1.1,0,1.1,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.8, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
     Thm(bgImage, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function()
         if bgImage and bgImage.Parent then
-            bgImage.Position = UDim2.new(0.5, math.sin(tick()*0.3)*15, 0.5, math.cos(tick()*0.2)*10)
+            bgImage.Position = UDim2.new(0.5 + math.sin(tick()*0.15)*0.015, 0, 0.5 + math.cos(tick()*0.1)*0.015, 0)
         end
     end)
     
