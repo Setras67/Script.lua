@@ -375,8 +375,8 @@ function Library:CreateWindow(opts)
         local tLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-42,1,0), BackgroundTransparency=1, Text=tName, TextSize=13, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=tBtn, ZIndex=11}) Thm(tLbl, "TextColor3", "TextDark")
         local indicator = I("Frame", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,8,0.5,0), Size=UDim2.new(0,3,0,16), BackgroundTransparency=1, Parent=tBtn, ZIndex=12}) Thm(indicator, "BackgroundColor3", "Accent") Crn(indicator, 2)
         
-        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,32), Size=UDim2.new(1,-4,1,-64), BackgroundTransparency=1, ScrollBarThickness=2, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
-        Thm(tPage, "ScrollBarImageColor3", "Accent") tPage.ScrollBarImageTransparency=0 Pad(tPage, 4, 10, 12, 12)
+        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,-4,1,-20), BackgroundTransparency=1, ScrollBarThickness=2, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
+        Thm(tPage, "ScrollBarImageColor3", "Accent") tPage.ScrollBarImageTransparency=0.2 Pad(tPage, 4, 10, 12, 12)
         
         local leftCol = I("Frame", {Size=UDim2.new(0.5,-4,1,0), BackgroundTransparency=1, Parent=tPage, ZIndex=10})
         local rightCol = I("Frame", {Position=UDim2.new(0.5,4,0,0), Size=UDim2.new(0.5,-4,1,0), BackgroundTransparency=1, Parent=tPage, ZIndex=10})
@@ -457,7 +457,7 @@ function Library:CreateWindow(opts)
             function SO:CreateColorPicker(opts) opts=opts or {} local name=opts.Name or "Color" local value=opts.Default or Color3.new(1,1,1) local flag=opts.Flag local cb=opts.Callback local pOpen=false local h,s,v=Color3.toHSV(value)
                 local ch=28 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=18})
                 local lbl=I("TextLabel",{Size=UDim2.new(1,-40,0,ch),BackgroundTransparency=1,Text=name,TextSize=11,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,Parent=wrap,ZIndex=19}) Thm(lbl,"TextColor3","TextDark")
-                local prev=I("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,28,0,18),BackgroundColor3=value,Parent=wrap,ZIndex=19}) Crn(prev,4) I("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=0.4,Parent=prev})
+                local prev=I("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-2,0.5,0),Size=UDim2.new(0,28,0,18),BackgroundColor3=value,Parent=wrap,ZIndex=19}) Crn(prev,4) I("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=0.4,Parent=prev})
                 local hit=I("TextButton",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=20})
                 
                 local pH=160 local pan=I("Frame",{Position=UDim2.new(0,0,0,ch+4),Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false,Parent=wrap,ZIndex=35}) Thm(pan,"BackgroundColor3","Panel") Crn(pan,6) Stk(pan,"Border",1,0)
@@ -655,7 +655,7 @@ function Library:CreateWindow(opts)
         local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
         local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
         local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-2,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
         Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
     end
     
