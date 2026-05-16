@@ -251,6 +251,15 @@ function Library:CreateWindow(opts)
     local main = I("Frame", {Name="Main", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-padding*2,1,-padding*2), BackgroundTransparency=0.1, Parent=outerMain, ZIndex=1})
     Thm(main, "BackgroundColor3", "Background") Crn(main, 4) self.Window=outerMain
     
+    local bgContainer = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=main, ZIndex=0}) Crn(bgContainer, 4)
+    local bgImage = I("ImageLabel", {Size=UDim2.new(1.2,0,1.2,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
+    Thm(bgImage, "ImageColor3", "Accent")
+    Cn(Run.RenderStepped, function()
+        if bgImage and bgImage.Parent then
+            bgImage.Position = UDim2.new(0.5, math.sin(tick()*0.3)*15, 0.5, math.cos(tick()*0.2)*10)
+        end
+    end)
+    
     -- EXCLUSIVE SINGLE UI STROKE
     local outStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
     local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "Gradient")
