@@ -182,11 +182,11 @@ function Library:Notify(title, msg, dur)
     local s=I("UIStroke",{Thickness=2,Transparency=1,Color=Color3.new(1,1,1),Parent=card}) local pGrad=I("UIGradient",{Parent=s}) Thm(pGrad,"Color","Accent","Gradient")
     Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 150) % 360 end)
     
-    local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,14),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
+    local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,15),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
     pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) Thm(icon,"ImageColor3","Logo")
     
-    local tL=I("TextLabel",{Position=UDim2.new(0,60,0,12),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=F_TITLE,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=1003}) Thm(tL,"TextColor3","Text")
-    local mL=I("TextLabel",{Position=UDim2.new(0,60,0,32),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=1003}) Thm(mL,"TextColor3","TextDark")
+    local tL=I("TextLabel",{Position=UDim2.new(0,60,0,16),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=F_TITLE,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=1003}) Thm(tL,"TextColor3","Text")
+    local mL=I("TextLabel",{Position=UDim2.new(0,60,0,36),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=1003}) Thm(mL,"TextColor3","TextDark")
     
     local pBg=I("Frame",{AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-6),Size=UDim2.new(1,-24,0,3),BorderSizePixel=0,Parent=card,ZIndex=1002}) Thm(pBg,"BackgroundColor3","Element") Crn(pBg,2)
     local pBar=I("Frame",{Size=UDim2.new(0,0,1,0),BorderSizePixel=0,BackgroundColor3=Color3.new(1,1,1),Parent=pBg,ZIndex=1004}) Crn(pBar,2)
@@ -209,7 +209,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
-    local size = opts.Size or UDim2.new(0, 750, 0, 500)
+    local size = opts.Size or UDim2.new(0, 800, 0, 500)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
     local persisted=false pcall(function() local pt=self:GetPersistedTheme() if pt~="" and self.Themes[pt] then self.Theme=self.Themes[pt] persisted=true end end)
@@ -222,7 +222,7 @@ function Library:CreateWindow(opts)
     Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 4) self._wm=wm MakeDrag(wm, wm)
     local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     Thm(wmBgI, "ImageColor3", "Accent")
-    Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.9 + math.cos(tick()*0.15)*0.03, 0) end end)
+    Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, -0.4 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
