@@ -77,9 +77,6 @@ local function Thm(inst, prop, key, special)
         elseif special=="LogoFill" then
             local lC = Library.Theme[key] local bright = lC:Lerp(Color3.new(1,1,1), 0.3)
             inst[prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bright), ColorSequenceKeypoint.new(1, lC)})
-        elseif special=="LogoStroke" then
-            local lC = Library.Theme[key] local shine = Color3.new(1,1,1) local dark = lC:Lerp(Color3.new(0,0,0), 0.4)
-            inst[prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, dark), ColorSequenceKeypoint.new(0.4, dark), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, dark), ColorSequenceKeypoint.new(1, dark)})
         else inst[prop]=Library.Theme[key] end
     end
     for _, t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key t.special=special pcall(apply) return end end
@@ -97,26 +94,60 @@ local function FetchAsset(url, path) pcall(function() if not isfolder("Synlith.h
 local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfolder(CDIR) then makefolder(CDIR) end end) end
 
 local function PremiumBorder(p)
-    local outStk = I("UIStroke", {Thickness=1, Transparency=0.1, Color=Color3.new(1,1,1), Parent=p, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local crn = p:FindFirstChildOfClass("UICorner")
+    local rad = crn and crn.CornerRadius.Offset or 6
+    
+    local outStk = I("UIStroke", {Thickness=2.5, Transparency=0.05, Color=Color3.new(1,1,1), Parent=p, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
     local outGrad = I("UIGradient", {Parent=outStk}) 
     Thm(outGrad, "Color", "Border", "BorderGradient")
     Cn(Run.RenderStepped, function() if outGrad.Parent then outGrad.Offset = Vector2.new((tick()*0.6)%2 - 1, 0) end end)
     
-    local innerF = I("Frame", {Size=UDim2.new(1,-2,1,-2), Position=UDim2.new(0,1,0,1), BackgroundTransparency=1, Parent=p, ZIndex=p.ZIndex+1})
-    local crn = p:FindFirstChildOfClass("UICorner") if crn then Crn(innerF, math.max(0, crn.CornerRadius.Offset - 1)) end
-    pcall(function() innerF.Interactable=false end)
-    I("UIStroke", {Thickness=1, Transparency=0.85, Color=Color3.new(1,1,1), Parent=innerF, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local innerF = I("Frame", {Size=UDim2.new(1,-4,1,-4), Position=UDim2.new(0,2,0,2), BackgroundTransparency=1, Parent=p, ZIndex=p.ZIndex+1})
+    Crn(innerF, math.max(0, rad - 2)) pcall(function() innerF.Interactable=false end)
+    I("UIStroke", {Thickness=1, Transparency=0.65, Color=Color3.new(1,1,1), Parent=innerF, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
     
-    local glow = I("ImageLabel", {Name="Glow", BackgroundTransparency=1, Image="rbxassetid://5028857084", ScaleType=Enum.ScaleType.Slice, SliceCenter=Rect.new(24,24,276,276), Size=UDim2.new(1,40,1,40), Position=UDim2.new(0,-20,0,-20), ImageTransparency=0.35, Parent=p, ZIndex=0})
-    pcall(function() glow.Interactable=false end) Thm(glow, "ImageColor3", "Background")
+    local outerF = I("Frame", {Size=UDim2.new(1,4,1,4), Position=UDim2.new(0,-2,0,-2), BackgroundTransparency=1, Parent=p, ZIndex=p.ZIndex-1})
+    Crn(outerF, rad + 2) pcall(function() outerF.Interactable=false end)
+    I("UIStroke", {Thickness=1, Transparency=0.4, Color=Color3.new(0,0,0), Parent=outerF, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+
+    local proxy = I("Frame", {Size=p.Size, Position=p.Position, AnchorPoint=p.AnchorPoint, BackgroundTransparency=1, Parent=p.Parent, ZIndex=p.ZIndex-5})
+    pcall(function() proxy.Interactable=false end)
+    
+    Cn(Run.RenderStepped, function()
+        if not p.Parent then proxy:Destroy() return end
+        proxy.Size = p.Size proxy.Position = p.Position proxy.AnchorPoint = p.AnchorPoint proxy.Visible = p.Visible
+        local tr = p:IsA("CanvasGroup") and p.GroupTransparency or p.BackgroundTransparency
+        for _, ch in ipairs(proxy:GetChildren()) do
+            if ch:IsA("ImageLabel") then ch.ImageTransparency = ch:GetAttribute("BaseTr") + (tr * (1 - ch:GetAttribute("BaseTr"))) end
+        end
+    end)
+    
+    local aura = I("ImageLabel", {Name="Aura", BackgroundTransparency=1, Image="rbxassetid://5028857084", ScaleType=Enum.ScaleType.Slice, SliceCenter=Rect.new(24,24,276,276), Size=UDim2.new(1,36,1,36), Position=UDim2.new(0,-18,0,-18), Parent=proxy, ZIndex=p.ZIndex-2})
+    aura:SetAttribute("BaseTr", 0.3) pcall(function() aura.Interactable=false end) Thm(aura, "ImageColor3", "Accent")
+    
+    local shadow = I("ImageLabel", {Name="Shadow", BackgroundTransparency=1, Image="rbxassetid://5028857084", ScaleType=Enum.ScaleType.Slice, SliceCenter=Rect.new(24,24,276,276), Size=UDim2.new(1,90,1,90), Position=UDim2.new(0,-45,0,-45), Parent=proxy, ZIndex=p.ZIndex-3})
+    shadow:SetAttribute("BaseTr", 0.15) pcall(function() shadow.Interactable=false end) Thm(shadow, "ImageColor3", "Background")
 end
 
 local function PremiumLogo(p)
     p.ImageColor3 = Color3.new(1,1,1)
     local fillGrad = I("UIGradient", {Parent=p, Rotation=90}) Thm(fillGrad, "Color", "Logo", "LogoFill")
-    local stk = I("UIStroke", {Thickness=1.2, Transparency=0.15, Color=Color3.new(1,1,1), Parent=p})
-    local stkGrad = I("UIGradient", {Parent=stk}) Thm(stkGrad, "Color", "Logo", "LogoStroke")
-    Cn(Run.RenderStepped, function() if stkGrad.Parent then stkGrad.Offset = Vector2.new((tick()*0.8)%2 - 1, 0) end end)
+    local outFrame = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=p, ZIndex=p.ZIndex-1})
+    pcall(function() outFrame.Interactable=false end)
+    local offsets = { Vector2.new(1.5,1.5), Vector2.new(-1.5,-1.5), Vector2.new(1.5,-1.5), Vector2.new(-1.5,1.5), Vector2.new(0,2), Vector2.new(0,-2), Vector2.new(2,0), Vector2.new(-2,0) }
+    local outlines = {}
+    for _, offset in ipairs(offsets) do
+        local ol = I("ImageLabel", { Size=UDim2.new(1,0,1,0), Position=UDim2.new(0, offset.X, 0, offset.Y), BackgroundTransparency=1, Image=p.Image, ScaleType=p.ScaleType, Parent=outFrame, ImageTransparency=0.1, ZIndex=p.ZIndex-1 })
+        pcall(function() ol.Interactable=false end) table.insert(outlines, ol)
+    end
+    Cn(Run.RenderStepped, function()
+        if not p.Parent then return end
+        local t = tick() local pulse = 0.5 + math.sin(t * 3) * 0.5
+        local lC = Library.Theme.Logo or Library.Theme.Accent
+        local outlineColor = lC:Lerp(Color3.new(1,1,1), pulse * 0.6)
+        for _, ol in ipairs(outlines) do if ol.Image ~= p.Image then ol.Image = p.Image end ol.ImageColor3 = outlineColor end
+        fillGrad.Offset = Vector2.new(0, math.sin(t * 2) * 0.1)
+    end)
 end
 
 local function MakeParticles(parent, count, minD, maxD)
@@ -199,9 +230,6 @@ function Library:SetTheme(name)
         elseif t.special=="LogoFill" then
             local lC = self.Theme[t.key] local bright = lC:Lerp(Color3.new(1,1,1), 0.3)
             t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bright), ColorSequenceKeypoint.new(1, lC)})
-        elseif t.special=="LogoStroke" then
-            local lC = self.Theme[t.key] local shine = Color3.new(1,1,1) local dark = lC:Lerp(Color3.new(0,0,0), 0.4)
-            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, dark), ColorSequenceKeypoint.new(0.4, dark), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, dark), ColorSequenceKeypoint.new(1, dark)})
         else t.inst[t.prop]=self.Theme[t.key] end 
     end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
