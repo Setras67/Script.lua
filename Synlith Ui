@@ -646,7 +646,7 @@ function Library:CreateWindow(opts)
 
         -- ABOUT TAB
         local abtTab = WO:CreateTab({Name="About", Icon=ICONS.About}) abtTab._btn.LayoutOrder=999
-        local aSec = abtTab:CreateSection("Synlith Framework", "Left")
+        local aSec = abtTab:CreateSection("Synlith", "Left")
         local lF = I("Frame", {Size=UDim2.new(1,0,0,130), BackgroundTransparency=1, Parent=aSec._c, ZIndex=15})
         local lI = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,10), Size=UDim2.new(0,70,0,70), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=lF, ZIndex=16}) pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then lI.Image=li end end) Thm(lI, "ImageColor3", "Logo")
         local lT = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,90), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="SYNLITH.HUB", TextSize=18, FontFace=F_TITLE, Parent=lF, ZIndex=16}) Thm(lT, "TextColor3", "Text")
@@ -659,9 +659,9 @@ function Library:CreateWindow(opts)
         
         local dSec = abtTab:CreateSection("Community", "Right")
         local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
-        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0,205,1,0), BackgroundTransparency=1, Parent=dF})
+        local wrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=dF})
         local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) Thm(dI, "ImageColor3", "Logo")
-        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(0,115,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
+        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
         local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
         local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
         local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
