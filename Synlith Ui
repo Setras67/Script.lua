@@ -36,11 +36,11 @@ local ICONS = {
 local CDIR = "Synlith.hub/configs/"
 local TDIR = "Synlith.hub/"
 local LPATH = "Synlith.hub/logo_w.png"
-local LURL = "https://raw.githubusercontent.com/Setras67/Script.lua/main/Synlith%20Logo%20No%20background%20White.png"
+local LURL = "https://raw.githubusercontent.com/Unknown394852/Chess/main/Synlith%20Logo%20No%20background%20White.png"
 local DPATH = "Synlith.hub/dc_w2.png"
-local DURL = "https://raw.githubusercontent.com/Setras67/Script.lua/main/discord%20logo%20white(1).png"
+local DURL = "https://raw.githubusercontent.com/Unknown394852/Chess/main/discord%20logo%20white(1).png"
 local BPATH = "Synlith.hub/bg_w.png"
-local BURL = "https://raw.githubusercontent.com/Setras67/Script.lua/main/Synlith%20Background.png"
+local BURL = "https://raw.githubusercontent.com/Unknown394852/Chess/main/Synlith%20Background.png"
 local DINV = "https://discord.gg/2q69gGWEcj"
 
 local Library = {Flags={}, _elems={}, _themed={}, _conn={}, _tabs={}, _refreshFn={}, _unloads={}, _activeTab=nil, ScreenGui=nil, Window=nil, Open=true, ToggleKey=Enum.KeyCode.RightShift, Theme=nil, Themes={}, ShowWatermark=true, _wm=nil, tkLbl=nil}
@@ -255,7 +255,6 @@ function Library:CreateWindow(opts)
     end)
     
     local outerMain = I("CanvasGroup", {Name="SynlithOuter", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5, 0, 0.5, 0), Size=size, BackgroundTransparency=1, GroupTransparency=1, ClipsDescendants=true, Parent=gui, ZIndex=1})
-    local uiScale = I("UIScale", {Scale=0.9, Parent=outerMain})
     local padding = 4
     local main = I("Frame", {Name="Main", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-padding*2,1,-padding*2), BackgroundTransparency=0.1, Parent=outerMain, ZIndex=1})
     Thm(main, "BackgroundColor3", "Background") Crn(main, 6) self.Window=outerMain
@@ -319,11 +318,11 @@ function Library:CreateWindow(opts)
     local function ToggleUI(state)
         if state then 
             self.Open=true outerMain.Visible=true 
-            TS:Create(uiScale, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Scale=1}):Play()
+            TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
             TS:Create(outerMain, TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=0}):Play()
         else 
             self.Open=false 
-            TS:Create(uiScale, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Scale=0.95}):Play()
+            TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)}):Play()
             local tw = TS:Create(outerMain, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=1})
             tw:Play()
             tw.Completed:Connect(function() if not self.Open then outerMain.Visible=false end end)
@@ -371,7 +370,7 @@ function Library:CreateWindow(opts)
         end
     end)
     
-    outerMain.Size = size outerMain.GroupTransparency = 1 uiScale.Scale = 0.9 ToggleUI(true)
+    outerMain.Size = size outerMain.GroupTransparency = 1 main.Position = UDim2.new(0.5, 0, 0.5, 15) ToggleUI(true)
     
     local WO = {_main=main, _tabs={}}
     function WO:CreateTab(tO) tO=tO or {} local tName = tO.Name or "Tab"
