@@ -67,10 +67,8 @@ local function Thm(inst, prop, key, special)
     local function apply()
         if special=="Gradient" then 
             local col = Library.Theme[key]
-            local mid = Color3.fromRGB(255,255,255)
-            local luma = col.R*0.299 + col.G*0.587 + col.B*0.114
-            if luma > 0.8 then mid = Color3.fromRGB(80,80,80) end
-            inst[prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col), ColorSequenceKeypoint.new(0.5,mid), ColorSequenceKeypoint.new(1,col)})
+            local dark = Color3.new(col.R*0.2, col.G*0.2, col.B*0.2)
+            inst[prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col), ColorSequenceKeypoint.new(0.5,dark), ColorSequenceKeypoint.new(1,col)})
         else inst[prop]=Library.Theme[key] end
     end
     for _, t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key t.special=special pcall(apply) return end end
@@ -136,8 +134,8 @@ local function MakeParticles(parent, count, minD, maxD)
     return ptcWrap
 end
 
-function Library:SaveConfig(n, msg) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", msg or "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
-function Library:LoadConfig(n, isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Config not found") end return end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set, v) end end self:Notify("Success", "Config loaded successfully") end
+function Library:SaveConfig(n, msg) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end if self.Window then d["_UI_SIZE_X"]=self.Window.AbsoluteSize.X d["_UI_SIZE_Y"]=self.Window.AbsoluteSize.Y end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", msg or "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
+function Library:LoadConfig(n, isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Config not found") end return end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set, v) end end if d["_UI_SIZE_X"] and d["_UI_SIZE_Y"] and self.Window then self.Window.Size=UDim2.new(0,d["_UI_SIZE_X"],0,d["_UI_SIZE_Y"]) end self:Notify("Success", "Config loaded successfully") end
 function Library:DeleteConfig(n) EnsureDir() local p=CDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Info", "Config deleted") else self:Notify("Error", "Config not found") end end
 function Library:GetConfigs() EnsureDir() local o={} pcall(function() for _,f in ipairs(listfiles(CDIR)) do if f:match("%.json$") then local n=f:match("([^/\\]+)%.json$") if n and isfile(CDIR..n..".json") then table.insert(o,n) end end end end) return o end
 function Library:SetAutoConfig(n) EnsureDir() writefile(CDIR.."_auto.txt", n) self:Notify("Success", "Autoload set to "..n) if self._refreshCfg then self._refreshCfg() end end
@@ -158,8 +156,8 @@ function Library:LoadCustomTheme() local ok, res = pcall(function() return Http:
 function Library:SetTheme(name)
     if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end
     for i=#self._themed, 1, -1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() if t.special=="Gradient" then 
-        local col = self.Theme[t.key] local mid = Color3.new(1,1,1) local luma = col.R*0.299 + col.G*0.587 + col.B*0.114 if luma > 0.8 then mid = Color3.fromRGB(80,80,80) end
-        t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col),ColorSequenceKeypoint.new(0.5,mid),ColorSequenceKeypoint.new(1,col)}) 
+        local col = self.Theme[t.key] local dark = Color3.new(col.R*0.2, col.G*0.2, col.B*0.2)
+        t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col),ColorSequenceKeypoint.new(0.5,dark),ColorSequenceKeypoint.new(1,col)}) 
     else t.inst[t.prop]=self.Theme[t.key] end end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end
@@ -209,7 +207,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
-    local size = UDim2.new(0, 1056, 0, 543)
+    local size = UDim2.new(0, 1050, 0, 550)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
     local persisted=false pcall(function() local pt=self:GetPersistedTheme() if pt~="" and self.Themes[pt] then self.Theme=self.Themes[pt] persisted=true end end)
@@ -219,12 +217,12 @@ function Library:CreateWindow(opts)
     pcall(function() gui.Parent=CG end) if not gui.Parent then gui.Parent=LP:WaitForChild("PlayerGui") end self.ScreenGui=gui
     
     local wm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-16,0,16), Size=UDim2.new(0,250,0,36), BackgroundTransparency=0.15, ClipsDescendants=true, Visible=false, Parent=gui, ZIndex=150})
-    Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 4) self._wm=wm MakeDrag(wm, wm)
+    Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 6) self._wm=wm MakeDrag(wm, wm)
     local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     Thm(wmBgI, "ImageColor3", "Accent")
     Cn(Run.RenderStepped, function() if wmBgI and wmBgI.Parent then wmBgI.Position = UDim2.new(0.5 + math.sin(tick()*0.2)*0.03, 0, 0.1 + math.cos(tick()*0.15)*0.03, 0) end end)
     MakeParticles(wm, 6, 1.5, 4)
-    local wmStk = I("UIStroke", {Thickness=1, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
+    local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 120) % 360 end)
     
@@ -256,7 +254,7 @@ function Library:CreateWindow(opts)
     local uiScale = I("UIScale", {Scale=0.9, Parent=outerMain})
     local padding = 4
     local main = I("Frame", {Name="Main", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-padding*2,1,-padding*2), BackgroundTransparency=0.1, Parent=outerMain, ZIndex=1})
-    Thm(main, "BackgroundColor3", "Background") Crn(main, 4) self.Window=outerMain
+    Thm(main, "BackgroundColor3", "Background") Crn(main, 6) self.Window=outerMain
     
     local bgContainer = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=main, ZIndex=0}) Crn(bgContainer, 4)
     local bgImage = I("ImageLabel", {Size=UDim2.new(1.04,0,1.04,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, Image="rbxassetid://115552895053354", ImageTransparency=0.88, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
@@ -268,7 +266,7 @@ function Library:CreateWindow(opts)
     end)
     
     -- EXCLUSIVE SINGLE UI STROKE
-    local outStk = I("UIStroke", {Thickness=1, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    local outStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=main, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
     local outGrad = I("UIGradient", {Parent=outStk}) Thm(outGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() outGrad.Rotation = (tick() * 50) % 360 end)
 
@@ -377,7 +375,7 @@ function Library:CreateWindow(opts)
         local tLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-42,1,0), BackgroundTransparency=1, Text=tName, TextSize=13, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=tBtn, ZIndex=11}) Thm(tLbl, "TextColor3", "TextDark")
         local indicator = I("Frame", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,8,0.5,0), Size=UDim2.new(0,3,0,16), BackgroundTransparency=1, Parent=tBtn, ZIndex=12}) Thm(indicator, "BackgroundColor3", "Accent") Crn(indicator, 2)
         
-        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,-12,1,-24), BackgroundTransparency=1, ScrollBarThickness=4, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
+        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,32), Size=UDim2.new(1,-4,1,-64), BackgroundTransparency=1, ScrollBarThickness=2, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
         Thm(tPage, "ScrollBarImageColor3", "Accent") tPage.ScrollBarImageTransparency=0 Pad(tPage, 4, 10, 12, 12)
         
         local leftCol = I("Frame", {Size=UDim2.new(0.5,-4,1,0), BackgroundTransparency=1, Parent=tPage, ZIndex=10})
@@ -652,10 +650,12 @@ function Library:CreateWindow(opts)
         
         local dSec = abtTab:CreateSection("Community", "Right")
         local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
-        local dI = I("ImageLabel", {Position=UDim2.new(0,14,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=dF, ZIndex=16}) pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) Thm(dI, "ImageColor3", "Logo")
-        local dT = I("TextLabel", {Position=UDim2.new(0,50,0,12), Size=UDim2.new(1,-110,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=dF, ZIndex=16}) Thm(dT, "TextColor3", "Text")
-        local dS = I("TextLabel", {Position=UDim2.new(0,50,0,30), Size=UDim2.new(1,-110,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=dF, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-20,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=dF, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
+        local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) Thm(dI, "ImageColor3", "Logo")
+        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, Parent=wrap})
+        local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
+        local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
         Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
     end
     
