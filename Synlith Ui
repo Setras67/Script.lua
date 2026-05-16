@@ -209,7 +209,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
-    local size = opts.Size or UDim2.new(0, 1056, 0, 543)
+    local size = UDim2.new(0, 1056, 0, 543)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
     local persisted=false pcall(function() local pt=self:GetPersistedTheme() if pt~="" and self.Themes[pt] then self.Theme=self.Themes[pt] persisted=true end end)
@@ -377,9 +377,8 @@ function Library:CreateWindow(opts)
         local tLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-42,1,0), BackgroundTransparency=1, Text=tName, TextSize=13, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=tBtn, ZIndex=11}) Thm(tLbl, "TextColor3", "TextDark")
         local indicator = I("Frame", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,8,0.5,0), Size=UDim2.new(0,3,0,16), BackgroundTransparency=1, Parent=tBtn, ZIndex=12}) Thm(indicator, "BackgroundColor3", "Accent") Crn(indicator, 2)
         
-        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,-4,1,-24), BackgroundTransparency=1, ScrollBarThickness=2, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
-        Thm(tPage, "ScrollBarImageColor3", "Accent") tPage.ScrollBarImageTransparency=0.6 Pad(tPage, 4, 10, 12, 12)
-        Cn(tPage.MouseEnter, function() Tw(tPage, {ScrollBarImageTransparency=0.2}, TF) end) Cn(tPage.MouseLeave, function() Tw(tPage, {ScrollBarImageTransparency=0.6}, TF) end)
+        local tPage = I("ScrollingFrame", {Name=tName.."_Page", Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,-12,1,-24), BackgroundTransparency=1, ScrollBarThickness=4, CanvasSize=UDim2.new(0,0,0,0), Visible=false, Parent=pageContainer, ZIndex=10})
+        Thm(tPage, "ScrollBarImageColor3", "Accent") tPage.ScrollBarImageTransparency=0 Pad(tPage, 4, 10, 12, 12)
         
         local leftCol = I("Frame", {Size=UDim2.new(0.5,-4,1,0), BackgroundTransparency=1, Parent=tPage, ZIndex=10})
         local rightCol = I("Frame", {Position=UDim2.new(0.5,4,0,0), Size=UDim2.new(0.5,-4,1,0), BackgroundTransparency=1, Parent=tPage, ZIndex=10})
@@ -656,7 +655,7 @@ function Library:CreateWindow(opts)
         local dI = I("ImageLabel", {Position=UDim2.new(0,14,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=dF, ZIndex=16}) pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) Thm(dI, "ImageColor3", "Logo")
         local dT = I("TextLabel", {Position=UDim2.new(0,50,0,12), Size=UDim2.new(1,-110,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=dF, ZIndex=16}) Thm(dT, "TextColor3", "Text")
         local dS = I("TextLabel", {Position=UDim2.new(0,50,0,30), Size=UDim2.new(1,-110,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=dF, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,190,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=dF, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-20,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=dF, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
         Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
     end
     
