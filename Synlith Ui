@@ -206,7 +206,7 @@ function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end sel
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
-    local size = opts.Size or UDim2.new(0, 560, 0, 600)
+    local size = opts.Size or UDim2.new(0, 720, 0, 500)
     if opts.ToggleKey then self.ToggleKey=opts.ToggleKey end
     self:LoadCustomTheme()
     local persisted=false pcall(function() local pt=self:GetPersistedTheme() if pt~="" and self.Themes[pt] then self.Theme=self.Themes[pt] persisted=true end end)
@@ -379,12 +379,26 @@ function Library:CreateWindow(opts)
                 local lbl = I("TextLabel", {Size=UDim2.new(0.6,0,0,16), BackgroundTransparency=1, Text=name, TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=wrap, ZIndex=16}) Thm(lbl, "TextColor3", "TextDark")
                 local valLbl = I("TextLabel", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,0,0,0), Size=UDim2.new(0.4,0,0,16), BackgroundTransparency=1, Text=tostring(value)..sfx, TextSize=11, FontFace=F_NUM, TextXAlignment=Enum.TextXAlignment.Right, Parent=wrap, ZIndex=16}) Thm(valLbl, "TextColor3", "Text")
                 
-                local bgBar = I("Frame", {Position=UDim2.new(0,0,1,-8), Size=UDim2.new(1,0,0,8), Parent=wrap, ZIndex=16}) Thm(bgBar, "BackgroundColor3", "Element") Crn(bgBar, 4) Stk(bgBar, "Border", 1, 0.2)
-                local fillBar = I("Frame", {Size=UDim2.new(math.clamp((value-mn)/(mx-mn),0,1),0,1,0), Parent=bgBar, ZIndex=17}) Thm(fillBar, "BackgroundColor3", "Accent") Crn(fillBar, 4)
+                local bgBar = I("Frame", {Position=UDim2.new(0,0,1,-10), Size=UDim2.new(1,0,0,4), Parent=wrap, ZIndex=16}) Thm(bgBar, "BackgroundColor3", "Element") Crn(bgBar, 2) Stk(bgBar, "Border", 1, 0.2)
+                local fillBar = I("Frame", {Size=UDim2.new(math.clamp((value-mn)/(mx-mn),0,1),0,1,0), Parent=bgBar, ZIndex=17}) Thm(fillBar, "BackgroundColor3", "Accent") Crn(fillBar, 2)
                 
-                local hit = I("TextButton", {Position=UDim2.new(0,0,1,-14), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="", Parent=wrap, ZIndex=20})
+                local sGrad = I("UIGradient", {Parent=fillBar, Rotation=0})
+                local cSeq = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0.85,0.85,0.85)), ColorSequenceKeypoint.new(1, Color3.new(1,1,1))})
+                sGrad.Color = cSeq
+                
+                local thumb = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,10,0,10), Parent=fillBar, ZIndex=18})
+                Thm(thumb, "BackgroundColor3", "Text") Crn(thumb, 5)
+                local tStk = Stk(thumb, "Accent", 1, 0)
+                
+                local glow = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0,0,0,0), BackgroundTransparency=0.8, Parent=thumb, ZIndex=17})
+                Thm(glow, "BackgroundColor3", "Accent") Crn(glow, 50)
+                
+                local hit = I("TextButton", {Position=UDim2.new(0,0,1,-16), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="", Parent=wrap, ZIndex=20})
                 local function setV(v) v=math.clamp(v,mn,mx) v=math.floor(v/inc+0.5)*inc value=v Tw(fillBar, {Size=UDim2.new((v-mn)/(mx-mn),0,1,0)}, TF) valLbl.Text=tostring(v)..sfx SF(flag,v) CB(cb,v) end
-                local dr=false Cn(hit.InputBegan,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=true local r=(i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X setV(mn+r*(mx-mn)) Thm(lbl,"TextColor3","Text") end end) Cn(hit.InputEnded,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=false Thm(lbl,"TextColor3","TextDark") end end) Cn(UIS.InputChanged,function(i) if dr and(i.UserInputType==Enum.UserInputType.MouseMovement) then local r=(i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X setV(mn+r*(mx-mn)) end end)
+                local dr=false 
+                Cn(hit.InputBegan,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=true Tw(glow, {Size=UDim2.new(0,24,0,24)}, TF) local r=(i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X setV(mn+r*(mx-mn)) Thm(lbl,"TextColor3","Text") end end) 
+                Cn(hit.InputEnded,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=false Tw(glow, {Size=UDim2.new(0,0,0,0)}, TF) Thm(lbl,"TextColor3","TextDark") end end) 
+                Cn(UIS.InputChanged,function(i) if dr and(i.UserInputType==Enum.UserInputType.MouseMovement) then local r=(i.Position.X-bgBar.AbsolutePosition.X)/bgBar.AbsoluteSize.X setV(mn+r*(mx-mn)) end end)
                 setV(value) if flag then Library._elems[flag]={set=function(v) setV(v) end, get=function() return value end} end
             end
             
