@@ -246,7 +246,7 @@ function Library:CreateWindow(opts)
         end
     end)
     
-    local outerMain = I("Frame", {Name="SynlithOuter", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=size, BackgroundTransparency=1, ClipsDescendants=true, Parent=gui, ZIndex=1})
+    local outerMain = I("Frame", {Name="SynlithOuter", AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5, -size.X.Offset/2, 0.5, -size.Y.Offset/2), Size=size, BackgroundTransparency=1, ClipsDescendants=true, Parent=gui, ZIndex=1})
     local padding = 4
     local main = I("Frame", {Name="Main", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-padding*2,1,-padding*2), BackgroundTransparency=0.1, Parent=outerMain, ZIndex=1})
     Thm(main, "BackgroundColor3", "Background") Crn(main, 4) self.Window=outerMain
@@ -308,6 +308,43 @@ function Library:CreateWindow(opts)
     Cn(wmExpand.MouseButton1Click, function() ToggleUI(true) end)
     Cn(minBtn.MouseButton1Click, function() ToggleUI(false) end)
     Cn(clsBtn.MouseButton1Click, function() Library:Unload() end)
+    
+    -- RESIZING SYSTEM
+    local resizeGrip = I("TextButton", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-2,1,-2), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, Text="", Parent=main, ZIndex=50})
+    local dot1 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot1,"BackgroundColor3","TextDark") Crn(dot1,3)
+    local dot2 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-9,1,-4), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot2,"BackgroundColor3","TextDark") Crn(dot2,3)
+    local dot3 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-9), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot3,"BackgroundColor3","TextDark") Crn(dot3,3)
+    local dot4 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-14,1,-4), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot4,"BackgroundColor3","TextDark") Crn(dot4,3)
+    local dot5 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-9,1,-9), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot5,"BackgroundColor3","TextDark") Crn(dot5,3)
+    local dot6 = I("Frame", {AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-14), Size=UDim2.new(0,3,0,3), Parent=resizeGrip, ZIndex=51}) Thm(dot6,"BackgroundColor3","TextDark") Crn(dot6,3)
+    
+    Cn(resizeGrip.MouseEnter, function() Thm(dot1,"BackgroundColor3","Accent") Thm(dot2,"BackgroundColor3","Accent") Thm(dot3,"BackgroundColor3","Accent") Thm(dot4,"BackgroundColor3","Accent") Thm(dot5,"BackgroundColor3","Accent") Thm(dot6,"BackgroundColor3","Accent") end)
+    Cn(resizeGrip.MouseLeave, function() Thm(dot1,"BackgroundColor3","TextDark") Thm(dot2,"BackgroundColor3","TextDark") Thm(dot3,"BackgroundColor3","TextDark") Thm(dot4,"BackgroundColor3","TextDark") Thm(dot5,"BackgroundColor3","TextDark") Thm(dot6,"BackgroundColor3","TextDark") end)
+    
+    local isResizing = false
+    local rStartMouse, rStartSize
+    Cn(resizeGrip.InputBegan, function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            isResizing = true
+            rStartMouse = inp.Position
+            rStartSize = outerMain.AbsoluteSize
+        end
+    end)
+    Cn(UIS.InputEnded, function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            isResizing = false
+        end
+    end)
+    Cn(UIS.InputChanged, function(inp)
+        if isResizing and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            local delta = inp.Position - rStartMouse
+            local newW = math.clamp(rStartSize.X + delta.X, 600, 1500)
+            local newH = math.clamp(rStartSize.Y + delta.Y, 400, 1000)
+            size = UDim2.new(0, newW, 0, newH)
+            outerMain.Size = size
+        end
+    end)
+    
     outerMain.Size = UDim2.new(0,size.X.Offset,0,0) ToggleUI(true)
     
     local WO = {_main=main, _tabs={}}
