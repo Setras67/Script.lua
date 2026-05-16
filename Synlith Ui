@@ -1,4 +1,4 @@
---[[ Synlith UI Library v19.0 - Definitive Edition ]]
+a--[[ Synlith UI Library v19.0 - Definitive Edition ]]
 -- Features: Redesigned Config System (Selector), Flawless Border Animations, Fixed Cursor Hitboxes, Clean Vertical Sidebar
 local Players = game:GetService("Players")
 local TS = game:GetService("TweenService")
