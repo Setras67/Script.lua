@@ -540,7 +540,11 @@ function Library:CreateWindow(opts)
         I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
         
         local function cBtn(parent, txt, cb)
-            local b = I("TextButton", {Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) Stk(b, "Border", 1, 0.2)
+            local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
+            local s = I("UIStroke", {Thickness=1, Transparency=0, Color=Color3.new(1,1,1), ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=b})
+            local g = I("UIGradient", {Parent=s}) Thm(g, "Color", "Accent", "Gradient")
+            Cn(Run.RenderStepped, function() g.Rotation = (tick() * 80) % 360 end)
+            
             local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
             Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
             Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
@@ -548,6 +552,7 @@ function Library:CreateWindow(opts)
             return b
         end
         
+        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n) else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Delete", function() 
@@ -559,13 +564,12 @@ function Library:CreateWindow(opts)
                 cfgDrop:Refresh(clean)
             else Library:Notify("Error", "Select config") end 
         end)
-        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error", "Select config") end end)
 
         local sep = I("Frame", {Size=UDim2.new(1,0,0,1), BackgroundTransparency=0.5, Parent=cfgSec._c, ZIndex=15}) Thm(sep, "BackgroundColor3", "Border")
 
         local cInp = cfgSec:CreateTextbox({Name="New Config Name", Placeholder="Enter name..."})
         local saveWrap = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
-        cBtn(saveWrap, "Create & Save", function() 
+        cBtn(saveWrap, "Create", function() 
             local n = cInp:Get() 
             if n~="" then 
                 Library:SaveConfig(n) 
