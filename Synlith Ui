@@ -285,10 +285,8 @@ function Library:CreateWindow(opts)
     local tabScroll = I("ScrollingFrame", {Position=UDim2.new(0,0,0,116), Size=UDim2.new(1,0,1,-146), BackgroundTransparency=1, ScrollBarThickness=0, Parent=sidebar, ZIndex=6})
     local tabLayout = Lst(tabScroll, 6) Cn(tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function() tabScroll.CanvasSize=UDim2.new(0,0,0,tabLayout.AbsoluteContentSize.Y+10) end)
     
-    local sizeLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-28), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text=string.format("%.0f x %.0f", size.X.Offset, size.Y.Offset), TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Center, Parent=sidebar, ZIndex=6}) Thm(sizeLbl, "TextColor3", "TextDark")
     local tkLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Toggle UI: ["..self.ToggleKey.Name.."]", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Center, Parent=sidebar, ZIndex=6}) Thm(tkLbl, "TextColor3", "TextDark")
     self.tkLbl = tkLbl
-    outerMain:GetPropertyChangedSignal("Size"):Connect(function() sizeLbl.Text = string.format("%.0f x %.0f", outerMain.Size.X.Offset, outerMain.Size.Y.Offset) end)
     
     local contentWrap = I("Frame", {Position=UDim2.new(0, sWidth, 0, 0), Size=UDim2.new(1, -sWidth, 1, 0), BackgroundTransparency=1, Parent=main, ZIndex=2})
     
@@ -600,6 +598,10 @@ function Library:CreateWindow(opts)
         local cfgSec = setTab:CreateSection("Config Manager", "Right")
         local cfgDrop = cfgSec:CreateDropdown({Name="Selected Config", Options=Library:GetConfigs(), Default=Library:GetConfigs()[1] or ""})
         
+        local autoLbl = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Autoload: None", TextSize=10, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=cfgSec._c, ZIndex=15}) Thm(autoLbl, "TextColor3", "TextDark")
+        local function updAutoLbl() local ac=Library:GetAutoConfig() autoLbl.Text = "Autoload: "..(ac~="" and ac or "None") end
+        updAutoLbl()
+        
         local bGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
         I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
         
@@ -612,13 +614,14 @@ function Library:CreateWindow(opts)
             return b
         end
         
-        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) else Library:Notify("Error", "Select config") end end)
+        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) updAutoLbl() else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n, "Config overwritten") else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Delete", function() 
             local n = cfgDrop:Get() 
             if n~="" then 
                 Library:DeleteConfig(n) 
+                if Library:GetAutoConfig() == n then pcall(function() writefile(CDIR.."_auto.txt", "") end) updAutoLbl() end
                 local cfgs = Library:GetConfigs()
                 local clean = {} for _,c in ipairs(cfgs) do if c~=n then table.insert(clean, c) end end
                 cfgDrop:Refresh(clean)
