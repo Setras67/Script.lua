@@ -77,7 +77,7 @@ local function Thm(inst, prop, key, special)
     pcall(apply) table.insert(Library._themed, {inst=inst, prop=prop, key=key, special=special})
 end
 
-local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, Parent=p}) if key then Thm(s, "Color", key) end return s end
+local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) if key then Thm(s, "Color", key) end return s end
 local function Cn(sig, fn) local c=sig:Connect(fn) table.insert(Library._conn, c) return c end
 local function CB(cb, ...) if cb then pcall(cb, ...) end end
 local function SF(f, v) if f then Library.Flags[f]=v end end
@@ -453,16 +453,16 @@ function Library:CreateWindow(opts)
                         local ob=I("TextButton", {Size=UDim2.new(1,0,0,22), Text=tostring(opt), TextSize=11, FontFace=F_TEXT, BackgroundTransparency=1, Parent=lF, ZIndex=lF.ZIndex+1}) Thm(ob, "TextColor3", "TextDark") Crn(ob, 4) 
                         Cn(ob.MouseEnter, function() Tw(ob, {BackgroundTransparency=0.8}, TF) Thm(ob, "BackgroundColor3", "ElementHover") Thm(ob, "TextColor3", "Text") end) 
                         Cn(ob.MouseLeave, function() Tw(ob, {BackgroundTransparency=1}, TF) Thm(ob, "TextColor3", "TextDark") end) 
-                        Cn(ob.MouseButton1Click, function() value=opt valLbl.Text=tostring(opt) SF(flag,value) CB(cb,value) isOpen=false Tw(lF, {Size=UDim2.new(1,0,0,0)}, TF) task.delay(0.15, function() lF.Visible=false end) arrow.Text="+" end) 
+                        Cn(ob.MouseButton1Click, function() value=opt valLbl.Text=tostring(opt) SF(flag,value) CB(cb,value) isOpen=false Tw(lF, {Size=UDim2.new(1,0,0,0)}, TF) Tw(wrap, {Size=UDim2.new(1,0,0,48)}, TF) task.delay(0.15, function() lF.Visible=false end) arrow.Text="+" end) 
                     end 
                     if isOpen then 
-                        local tH=math.min(#optsList*24+8, 130) lF.CanvasSize=UDim2.new(0,0,0,#optsList*24+8) Tw(lF, {Size=UDim2.new(1,0,0,tH)}, TM) 
+                        local tH=math.min(#optsList*24+8, 130) lF.CanvasSize=UDim2.new(0,0,0,#optsList*24+8) Tw(lF, {Size=UDim2.new(1,0,0,tH)}, TM) Tw(wrap, {Size=UDim2.new(1,0,0,48+tH+4)}, TM)
                     end 
                 end
                 rebuild(optsList)
                 
-                local function closeDrop() isOpen=false Tw(lF, {Size=UDim2.new(1,0,0,0)}, TF) task.delay(0.15, function() lF.Visible=false end) arrow.Text="+" Thm(lbl, "TextColor3", "TextDark") end
-                local function openDrop() isOpen=true lF.Visible=true local tH=math.min(#optsList*24+8, 130) lF.CanvasSize=UDim2.new(0,0,0,#optsList*24+8) Tw(lF, {Size=UDim2.new(1,0,0,tH)}, TM) arrow.Text="-" Thm(lbl, "TextColor3", "Text") end
+                local function closeDrop() isOpen=false Tw(lF, {Size=UDim2.new(1,0,0,0)}, TF) Tw(wrap, {Size=UDim2.new(1,0,0,48)}, TF) task.delay(0.15, function() lF.Visible=false end) arrow.Text="+" Thm(lbl, "TextColor3", "TextDark") end
+                local function openDrop() isOpen=true lF.Visible=true local tH=math.min(#optsList*24+8, 130) lF.CanvasSize=UDim2.new(0,0,0,#optsList*24+8) Tw(lF, {Size=UDim2.new(1,0,0,tH)}, TM) Tw(wrap, {Size=UDim2.new(1,0,0,48+tH+4)}, TM) arrow.Text="-" Thm(lbl, "TextColor3", "Text") end
                 
                 Cn(btn.MouseButton1Click, function() if isOpen then closeDrop() else openDrop() end end)
                 
@@ -500,7 +500,6 @@ function Library:CreateWindow(opts)
 
         local ctSec = setTab:CreateSection("Custom Theme", "Left")
         local cT = Library.Themes["Custom"]
-        local function applyC() Library:SetTheme("Custom") Library:SaveCustomTheme() end
         
         ctSec:CreateColorPicker({Name="Background", Default=cT.Background, Callback=function(v) 
             local h, s, vl = Color3.toHSV(v)
@@ -513,17 +512,16 @@ function Library:CreateWindow(opts)
             cT.Element = Color3.fromHSV(h, s_mod, math.clamp(v_mod + 0.05, 0, 1))
             cT.ElementHover = Color3.fromHSV(h, s_mod, math.clamp(v_mod + 0.08, 0, 1))
             cT.Border = Color3.fromHSV(h, s_mod, math.clamp(v_mod + 0.06, 0, 1))
-            applyC() 
         end})
-        ctSec:CreateColorPicker({Name="Accent", Default=cT.Accent, Callback=function(v) cT.Accent=v cT.Logo=v applyC() end})
+        ctSec:CreateColorPicker({Name="Accent", Default=cT.Accent, Callback=function(v) cT.Accent=v cT.Logo=v end})
         ctSec:CreateColorPicker({Name="Text", Default=cT.Text, Callback=function(v) 
             cT.Text=v 
             local luma = v.R*0.299 + v.G*0.587 + v.B*0.114 
             local tgt = (luma > 0.5) and Color3.new(0,0,0) or Color3.new(1,1,1) 
             cT.TextDark = v:Lerp(tgt, 0.4) 
-            applyC() 
         end})
-        ctSec:CreateColorPicker({Name="Icons", Default=cT.Icon, Callback=function(v) cT.Icon=v applyC() end})
+        ctSec:CreateColorPicker({Name="Icons", Default=cT.Icon, Callback=function(v) cT.Icon=v end})
+        ctSec:CreateButton({Name="Apply Custom Theme", Callback=function() Library:SetTheme("Custom") Library:SaveCustomTheme() end})
         
         -- RIGHT SIDE OF SETTINGS
         local uiSec = setTab:CreateSection("Interface", "Right")
@@ -541,10 +539,6 @@ function Library:CreateWindow(opts)
         
         local function cBtn(parent, txt, cb)
             local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
-            local s = I("UIStroke", {Thickness=1, Transparency=0, Color=Color3.new(1,1,1), ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=b})
-            local g = I("UIGradient", {Parent=s}) Thm(g, "Color", "Accent", "Gradient")
-            Cn(Run.RenderStepped, function() g.Rotation = (tick() * 80) % 360 end)
-            
             local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
             Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
             Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
