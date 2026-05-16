@@ -168,10 +168,15 @@ function Library:LoadCustomTheme() local ok, res = pcall(function() return Http:
 
 function Library:SetTheme(name)
     if type(name)=="string" and self.Themes[name] then self.Theme=self.Themes[name] self:PersistTheme(name) end
-    for i=#self._themed, 1, -1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() if t.special=="Gradient" then 
-        local col = self.Theme[t.key] local dark = Color3.new(col.R*0.2, col.G*0.2, col.B*0.2)
-        t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col),ColorSequenceKeypoint.new(0.5,dark),ColorSequenceKeypoint.new(1,col)}) 
-    else t.inst[t.prop]=self.Theme[t.key] end end) else table.remove(self._themed, i) end end
+    for i=#self._themed, 1, -1 do local t=self._themed[i] if t.inst and t.inst.Parent then pcall(function() 
+        if t.special=="Gradient" then 
+            local col = self.Theme[t.key] local bright = col:Lerp(Color3.new(1,1,1), 0.65)
+            t.inst[t.prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col),ColorSequenceKeypoint.new(0.5,bright),ColorSequenceKeypoint.new(1,col)}) 
+        elseif t.special=="BorderGradient" then
+            local bC = self.Theme.Border local aC = self.Theme.Accent local shine = aC:Lerp(Color3.new(1,1,1), 0.3)
+            t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bC), ColorSequenceKeypoint.new(0.4, bC), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, bC), ColorSequenceKeypoint.new(1, bC)})
+        else t.inst[t.prop]=self.Theme[t.key] end 
+    end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end
 end
@@ -195,7 +200,8 @@ function Library:Notify(title, msg, dur)
     Cn(Run.RenderStepped, function() pGrad.Rotation = (tick() * 150) % 360 end)
     
     local icon=I("ImageLabel",{Position=UDim2.new(0,14,0,15),Size=UDim2.new(0,32,0,32),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,Parent=card,ZIndex=1003}) 
-    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) Thm(icon,"ImageColor3","Logo")
+    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then icon.Image=li end end) 
+    icon.ImageColor3=Color3.new(1,1,1) local iGrad=I("UIGradient",{Parent=icon}) Thm(iGrad,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if iGrad.Parent then iGrad.Rotation=(tick()*50)%360 end end)
     
     local tL=I("TextLabel",{Position=UDim2.new(0,60,0,16),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=title or"Notification",TextSize=14,FontFace=F_TITLE,TextXAlignment=Enum.TextXAlignment.Left,Parent=card,ZIndex=1003}) Thm(tL,"TextColor3","Text")
     local mL=I("TextLabel",{Position=UDim2.new(0,60,0,36),Size=UDim2.new(1,-70,0,16),BackgroundTransparency=1,Text=msg or"",TextSize=12,FontFace=F_TEXT,TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true,Parent=card,ZIndex=1003}) Thm(mL,"TextColor3","TextDark")
@@ -242,7 +248,8 @@ function Library:CreateWindow(opts)
     Cn(Run.RenderStepped, function() wGrad.Rotation = (tick() * 120) % 360 end)
     
     local wmLogo = I("ImageLabel", {Position=UDim2.new(0,10,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wm, ZIndex=151})
-    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) Thm(wmLogo, "ImageColor3", "Logo")
+    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then wmLogo.Image=li end end) 
+    wmLogo.ImageColor3=Color3.new(1,1,1) local wGradL=I("UIGradient",{Parent=wmLogo}) Thm(wGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if wGradL.Parent then wGradL.Rotation=(tick()*50)%360 end end)
     
     local wmLbl = I("TextLabel", {Position=UDim2.new(0,42,0,0), Size=UDim2.new(1,-75,1,0), BackgroundTransparency=1, Text=title:upper().." | 0 FPS | 0 MS", TextSize=13, FontFace=F_NUM, TextXAlignment=Enum.TextXAlignment.Left, Parent=wm, ZIndex=151}) Thm(wmLbl, "TextColor3", "Text")
     
@@ -293,7 +300,8 @@ function Library:CreateWindow(opts)
     
     -- VERTICAL CLEAN PREMIUM LOGO HIERARCHY
     local logo = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,24), Size=UDim2.new(0,48,0,48), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=sidebar, ZIndex=6})
-    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then logo.Image=li end end) Thm(logo, "ImageColor3", "Logo")
+    pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then logo.Image=li end end) 
+    logo.ImageColor3=Color3.new(1,1,1) local lGradL=I("UIGradient",{Parent=logo}) Thm(lGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if lGradL.Parent then lGradL.Rotation=(tick()*50)%360 end end)
     local cName = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,76), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text=title:upper(), TextSize=13, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Center, Parent=sidebar, ZIndex=6}) Thm(cName, "TextColor3", "Text")
     local sep = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,104), Size=UDim2.new(0.8,0,0,1), BackgroundTransparency=0.5, Parent=sidebar, ZIndex=6}) Thm(sep, "BackgroundColor3", "Border")
     
