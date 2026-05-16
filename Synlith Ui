@@ -659,12 +659,13 @@ function Library:CreateWindow(opts)
         
         local dSec = abtTab:CreateSection("Community", "Right")
         local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
-        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
+        local wrap = I("Frame", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,10,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
+        I("UISizeConstraint", {MaxSize=Vector2.new(205, 9999), Parent=wrap})
         local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) Thm(dI, "ImageColor3", "Logo")
-        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(0,115,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
+        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
         local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
         local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0,155,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
         Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
     end
     
