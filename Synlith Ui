@@ -117,6 +117,8 @@ local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then 
 local function MakeParticles(parent, count, minD, maxD)
     minD = minD or 10 maxD = maxD or 25
     local ptcWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=parent, ZIndex=parent.ZIndex, Active=false})
+    if not Library._particleWraps then Library._particleWraps = {} end
+    table.insert(Library._particleWraps, ptcWrap)
     pcall(function() ptcWrap.Interactable=false end)
     local function spawnParticle()
         if not ptcWrap.Parent then return end
@@ -240,9 +242,10 @@ function Library:CreateKeybindsWindow(opts)
     local kbGrad = I("UIGradient", {Parent=kbStk}) Thm(kbGrad, "Color", "Accent", "Gradient")
     Cn(Run.RenderStepped, function() kbGrad.Rotation = (tick() * 35) % 360 end)
     
-    local kbBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.1,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=kbWin, ZIndex=150})
+    local kbBgI = I("ImageLabel", {Size=UDim2.new(1,0,1,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Fit, Parent=kbWin, ZIndex=150})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then kbBgI.Image=bgi end end)
     Thm(kbBgI, "ImageColor3", "Accent")
+    Library._kbBgI = kbBgI
     MakeParticles(kbWin, 6, 1.5, 4)
     
     local topBar = I("Frame", {Size=UDim2.new(1,0,0,26), BackgroundTransparency=1, Parent=kbWin, ZIndex=151})
@@ -308,6 +311,7 @@ function Library:CreateWindow(opts)
     local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.1,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then wmBgI.Image=bgi end end)
     Thm(wmBgI, "ImageColor3", "Accent")
+    self._wmBgI = wmBgI
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
     local wGrad = I("UIGradient", {Parent=wmStk}) Thm(wGrad, "Color", "Accent", "Gradient")
@@ -550,7 +554,7 @@ function Library:CreateWindow(opts)
                 local prev=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(1,-4,1,-4),BackgroundColor3=value,Parent=prevBg,ZIndex=20}) Crn(prev,3)
                 local hit=I("TextButton",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="",Parent=wrap,ZIndex=21})
                 
-                local pH=130 local pan=I("Frame",{Position=UDim2.new(0,0,0,ch+4),Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false,Parent=wrap,ZIndex=35}) Thm(pan,"BackgroundColor3","Panel") Crn(pan,6) Stk(pan,"Border",1,0)
+                local pH=160 local pan=I("Frame",{Position=UDim2.new(0,0,0,ch+4),Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false,Parent=wrap,ZIndex=35}) Thm(pan,"BackgroundColor3","Panel") Crn(pan,6) Stk(pan,"Border",1,0)
                 local map=I("TextButton",{Position=UDim2.new(0,10,0,10),Size=UDim2.new(1,-40,0,110),Text="",AutoButtonColor=false,Parent=pan,ZIndex=36}) Crn(map,4)
                 local mGrad=I("UIGradient",{Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,Color3.fromHSV(h,1,1))}),Parent=map})
                 local mBlk=I("Frame",{Size=UDim2.new(1,0,1,0),BackgroundColor3=Color3.new(1,1,1),Parent=map,ZIndex=37}) Crn(mBlk,4) I("UIGradient",{Color=ColorSequence.new(Color3.new(0,0,0)),Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)}),Rotation=90,Parent=mBlk})
@@ -560,13 +564,18 @@ function Library:CreateWindow(opts)
                 I("UIGradient",{Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromHSV(0,1,1)),ColorSequenceKeypoint.new(0.166,Color3.fromHSV(0.166,1,1)),ColorSequenceKeypoint.new(0.333,Color3.fromHSV(0.333,1,1)),ColorSequenceKeypoint.new(0.5,Color3.fromHSV(0.5,1,1)),ColorSequenceKeypoint.new(0.666,Color3.fromHSV(0.666,1,1)),ColorSequenceKeypoint.new(0.833,Color3.fromHSV(0.833,1,1)),ColorSequenceKeypoint.new(1,Color3.fromHSV(1,1,1))}),Rotation=90,Parent=hBar})
                 local hThumb=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,h,0),Size=UDim2.new(1.4,0,0,4),BackgroundColor3=Color3.new(1,1,1),Parent=hBar,ZIndex=38}) Crn(hThumb,2) I("UIStroke",{Color=Color3.new(0,0,0),Parent=hThumb})
                 
-                local function apply() value=Color3.fromHSV(h,s,v) prev.BackgroundColor3=value mGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,Color3.fromHSV(h,1,1))}) thumb.Position=UDim2.new(s,0,1-v,0) hThumb.Position=UDim2.new(0.5,0,h,0) SF(flag,value) CB(cb,value) end
+                local hexBox=I("TextBox",{Position=UDim2.new(0,10,0,128),Size=UDim2.new(1,-46,0,22),Text="#"..value:ToHex(),TextSize=11,FontFace=F_NUM,Parent=pan,ZIndex=37}) Thm(hexBox,"BackgroundColor3","Element") Thm(hexBox,"TextColor3","Text") Crn(hexBox,4) Stk(hexBox,"Border",1,0.2)
+                local clsBtn=I("TextButton",{Position=UDim2.new(1,-32,0,128),Size=UDim2.new(0,22,0,22),Text="X",TextSize=11,FontFace=F_TITLE,Parent=pan,ZIndex=37}) Thm(clsBtn,"BackgroundColor3","Element") Thm(clsBtn,"TextColor3","Text") Crn(clsBtn,4) Stk(clsBtn,"Border",1,0.2)
+                
+                local function apply() value=Color3.fromHSV(h,s,v) prev.BackgroundColor3=value mGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,Color3.fromHSV(h,1,1))}) thumb.Position=UDim2.new(s,0,1-v,0) hThumb.Position=UDim2.new(0.5,0,h,0) hexBox.Text="#"..value:ToHex() SF(flag,value) CB(cb,value) end
                 local mDr, hDr = false, false
                 Cn(map.InputBegan,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then mDr=true s=math.clamp((i.Position.X-map.AbsolutePosition.X)/map.AbsoluteSize.X,0,1) v=1-math.clamp((i.Position.Y-map.AbsolutePosition.Y)/map.AbsoluteSize.Y,0,1) apply() end end) Cn(map.InputEnded,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then mDr=false end end)
                 Cn(hBar.InputBegan,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then hDr=true h=math.clamp((i.Position.Y-hBar.AbsolutePosition.Y)/hBar.AbsoluteSize.Y,0,0.999) apply() end end) Cn(hBar.InputEnded,function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then hDr=false end end)
                 Cn(UIS.InputChanged,function(i) if i.UserInputType==Enum.UserInputType.MouseMovement then if mDr then s=math.clamp((i.Position.X-map.AbsolutePosition.X)/map.AbsoluteSize.X,0,1) v=1-math.clamp((i.Position.Y-map.AbsolutePosition.Y)/map.AbsoluteSize.Y,0,1) apply() end if hDr then h=math.clamp((i.Position.Y-hBar.AbsolutePosition.Y)/hBar.AbsoluteSize.Y,0,0.999) apply() end end end)
                 
+                Cn(hexBox.FocusLost,function() pcall(function() local t=hexBox.Text:gsub("#","") if #t==6 then local nc=Color3.fromHex(t) h,s,v=Color3.toHSV(nc) apply() else hexBox.Text="#"..value:ToHex() end end) end)
                 local function cls() pOpen=false Tw(pan,{Size=UDim2.new(1,0,0,0)},TF) Tw(wrap,{Size=UDim2.new(1,0,0,ch)},TF) task.delay(0.15,function() pan.Visible=false end) Thm(lbl,"TextColor3","TextDark") end
+                Cn(clsBtn.MouseButton1Click, cls)
                 Cn(hit.MouseButton1Click,function() pOpen=not pOpen if pOpen then pan.Visible=true Tw(pan,{Size=UDim2.new(1,0,0,pH)},TM) Tw(wrap,{Size=UDim2.new(1,0,0,ch+pH+6)},TM) Thm(lbl,"TextColor3","Text") else cls() end end)
                 SF(flag,value) if flag then Library._elems[flag]={set=function(v) if typeof(v)=="Color3" then value=v h,s,v=Color3.toHSV(v) apply() end end, get=function() return value end} end
             end
@@ -642,22 +651,36 @@ function Library:CreateWindow(opts)
                 if not opts.Image then
                     local bodyCol = Color3.fromRGB(45,45,45)
                     local head = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,0), Size=UDim2.new(0,24,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(head, 12)
-                    local torso = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,26), Size=UDim2.new(0,48,0,48), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torso, 4)
-                    local lArm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-25,0,26), Size=UDim2.new(0,22,0,48), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArm, 4)
-                    local rArm = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,25,0,26), Size=UDim2.new(0,22,0,48), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArm, 4)
-                    local lLeg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-1,0,76), Size=UDim2.new(0,23,0,44), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLeg, 4)
-                    local rLeg = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,1,0,76), Size=UDim2.new(0,23,0,44), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLeg, 4)
+                    local neck = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,23), Size=UDim2.new(0,10,0,6), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18})
+                    local torsoTop = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,28), Size=UDim2.new(0,48,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torsoTop, 4)
+                    local torsoBot = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,51), Size=UDim2.new(0,42,0,22), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torsoBot, 4)
+                    
+                    local lArmT = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-25,0,28), Size=UDim2.new(0,18,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArmT, 4)
+                    local lArmB = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-25,0,53), Size=UDim2.new(0,16,0,20), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArmB, 4)
+                    local lHand = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-25,0,74), Size=UDim2.new(0,16,0,10), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lHand, 8)
+                    
+                    local rArmT = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,25,0,28), Size=UDim2.new(0,18,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArmT, 4)
+                    local rArmB = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,25,0,53), Size=UDim2.new(0,16,0,20), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArmB, 4)
+                    local rHand = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,25,0,74), Size=UDim2.new(0,16,0,10), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rHand, 8)
+                    
+                    local lLegT = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,74), Size=UDim2.new(0,20,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLegT, 4)
+                    local lLegB = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,99), Size=UDim2.new(0,18,0,22), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLegB, 4)
+                    local lFoot = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,122), Size=UDim2.new(0,20,0,8), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lFoot, 4)
+                    
+                    local rLegT = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,74), Size=UDim2.new(0,20,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLegT, 4)
+                    local rLegB = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,99), Size=UDim2.new(0,18,0,22), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLegB, 4)
+                    local rFoot = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,122), Size=UDim2.new(0,20,0,8), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rFoot, 4)
                 end
                 
                 local skelCol = Color3.new(1,1,1)
                 local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
                 local skSpine = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,12), Size=UDim2.new(0,2,0,62), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,36), Size=UDim2.new(0,48,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-24,0,36), Size=UDim2.new(0,2,0,38), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skRArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,24,0,36), Size=UDim2.new(0,2,0,38), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,40), Size=UDim2.new(0,66,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-33,0,40), Size=UDim2.new(0,2,0,34), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,33,0,40), Size=UDim2.new(0,2,0,34), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
                 local skHips = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,74), Size=UDim2.new(0,24,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skLLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-12,0,74), Size=UDim2.new(0,2,0,46), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skRLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,12,0,74), Size=UDim2.new(0,2,0,46), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-12,0,74), Size=UDim2.new(0,2,0,52), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,12,0,74), Size=UDim2.new(0,2,0,52), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
                 local skelLines = {skSpine, skShoulder, skLArm, skRArm, skHips, skLLeg, skRLeg}
                 
                 local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,16,1,16), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
@@ -733,6 +756,26 @@ function Library:CreateWindow(opts)
         local uiSec = setTab:CreateSection("Interface", "Right")
         uiSec:CreateKeybind({Name="Toggle Menu", Default=Library.ToggleKey, Flag="_SynTK", Callback=function() end})
         Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library.tkLbl then Library.tkLbl.Text="Toggle UI: ["..tk.Name.."]" end end end)
+        
+        uiSec:CreateTextbox({Name="Custom Background URL", Placeholder="github raw link...", Flag="_SynBgUrl", Callback=function(v) 
+            pcall(function() 
+                local img = GetIcon(v) 
+                if img~="" then 
+                    if Library._wmBgI then Library._wmBgI.Image = img end
+                    if Library._kbBgI then Library._kbBgI.Image = img end
+                end 
+            end)
+        end})
+        local bgHelp = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Recommended Image Size: 512x256", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=uiSec._c, ZIndex=15}) Thm(bgHelp, "TextColor3", "Accent")
+        
+        uiSec:CreateToggle({Name="Show Background Image", Default=true, Flag="_SynBgVis", Callback=function(v)
+            if Library._wmBgI then Library._wmBgI.Visible = v end
+            if Library._kbBgI then Library._kbBgI.Visible = v end
+        end})
+        uiSec:CreateToggle({Name="Show Particles", Default=true, Flag="_SynPtcVis", Callback=function(v)
+            Library.ShowParticles = v
+            for _, ptc in ipairs(Library._particleWraps or {}) do ptc.Visible = v end
+        end})
         uiSec:CreateToggle({Name="Show Watermark", Default=Library.ShowWatermark, Flag="_SynWM", Callback=function(v) Library.ShowWatermark=v if Library._wm then if Library.Open then Library._wm.Visible=false else Library._wm.Visible=v end end end})
         uiSec:CreateButton({Name="Unload Script", Callback=function() Library:Unload() end})
 
