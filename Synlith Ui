@@ -1,4 +1,4 @@
---[[ Synlith UI Library v19.0 - Definitive Edition ]]
+a--[[ Synlith UI Library v19.0 - Definitive Edition ]]
 -- Features: Redesigned Config System (Selector), Flawless Border Animations, Fixed Cursor Hitboxes, Clean Vertical Sidebar
 local Players = game:GetService("Players")
 local TS = game:GetService("TweenService")
@@ -71,17 +71,6 @@ local function Thm(inst, prop, key, special)
             local col = Library.Theme[key]
             local bright = col:Lerp(Color3.new(1,1,1), 0.65)
             inst[prop]=ColorSequence.new({ColorSequenceKeypoint.new(0,col), ColorSequenceKeypoint.new(0.5,bright), ColorSequenceKeypoint.new(1,col)})
-        elseif special=="BorderGradient" then
-            local bC = Library.Theme.Border
-            local aC = Library.Theme.Accent
-            local shine = aC:Lerp(Color3.new(1,1,1), 0.3)
-            inst[prop] = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, bC), 
-                ColorSequenceKeypoint.new(0.4, bC),
-                ColorSequenceKeypoint.new(0.5, shine),
-                ColorSequenceKeypoint.new(0.6, bC),
-                ColorSequenceKeypoint.new(1, bC)
-            })
         else inst[prop]=Library.Theme[key] end
     end
     for _, t in ipairs(Library._themed) do if t.inst==inst and t.prop==prop then t.key=key t.special=special pcall(apply) return end end
@@ -91,7 +80,7 @@ end
 local function Cn(sig, fn) local c=sig:Connect(fn) table.insert(Library._conn, c) return c end
 local function CB(cb, ...) if cb then pcall(cb, ...) end end
 local function SF(f, v) if f then Library.Flags[f]=v end end
-local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) if key then if key=="Border" then s.Color=Color3.new(1,1,1) s.Transparency=0.05 local g=I("UIGradient",{Parent=s}) Thm(g,"Color","Border","BorderGradient") Cn(Run.RenderStepped,function() if g.Parent then g.Rotation=(tick()*50)%360 end end) else Thm(s, "Color", key) end end return s end
+local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Transparency=tr or 0, ApplyStrokeMode=Enum.ApplyStrokeMode.Border, Parent=p}) if key then if key=="Border" then s.Color=Color3.new(1,1,1) s.Transparency=0.08 local g=I("UIGradient",{Parent=s}) Thm(g,"Color","Border","Gradient") Cn(Run.RenderStepped,function() if g.Parent then g.Rotation=(tick()*45)%360 end end) else Thm(s, "Color", key) end end return s end
 local function Ripple(btn) local c=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,0,0,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.8,Active=false,Interactable=false,Parent=btn,ZIndex=btn.ZIndex+1}) Crn(c,999) local sz=math.max(btn.AbsoluteSize.X,btn.AbsoluteSize.Y)*2.5 Tw(c,{Size=UDim2.new(0,sz,0,sz),BackgroundTransparency=1},TM) task.delay(0.4,function() c:Destroy() end) end
 
 local function MakeDrag(frame, handle) local dr, ds, sp Cn(handle.InputBegan,function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then dr=true ds=inp.Position sp=frame.Position inp.Changed:Connect(function() if inp.UserInputState==Enum.UserInputState.End then dr=false end end) end end) Cn(UIS.InputChanged,function(inp) if dr and(inp.UserInputType==Enum.UserInputType.MouseMovement or inp.UserInputType==Enum.UserInputType.Touch) then local d=inp.Position-ds frame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end) end
