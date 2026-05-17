@@ -219,6 +219,62 @@ end
 
 function Library:RegisterUnload(fn) table.insert(self._unloads, fn) end
 function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end self.Open=false for _,c in ipairs(self._conn) do pcall(function() c:Disconnect() end) end self._conn={} self._themed={} self._elems={} self._refreshFn={} self._unloads={} if self.ScreenGui then self.ScreenGui:Destroy() end end
+function Library:CreateKeybindsWindow(opts)
+    opts = opts or {}
+    local title = opts.Title or "KEYBINDS"
+    
+    local kbWin = I("Frame", {AnchorPoint=Vector2.new(0,0.5), Position=UDim2.new(0, 16, 0.5, 0), Size=UDim2.new(0, 210, 0, 40), BackgroundTransparency=0.15, ClipsDescendants=true, Visible=false, Parent=self.ScreenGui, ZIndex=150})
+    Thm(kbWin, "BackgroundColor3", "Panel") Crn(kbWin, 6) MakeDrag(kbWin, kbWin)
+    local kbStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=kbWin})
+    local kbGrad = I("UIGradient", {Parent=kbStk}) Thm(kbGrad, "Color", "Accent", "Gradient")
+    Cn(Run.RenderStepped, function() kbGrad.Rotation = (tick() * 35) % 360 end)
+    
+    local topBar = I("Frame", {Size=UDim2.new(1,0,0,26), BackgroundTransparency=1, Parent=kbWin, ZIndex=151})
+    local tLbl = I("TextLabel", {Position=UDim2.new(0,12,0,0), Size=UDim2.new(1,-24,1,0), BackgroundTransparency=1, Text=title:upper(), TextSize=11, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=topBar, ZIndex=151}) Thm(tLbl, "TextColor3", "Accent")
+    local countLbl = I("TextLabel", {Position=UDim2.new(0,12,0,0), Size=UDim2.new(1,-24,1,0), BackgroundTransparency=1, Text="0", TextSize=11, FontFace=F_NUM, TextXAlignment=Enum.TextXAlignment.Right, Parent=topBar, ZIndex=151}) Thm(countLbl, "TextColor3", "TextDark")
+    local sep = I("Frame", {Position=UDim2.new(0,10,1,0), Size=UDim2.new(1,-20,0,1), BackgroundTransparency=0.5, Parent=topBar, ZIndex=151}) Thm(sep, "BackgroundColor3", "Border")
+    
+    local listWrap = I("Frame", {Position=UDim2.new(0,0,0,28), Size=UDim2.new(1,0,1,-28), BackgroundTransparency=1, Parent=kbWin, ZIndex=151})
+    local layout = Lst(listWrap, 2) Pad(listWrap, 6, 6, 10, 10)
+    
+    local items = {}
+    local activeCount = 0
+    local obj = {
+        Window = kbWin,
+        Add = function(self, name, keyStr, modeStr)
+            if not items[name] then
+                activeCount = activeCount + 1
+                local itm = I("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Parent=listWrap, ZIndex=151})
+                local nLbl = I("TextLabel", {Size=UDim2.new(0.65,0,1,0), BackgroundTransparency=1, Text=name.." ["..keyStr.."]", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=itm, ZIndex=152}) Thm(nLbl, "TextColor3", "Text")
+                local sLbl = I("TextLabel", {Position=UDim2.new(0.65,0,0,0), Size=UDim2.new(0.35,0,1,0), BackgroundTransparency=1, Text=modeStr or "Hold", TextSize=11, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Right, Parent=itm, ZIndex=152}) Thm(sLbl, "TextColor3", "Accent")
+                items[name] = {Frame=itm, StateLbl=sLbl, NameLbl=nLbl}
+            else
+                items[name].StateLbl.Text = modeStr or "Hold"
+                items[name].NameLbl.Text = name.." ["..keyStr.."]"
+            end
+            countLbl.Text = tostring(activeCount)
+            self:UpdateSize()
+        end,
+        Remove = function(self, name)
+            if items[name] then 
+                items[name].Frame:Destroy() 
+                items[name] = nil 
+                activeCount = activeCount - 1
+                countLbl.Text = tostring(activeCount)
+                self:UpdateSize() 
+            end
+        end,
+        UpdateSize = function(self)
+            local targetH = 28 + layout.AbsoluteContentSize.Y + 12
+            if targetH < 40 then targetH = 40 end
+            Tw(kbWin, {Size=UDim2.new(0, 210, 0, targetH)}, TF)
+        end,
+        SetVisible = function(self, vis)
+            kbWin.Visible = vis
+        end
+    }
+    return obj
+end
 
 function Library:CreateWindow(opts)
     opts = opts or {} local title = opts.Title or "Synlith.hub"
@@ -560,6 +616,64 @@ function Library:CreateWindow(opts)
                 local box = I("TextBox", {Position=UDim2.new(0,10,0,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Text=value, PlaceholderText=ph, TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Center, ClearTextOnFocus=false, Parent=bg, ZIndex=17}) Thm(box, "TextColor3", "Text") Thm(box, "PlaceholderColor3", "TextDark")
                 Cn(box.FocusLost, function() value=box.Text SF(flag,value) CB(cb,value) end)
                 SF(flag,value) if flag then Library._elems[flag]={set=function(v) value=v box.Text=tostring(v) SF(flag,v) end, get=function() return value end} end return {SetText=function(_,t) value=t box.Text=tostring(t) end, Get=function() return value end}
+            end
+            function SO:CreateESPPreview(opts)
+                opts = opts or {}
+                local ch=220 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=15})
+                local bg=I("Frame",{Size=UDim2.new(1,0,1,0),Parent=wrap,ZIndex=16}) Thm(bg,"BackgroundColor3","Element") Crn(bg,4) Stk(bg,"Border",1,0.2)
+                
+                local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,70,0,130),BackgroundTransparency=1,Parent=bg,ZIndex=17})
+                
+                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=opts.Image or "", ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
+                
+                if not opts.Image then
+                    local bodyCol = Color3.fromRGB(45,45,45)
+                    local head = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,0), Size=UDim2.new(0,24,0,24), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(head, 12)
+                    local torso = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,26), Size=UDim2.new(0,46,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torso, 4)
+                    local lArm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-25,0,26), Size=UDim2.new(0,18,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArm, 4)
+                    local rArm = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,25,0,26), Size=UDim2.new(0,18,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArm, 4)
+                    local lLeg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-1,0,74), Size=UDim2.new(0,21,0,52), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLeg, 4)
+                    local rLeg = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,1,0,74), Size=UDim2.new(0,21,0,52), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLeg, 4)
+                end
+                
+                local skelCol = Color3.new(1,1,1)
+                local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
+                local skSpine = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,12), Size=UDim2.new(0,2,0,62), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,32), Size=UDim2.new(0,38,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-19,0,32), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,19,0,32), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skHips = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,74), Size=UDim2.new(0,22,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-11,0,74), Size=UDim2.new(0,2,0,52), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,11,0,74), Size=UDim2.new(0,2,0,52), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skelLines = {skSpine, skShoulder, skLArm, skRArm, skHips, skLLeg, skRLeg}
+                
+                local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,16,1,16), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
+                local boxStk = I("UIStroke", {Thickness=1, Color=Color3.new(1,1,1), Parent=box}) Thm(boxStk, "Color", "Accent")
+                
+                local hpBg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0,-6,0,0), Size=UDim2.new(0,3,1,0), BackgroundColor3=Color3.new(0,0,0), BorderSizePixel=0, Parent=box, ZIndex=26})
+                local hpFill = I("Frame", {AnchorPoint=Vector2.new(0,1), Position=UDim2.new(0,0,1,0), Size=UDim2.new(1,0,0.8,0), BackgroundColor3=Color3.fromRGB(0,255,0), BorderSizePixel=0, Parent=hpBg, ZIndex=27})
+                
+                local nameLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,0,-4), Size=UDim2.new(0,100,0,14), BackgroundTransparency=1, Text="Enemy", TextSize=11, FontFace=F_TEXT, TextColor3=Color3.new(1,1,1), Parent=box, ZIndex=26})
+                local distLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,1,2), Size=UDim2.new(0,100,0,14), BackgroundTransparency=1, Text="25m", TextSize=10, FontFace=F_NUM, TextColor3=Color3.new(1,1,1), Parent=box, ZIndex=26})
+                local wpnLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,1,14), Size=UDim2.new(0,100,0,14), BackgroundTransparency=1, Text="Weapon", TextSize=10, FontFace=F_TEXT, TextColor3=Color3.new(0.8,0.8,0.8), Parent=box, ZIndex=26})
+                
+                local obj = {
+                    Box = box, BoxOutline = boxStk, HealthBarBg = hpBg, HealthBar = hpFill, Name = nameLbl, Distance = distLbl, Weapon = wpnLbl, Skeleton = skelWrap, SkelLines = skelLines,
+                    Update = function(self, settings)
+                        if settings.BoxVisible ~= nil then self.BoxOutline.Transparency = settings.BoxVisible and 0 or 1 end
+                        if settings.BoxColor ~= nil then self.BoxOutline.Color = settings.BoxColor end
+                        if settings.HealthBarVisible ~= nil then self.HealthBarBg.Visible = settings.HealthBarVisible end
+                        if settings.NameVisible ~= nil then self.Name.Visible = settings.NameVisible end
+                        if settings.NameColor ~= nil then self.Name.TextColor3 = settings.NameColor end
+                        if settings.DistanceVisible ~= nil then self.Distance.Visible = settings.DistanceVisible end
+                        if settings.DistanceColor ~= nil then self.Distance.TextColor3 = settings.DistanceColor end
+                        if settings.WeaponVisible ~= nil then self.Weapon.Visible = settings.WeaponVisible end
+                        if settings.WeaponColor ~= nil then self.Weapon.TextColor3 = settings.WeaponColor end
+                        if settings.SkeletonVisible ~= nil then self.Skeleton.Visible = settings.SkeletonVisible end
+                        if settings.SkeletonColor ~= nil then for _, l in ipairs(self.SkelLines) do l.BackgroundColor3 = settings.SkeletonColor end end
+                    end
+                }
+                return obj
             end
             
             return SO
