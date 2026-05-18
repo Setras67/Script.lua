@@ -44,6 +44,9 @@ local BURL = "https://raw.githubusercontent.com/Unknown394852/Chess/main/Synlith
 local DINV = "https://discord.gg/2q69gGWEcj"
 
 local Library = {Flags={}, _elems={}, _themed={}, _conn={}, _tabs={}, _refreshFn={}, _unloads={}, _activeTab=nil, ScreenGui=nil, Window=nil, Open=true, ToggleKey=Enum.KeyCode.RightShift, Theme=nil, Themes={}, ShowWatermark=true, _wm=nil, tkLbl=nil}
+if getgenv then getgenv().Library = Library end
+_G.Library = Library
+
 
 local function T(bg, panel, sec, elem, elemH, acc, txt, txtD, border, icon, logo)
     return {Background=bg, Panel=panel, Section=sec, Element=elem, ElementHover=elemH, Accent=acc, Text=txt, TextDark=txtD, Border=border, Icon=icon or acc, Logo=logo or acc}
