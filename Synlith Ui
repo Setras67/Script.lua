@@ -52,7 +52,7 @@ local function T(bg, panel, sec, elem, elemH, acc, txt, txtD, border, icon, logo
     return {Background=bg, Panel=panel, Section=sec, Element=elem, ElementHover=elemH, Accent=acc, Text=txt, TextDark=txtD, Border=border, Icon=icon or acc, Logo=logo or acc}
 end
 
-Library.Themes["Darkness"] = T(Color3.fromRGB(4,4,4), Color3.fromRGB(8,8,8), Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(26,26,26), Color3.fromRGB(255,255,255), Color3.fromRGB(245,245,245), Color3.fromRGB(130,130,130), Color3.fromRGB(90,90,90), Color3.fromRGB(255,255,255), Color3.fromRGB(125,90,255))
+Library.Themes["Darkness"] = T(Color3.fromRGB(4,4,4), Color3.fromRGB(8,8,8), Color3.fromRGB(12,12,12), Color3.fromRGB(18,18,18), Color3.fromRGB(26,26,26), Color3.fromRGB(255,255,255), Color3.fromRGB(245,245,245), Color3.fromRGB(130,130,130), Color3.fromRGB(90,90,90), Color3.fromRGB(255,255,255), Color3.fromRGB(255,255,255))
 Library.Themes["Midnight"] = T(Color3.fromRGB(6,4,14), Color3.fromRGB(12,8,24), Color3.fromRGB(18,12,34), Color3.fromRGB(26,18,48), Color3.fromRGB(38,26,70), Color3.fromRGB(160,60,255), Color3.fromRGB(240,235,255), Color3.fromRGB(140,130,170), Color3.fromRGB(90,50,180), Color3.fromRGB(255,255,255), Color3.fromRGB(160,60,255))
 Library.Themes["Fatality"] = T(Color3.fromRGB(12,8,16), Color3.fromRGB(18,12,24), Color3.fromRGB(26,18,34), Color3.fromRGB(32,24,42), Color3.fromRGB(40,30,52), Color3.fromRGB(190,0,100), Color3.fromRGB(245,240,250), Color3.fromRGB(150,130,170), Color3.fromRGB(110,10,60), Color3.fromRGB(255,255,255), Color3.fromRGB(190,0,100))
 Library.Themes["Aurora"] = T(Color3.fromRGB(5, 7, 12), Color3.fromRGB(9, 13, 20), Color3.fromRGB(14, 20, 30), Color3.fromRGB(20, 28, 40), Color3.fromRGB(28, 38, 54), Color3.fromRGB(0, 255, 170), Color3.fromRGB(240, 255, 250), Color3.fromRGB(140, 160, 180), Color3.fromRGB(0, 150, 100), Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 255, 170))
@@ -200,7 +200,7 @@ function Library:Notify(title, msg, dur)
         local l=Lst(self._notifH,12) l.VerticalAlignment=Enum.VerticalAlignment.Bottom l.HorizontalAlignment=Enum.HorizontalAlignment.Right
     end
     
-    local card=I("CanvasGroup",{Size=UDim2.new(0,320,0,65), Position=UDim2.new(1, 50, 0, 0), GroupTransparency=1, BackgroundTransparency=0.15, Parent=self._notifH, ZIndex=1001}) 
+    local card=I("Frame",{Size=UDim2.new(0,320,0,65), Position=UDim2.new(1, 50, 0, 0), BackgroundTransparency=0.15, ClipsDescendants=true, Parent=self._notifH, ZIndex=1001}) 
     Thm(card,"BackgroundColor3","Panel") Crn(card,6)
     local nBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,3,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.1,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=card, ZIndex=1001, Visible=Library.ShowBackground~=false})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then nBgI.Image=bgi end end)
@@ -224,13 +224,13 @@ function Library:Notify(title, msg, dur)
     local pBarGrad=I("UIGradient",{Parent=pBar}) Thm(pBarGrad,"Color","Accent","Gradient")
     Cn(Run.RenderStepped, function() if pBarGrad.Parent then pBarGrad.Rotation = (tick() * 60) % 360 end end)
     
-    TS:Create(card, TM, {Position=UDim2.new(0,0,0,0), GroupTransparency=0}):Play()
+    TS:Create(card, TM, {Position=UDim2.new(0,0,0,0)}):Play()
     TS:Create(s, TM, {Transparency=0}):Play()
     TS:Create(pBar, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(1,0,1,0)}):Play()
     
     task.delay(dur, function() 
         TS:Create(s, TM, {Transparency=1}):Play()
-        local tw = TS:Create(card, TM, {Position=UDim2.new(1,50,0,0), GroupTransparency=1})
+        local tw = TS:Create(card, TM, {Position=UDim2.new(1,50,0,0)})
         tw:Play() tw.Completed:Connect(function() 
             card:Destroy() 
             for i,v in ipairs(Library._notifBgs) do if v==nBgI then table.remove(Library._notifBgs, i) break end end
@@ -350,7 +350,7 @@ function Library:CreateWindow(opts)
         end
     end)
     
-    local outerMain = I("CanvasGroup", {Name="SynlithOuter", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5, 0, 0.5, 0), Size=size, BackgroundTransparency=1, GroupTransparency=1, ClipsDescendants=true, Parent=gui, ZIndex=1})
+    local outerMain = I("Frame", {Name="SynlithOuter", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5, 0, 0.5, 0), Size=size, BackgroundTransparency=1, ClipsDescendants=true, Parent=gui, ZIndex=1})
     local padding = 4
     local main = I("Frame", {Name="Main", AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-padding*2,1,-padding*2), BackgroundTransparency=0.1, Parent=outerMain, ZIndex=1})
     Thm(main, "BackgroundColor3", "Background") Crn(main, 6) self.Window=outerMain
@@ -413,13 +413,11 @@ function Library:CreateWindow(opts)
         if state then 
             Library.Open=true outerMain.Visible=true 
             TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
-            TS:Create(outerMain, TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=0}):Play()
         else 
             Library.Open=false 
-            TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)}):Play()
-            local tw = TS:Create(outerMain, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=1})
-            tw:Play()
+            local tw = TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)})
             tw.Completed:Connect(function() if not Library.Open then outerMain.Visible=false end end)
+            tw:Play()
         end
         UpdateWm()
     end
@@ -464,7 +462,7 @@ function Library:CreateWindow(opts)
         end
     end)
     
-    outerMain.Size = size outerMain.GroupTransparency = 1 main.Position = UDim2.new(0.5, 0, 0.5, 15) ToggleUI(true)
+    outerMain.Size = size main.Position = UDim2.new(0.5, 0, 0.5, 15) ToggleUI(true)
     
     local WO = {_main=main, _tabs={}}
     function WO:CreateTab(tO) tO=tO or {} local tName = tO.Name or "Tab"
