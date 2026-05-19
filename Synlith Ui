@@ -103,17 +103,44 @@ local function Stk(p, key, th, tr) local s=I("UIStroke", {Thickness=th or 1, Tra
 local function Ripple(btn) end
 
 local function MakeDrag(frame, handle) local dr, ds, sp Cn(handle.InputBegan,function(inp) if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then dr=true ds=inp.Position sp=frame.Position inp.Changed:Connect(function() if inp.UserInputState==Enum.UserInputState.End then dr=false end end) end end) Cn(UIS.InputChanged,function(inp) if dr and(inp.UserInputType==Enum.UserInputType.MouseMovement or inp.UserInputType==Enum.UserInputType.Touch) then local d=inp.Position-ds frame.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y) end end) end
-local function FetchAsset(url, path) pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfile(path) then writefile(path, game:HttpGet(url)) end end) local img="" pcall(function() if isfile(path) then img=getcustomasset(path) end end) return img end
+local function FetchAsset(url, path)
+    pcall(function()
+        if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end
+        if not isfile(path) then
+            local data = game:HttpGet(url)
+            local isPng = data:sub(1, 4) == "\137PNG"
+            local isJpg = data:sub(1, 3) == "\255\216\255"
+            local isGif = data:sub(1, 4) == "GIF8"
+            local isWebp = data:sub(1, 4) == "RIFF" and data:sub(9, 12) == "WEBP"
+            if isPng or isJpg or isGif or isWebp then
+                writefile(path, data)
+            else
+                task.spawn(function()
+                    Library:Notify("Invalid Image", "URL must be a direct link to a raw PNG, JPG, or WEBP file.", 5)
+                end)
+            end
+        end
+    end)
+    local img=""
+    pcall(function() if isfile(path) then img=getcustomasset(path) end end)
+    return img
+end
 local function GetIcon(id)
-    if not id then return "" end
+    if not id or id == "" then return "" end
     if tonumber(id) then 
         return "rbxassetid://"..id 
-    elseif type(id) == "string" and id:sub(1,4) == "http" then
-        local filename = id:match("([^/]+)$") or "temp_icon.png"
-        local path = "Synlith.hub/"..filename
-        return FetchAsset(id, path)
+    elseif type(id) == "string" then
+        if id:sub(1,4) == "http" then
+            local cleanUrl = id:split("?")[1] or id
+            local filename = cleanUrl:match("([^/]+)$") or "temp_icon.png"
+            if not filename:match("%.%w+$") then filename = filename..".png" end
+            local path = "Synlith.hub/"..filename
+            return FetchAsset(id, path)
+        elseif id:sub(1,13) == "rbxassetid://" or id:sub(1,17) == "rbxgameasset://" then
+            return id
+        end
     end
-    return id
+    return ""
 end
 local function EnsureDir() pcall(function() if not isfolder("Synlith.hub") then makefolder("Synlith.hub") end if not isfolder(CDIR) then makefolder(CDIR) end end) end
 
@@ -168,6 +195,32 @@ function Library:GetAutoConfig() local n="" pcall(function() if isfile(CDIR.."_a
 function Library:PersistTheme(n) pcall(function() EnsureDir() writefile(TDIR.."_theme.txt", n) end) end
 function Library:GetPersistedTheme() local n="" pcall(function() if isfile(TDIR.."_theme.txt") then n=readfile(TDIR.."_theme.txt"):gsub("%s+","") end end) return n end
 
+function Library:GetSavedBackgrounds() EnsureDir() local p=TDIR.."backgrounds.json" if not isfile(p) then return {} end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then local o={} for k in pairs(d) do table.insert(o, k) end table.sort(o) return o end return {} end
+function Library:GetBackgroundUrl(n) EnsureDir() local p=TDIR.."backgrounds.json" if not isfile(p) then return "" end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then return d[n] or "" end return "" end
+function Library:SaveBackground(n, url) EnsureDir() local p=TDIR.."backgrounds.json" local d={} if isfile(p) then pcall(function() d=Http:JSONDecode(readfile(p)) end) if type(d)~="table" then d={} end end d[n]=url pcall(function() writefile(p, Http:JSONEncode(d)) end) self:Notify("Success", "Background '"..n.."' saved") if self._refreshBgList then self._refreshBgList() end end
+function Library:DeleteBackground(n) EnsureDir() local p=TDIR.."backgrounds.json" if isfile(p) then local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then d[n]=nil pcall(function() writefile(p, Http:JSONEncode(d)) end) self:Notify("Info", "Background deleted") if self._refreshBgList then self._refreshBgList() end end end end
+function Library:SetBackground(url)
+    pcall(function()
+        if url == "" then
+            local defaultImg = FetchAsset(BURL, BPATH)
+            if self._wmBgI then self._wmBgI.Image = defaultImg end
+            if self._kbBgI then self._kbBgI.Image = defaultImg end
+            if self._uiBgI then self._uiBgI.Image = defaultImg end
+            if self._notifBgs then for _, nb in ipairs(self._notifBgs) do nb.Image = defaultImg end end
+            return
+        end
+        local img = GetIcon(url)
+        if img ~= "" then
+            if self._wmBgI then self._wmBgI.Image = img end
+            if self._kbBgI then self._kbBgI.Image = img end
+            if self._uiBgI then self._uiBgI.Image = img end
+            if self._notifBgs then for _, nb in ipairs(self._notifBgs) do nb.Image = img end end
+        else
+            self:Notify("Invalid Input", "Must be a direct link to a raw image URL (PNG, JPG, or WEBP).", 5)
+        end
+    end)
+end
+
 function Library:SaveCustomTheme() local cthm=self.Themes["Custom"] local d={Bg={R=cthm.Background.R,G=cthm.Background.G,B=cthm.Background.B},Acc={R=cthm.Accent.R,G=cthm.Accent.G,B=cthm.Accent.B},Txt={R=cthm.Text.R,G=cthm.Text.G,B=cthm.Text.B},Logo={R=cthm.Logo.R,G=cthm.Logo.G,B=cthm.Logo.B},Ico={R=cthm.Icon.R,G=cthm.Icon.G,B=cthm.Icon.B}} pcall(function() EnsureDir() writefile(TDIR.."_custom.json", Http:JSONEncode(d)) end) end
 function Library:LoadCustomTheme() local ok, res = pcall(function() return Http:JSONDecode(readfile(TDIR.."_custom.json")) end) if ok and type(res)=="table" then pcall(function() local bg=Color3.new(res.Bg.R,res.Bg.G,res.Bg.B) local acc=Color3.new(res.Acc.R,res.Acc.G,res.Acc.B) local txt=Color3.new(res.Txt.R,res.Txt.G,res.Txt.B) local logo=res.Logo and Color3.new(res.Logo.R,res.Logo.G,res.Logo.B) or acc local ico=res.Ico and Color3.new(res.Ico.R,res.Ico.G,res.Ico.B) or Color3.fromRGB(255,255,255) 
     local h, s, vl = Color3.toHSV(bg)
@@ -187,7 +240,7 @@ function Library:SetTheme(name)
         elseif t.special=="BorderGradient" then
             local bC = self.Theme.Border local aC = self.Theme.Accent local shine = aC:Lerp(Color3.new(1,1,1), 0.3)
             t.inst[t.prop] = ColorSequence.new({ColorSequenceKeypoint.new(0, bC), ColorSequenceKeypoint.new(0.4, bC), ColorSequenceKeypoint.new(0.5, shine), ColorSequenceKeypoint.new(0.6, bC), ColorSequenceKeypoint.new(1, bC)})
-        else t.inst[t.prop]=self.Theme[t.key] end 
+        else t.inst[t.prop]=self.Theme[t.key] end
     end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end
@@ -549,6 +602,7 @@ function Library:CreateWindow(opts)
                 Cn(hit.MouseButton1Click, function() value=not value upd(value) SF(flag,value) CB(cb,value) end)
                 upd(value) SF(flag,value) table.insert(Library._refreshFn, function() upd(value) end)
                 if flag then Library._elems[flag]={set=function(v) value=v upd(v) SF(flag,v) end, get=function() return value end} end
+                return {Set=function(_,v) value=v upd(v) end, Get=function() return value end}
             end
             
             function SO:CreateSlider(opts) opts=opts or {} local name=opts.Name or "Slider" local mn=opts.Min or 0 local mx=opts.Max or 100 local value=opts.Default or mn local inc=opts.Increment or 1 local sfx=opts.Suffix or "" local flag=opts.Flag local cb=opts.Callback
@@ -775,18 +829,96 @@ function Library:CreateWindow(opts)
         ctSec:CreateButton({Name="Apply Custom Theme", Callback=function() Library:SetTheme("Custom") Library:SaveCustomTheme() end})
         
         -- RIGHT SIDE OF SETTINGS
+        local function cBtn(parent, txt, cb)
+            local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
+            local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
+            Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
+            Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
+            Cn(b.MouseLeave, function() Tw(b, {BackgroundColor3=Library.Theme.Element}, TF) end)
+            return b
+        end
+
+        local uiSec = setTab:CreateSection("Interface", "Right")
+        uiSec:CreateKeybind({Name="Toggle Menu", Default=Library.ToggleKey, Flag="_SynTK", Callback=function() end})
+        Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library.tkLbl then Library.tkLbl.Text="Toggle UI: ["..tk.Name.."]" end end end)
+        
+        uiSec:CreateToggle({Name="Show Background Image", Default=true, Flag="_SynBgVis", Callback=function(v)
+            Library.ShowBackground = v
+            if Library._wmBgI then Library._wmBgI.Visible = v end
+            if Library._kbBgI then Library._kbBgI.Visible = v end
+            if Library._uiBgI then Library._uiBgI.Visible = v end
+            if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Visible = v end end
+        end})
+        uiSec:CreateToggle({Name="Show Particles", Default=true, Flag="_SynPtcVis", Callback=function(v)
+            Library.ShowParticles = v
+            for _, ptc in ipairs(Library._particleWraps or {}) do ptc.Visible = v end
+        end})
+        uiSec:CreateToggle({Name="Show Watermark (When UI Hidden)", Default=Library.ShowWatermark, Flag="_SynWM", Callback=function(v) Library.ShowWatermark=v if Library._wm then if Library.Open then Library._wm.Visible=false else Library._wm.Visible=v end end end})
+        uiSec:CreateButton({Name="Unload Script", Callback=function() Library:Unload() end})
+
+        -- FLAWLESS SELECTOR CONFIG SYSTEM
+        local cfgSec = setTab:CreateSection("Config Manager", "Right")
+        local cfgDrop = cfgSec:CreateDropdown({Name="Selected Config", Options=Library:GetConfigs(), Default=Library:GetConfigs()[1] or ""})
+        
+        local autoLbl = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Autoload: None", TextSize=10, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=cfgSec._c, ZIndex=15}) Thm(autoLbl, "TextColor3", "TextDark")
+        local function updAutoLbl() local ac=Library:GetAutoConfig() autoLbl.Text = "Autoload: "..(ac~="" and ac or "None") end
+        updAutoLbl()
+        
+        local bGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
+        
+        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) updAutoLbl() else Library:Notify("Error", "Select config") end end)
+        cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
+        cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n, "Config overwritten") else Library:Notify("Error", "Select config") end end)
+        cBtn(bGrid, "Delete", function() 
+            local n = cfgDrop:Get() 
+            if n~="" then 
+                Library:DeleteConfig(n) 
+                if Library:GetAutoConfig() == n then pcall(function() writefile(CDIR.."_auto.txt", "") end) updAutoLbl() end
+                local cfgs = Library:GetConfigs()
+                local clean = {} for _,c in ipairs(cfgs) do if c~=n then table.insert(clean, c) end end
+                cfgDrop:Refresh(clean)
+            else Library:Notify("Error", "Select config") end 
+        end)
+
+        local sep = I("Frame", {Size=UDim2.new(1,0,0,1), BackgroundTransparency=0.5, Parent=cfgSec._c, ZIndex=15}) Thm(sep, "BackgroundColor3", "Border")
+
+        local cInp = cfgSec:CreateTextbox({Name="New Config Name", Placeholder="Enter name..."})
+        local saveWrap = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
+        cBtn(saveWrap, "Create", function() 
+            local n = cInp:Get() 
+            if n~="" then 
+                Library:SaveConfig(n, "Config created") 
+                local cfgs = Library:GetConfigs()
+                if not table.find(cfgs, n) then table.insert(cfgs, n) end
+                cfgDrop:Refresh(cfgs)
+                cfgDrop:Set(n)
+                cInp:SetText("")
+            else Library:Notify("Error", "Enter name") end 
+        end)
+
         local uiSec = setTab:CreateSection("Interface", "Right")
         uiSec:CreateKeybind({Name="Toggle Menu", Default=Library.ToggleKey, Flag="_SynTK", Callback=function() end})
         Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library.tkLbl then Library.tkLbl.Text="Toggle UI: ["..tk.Name.."]" end end end)
         
         uiSec:CreateTextbox({Name="Custom Background URL", Placeholder="Image URL...", Flag="_SynBgUrl", Callback=function(v) 
             pcall(function() 
+                if v == "" then
+                    local defaultImg = FetchAsset(BURL, BPATH)
+                    if Library._wmBgI then Library._wmBgI.Image = defaultImg end
+                    if Library._kbBgI then Library._kbBgI.Image = defaultImg end
+                    if Library._uiBgI then Library._uiBgI.Image = defaultImg end
+                    if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Image = defaultImg end end
+                    return
+                end
                 local img = GetIcon(v) 
-                if img~="" then 
+                if img ~= "" then 
                     if Library._wmBgI then Library._wmBgI.Image = img end
                     if Library._kbBgI then Library._kbBgI.Image = img end
                     if Library._uiBgI then Library._uiBgI.Image = img end
                     if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Image = img end end
+                else
+                    Library:Notify("Invalid Input", "Must be a valid Roblox Asset ID, rbxassetid://, or direct image URL.", 5)
                 end 
             end)
         end})
@@ -816,15 +948,6 @@ function Library:CreateWindow(opts)
         
         local bGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
         I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
-        
-        local function cBtn(parent, txt, cb)
-            local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
-            local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
-            Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
-            Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
-            Cn(b.MouseLeave, function() Tw(b, {BackgroundColor3=Library.Theme.Element}, TF) end)
-            return b
-        end
         
         cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) updAutoLbl() else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
