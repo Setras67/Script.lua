@@ -195,32 +195,6 @@ function Library:GetAutoConfig() local n="" pcall(function() if isfile(CDIR.."_a
 function Library:PersistTheme(n) pcall(function() EnsureDir() writefile(TDIR.."_theme.txt", n) end) end
 function Library:GetPersistedTheme() local n="" pcall(function() if isfile(TDIR.."_theme.txt") then n=readfile(TDIR.."_theme.txt"):gsub("%s+","") end end) return n end
 
-function Library:GetSavedBackgrounds() EnsureDir() local p=TDIR.."backgrounds.json" if not isfile(p) then return {} end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then local o={} for k in pairs(d) do table.insert(o, k) end table.sort(o) return o end return {} end
-function Library:GetBackgroundUrl(n) EnsureDir() local p=TDIR.."backgrounds.json" if not isfile(p) then return "" end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then return d[n] or "" end return "" end
-function Library:SaveBackground(n, url) EnsureDir() local p=TDIR.."backgrounds.json" local d={} if isfile(p) then pcall(function() d=Http:JSONDecode(readfile(p)) end) if type(d)~="table" then d={} end end d[n]=url pcall(function() writefile(p, Http:JSONEncode(d)) end) self:Notify("Success", "Background '"..n.."' saved") if self._refreshBgList then self._refreshBgList() end end
-function Library:DeleteBackground(n) EnsureDir() local p=TDIR.."backgrounds.json" if isfile(p) then local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if ok and type(d)=="table" then d[n]=nil pcall(function() writefile(p, Http:JSONEncode(d)) end) self:Notify("Info", "Background deleted") if self._refreshBgList then self._refreshBgList() end end end end
-function Library:SetBackground(url)
-    pcall(function()
-        if url == "" then
-            local defaultImg = FetchAsset(BURL, BPATH)
-            if self._wmBgI then self._wmBgI.Image = defaultImg end
-            if self._kbBgI then self._kbBgI.Image = defaultImg end
-            if self._uiBgI then self._uiBgI.Image = defaultImg end
-            if self._notifBgs then for _, nb in ipairs(self._notifBgs) do nb.Image = defaultImg end end
-            return
-        end
-        local img = GetIcon(url)
-        if img ~= "" then
-            if self._wmBgI then self._wmBgI.Image = img end
-            if self._kbBgI then self._kbBgI.Image = img end
-            if self._uiBgI then self._uiBgI.Image = img end
-            if self._notifBgs then for _, nb in ipairs(self._notifBgs) do nb.Image = img end end
-        else
-            self:Notify("Invalid Input", "Must be a direct link to a raw image URL (PNG, JPG, or WEBP).", 5)
-        end
-    end)
-end
-
 function Library:SaveCustomTheme() local cthm=self.Themes["Custom"] local d={Bg={R=cthm.Background.R,G=cthm.Background.G,B=cthm.Background.B},Acc={R=cthm.Accent.R,G=cthm.Accent.G,B=cthm.Accent.B},Txt={R=cthm.Text.R,G=cthm.Text.G,B=cthm.Text.B},Logo={R=cthm.Logo.R,G=cthm.Logo.G,B=cthm.Logo.B},Ico={R=cthm.Icon.R,G=cthm.Icon.G,B=cthm.Icon.B}} pcall(function() EnsureDir() writefile(TDIR.."_custom.json", Http:JSONEncode(d)) end) end
 function Library:LoadCustomTheme() local ok, res = pcall(function() return Http:JSONDecode(readfile(TDIR.."_custom.json")) end) if ok and type(res)=="table" then pcall(function() local bg=Color3.new(res.Bg.R,res.Bg.G,res.Bg.B) local acc=Color3.new(res.Acc.R,res.Acc.G,res.Acc.B) local txt=Color3.new(res.Txt.R,res.Txt.G,res.Txt.B) local logo=res.Logo and Color3.new(res.Logo.R,res.Logo.G,res.Logo.B) or acc local ico=res.Ico and Color3.new(res.Ico.R,res.Ico.G,res.Ico.B) or Color3.fromRGB(255,255,255) 
     local h, s, vl = Color3.toHSV(bg)
@@ -828,18 +802,32 @@ function Library:CreateWindow(opts)
         ctSec:CreateButton({Name="Apply Custom Theme", Callback=function() Library:SetTheme("Custom") Library:SaveCustomTheme() end})
         
         -- RIGHT SIDE OF SETTINGS
-        local function cBtn(parent, txt, cb)
-            local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
-            local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
-            Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
-            Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
-            Cn(b.MouseLeave, function() Tw(b, {BackgroundColor3=Library.Theme.Element}, TF) end)
-            return b
-        end
-
         local uiSec = setTab:CreateSection("Interface", "Right")
         uiSec:CreateKeybind({Name="Toggle Menu", Default=Library.ToggleKey, Flag="_SynTK", Callback=function() end})
         Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library.tkLbl then Library.tkLbl.Text="Toggle UI: ["..tk.Name.."]" end end end)
+        
+        uiSec:CreateTextbox({Name="Custom Background URL", Placeholder="Image URL...", Flag="_SynBgUrl", Callback=function(v) 
+            pcall(function() 
+                if v == "" then
+                    local defaultImg = FetchAsset(BURL, BPATH)
+                    if Library._wmBgI then Library._wmBgI.Image = defaultImg end
+                    if Library._kbBgI then Library._kbBgI.Image = defaultImg end
+                    if Library._uiBgI then Library._uiBgI.Image = defaultImg end
+                    if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Image = defaultImg end end
+                    return
+                end
+                local img = GetIcon(v) 
+                if img ~= "" then 
+                    if Library._wmBgI then Library._wmBgI.Image = img end
+                    if Library._kbBgI then Library._kbBgI.Image = img end
+                    if Library._uiBgI then Library._uiBgI.Image = img end
+                    if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Image = img end end
+                else
+                    Library:Notify("Invalid Input", "Must be a valid Roblox Asset ID, rbxassetid://, or direct image URL.", 5)
+                end 
+            end)
+        end})
+        local bgHelp = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Recommended Image Size: 512x256", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=uiSec._c, ZIndex=15}) Thm(bgHelp, "TextColor3", "Accent")
         
         uiSec:CreateToggle({Name="Show Background Image", Default=true, Flag="_SynBgVis", Callback=function(v)
             Library.ShowBackground = v
@@ -865,6 +853,15 @@ function Library:CreateWindow(opts)
         
         local bGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
         I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
+        
+        local function cBtn(parent, txt, cb)
+            local b = I("TextButton", {Size=UDim2.new(1,0,1,0), Text="", Parent=parent, ZIndex=16}) Thm(b, "BackgroundColor3", "Element") Crn(b, 4) 
+            local lb = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=txt:upper(), TextSize=10, FontFace=F_TITLE, Parent=b, ZIndex=17}) Thm(lb, "TextColor3", "Text")
+            Cn(b.MouseButton1Click, function() Ripple(b) cb() end)
+            Cn(b.MouseEnter, function() Tw(b, {BackgroundColor3=Library.Theme.ElementHover}, TF) end)
+            Cn(b.MouseLeave, function() Tw(b, {BackgroundColor3=Library.Theme.Element}, TF) end)
+            return b
+        end
         
         cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) updAutoLbl() else Library:Notify("Error", "Select config") end end)
         cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
@@ -894,63 +891,6 @@ function Library:CreateWindow(opts)
                 cfgDrop:Set(n)
                 cInp:SetText("")
             else Library:Notify("Error", "Enter name") end 
-        end)
-
-        -- PREMIUM BACKGROUND MANAGER SYSTEM
-        local bgSec = setTab:CreateSection("Background Manager", "Right")
-        
-        local infoLbl1 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• File Types: PNG, JPG, or WEBP", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl1, "TextColor3", "Accent")
-        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Size: 512x256 or 1024x512", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
-        local infoLbl3 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Must be a direct link to a raw image URL", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl3, "TextColor3", "TextDark")
-        
-        local bgDrop = bgSec:CreateDropdown({Name="Saved Backgrounds", Options=Library:GetSavedBackgrounds(), Default=Library:GetSavedBackgrounds()[1] or ""})
-        
-        local bgInpName = bgSec:CreateTextbox({Name="Background Name", Placeholder="Enter name..."})
-        local bgInpUrl = bgSec:CreateTextbox({Name="Background URL", Placeholder="Direct image link..."})
-        
-        local bgGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid})
-        
-        Library._refreshBgList = function()
-            local list = Library:GetSavedBackgrounds()
-            bgDrop:Refresh(list)
-        end
-        
-        cBtn(bgGrid, "Save / Update", function()
-            local n = bgInpName:Get()
-            local url = bgInpUrl:Get()
-            if n ~= "" and url ~= "" then
-                Library:SaveBackground(n, url)
-                bgInpName:SetText("")
-                bgInpUrl:SetText("")
-            else
-                Library:Notify("Error", "Enter both name and URL", 4)
-            end
-        end)
-        
-        cBtn(bgGrid, "Apply", function()
-            local n = bgDrop:Get()
-            if n ~= "" then
-                local url = Library:GetBackgroundUrl(n)
-                if url ~= "" then
-                    Library:SetBackground(url)
-                end
-            else
-                Library:Notify("Error", "Select background to apply", 4)
-            end
-        end)
-        
-        cBtn(bgGrid, "Delete", function()
-            local n = bgDrop:Get()
-            if n ~= "" then
-                Library:DeleteBackground(n)
-            else
-                Library:Notify("Error", "Select background to delete", 4)
-            end
-        end)
-        
-        cBtn(bgGrid, "Reset Default", function()
-            Library:SetBackground("")
         end)
 
         -- ABOUT TAB
