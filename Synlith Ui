@@ -239,7 +239,20 @@ function Library:Notify(title, msg, dur)
 end
 
 function Library:RegisterUnload(fn) table.insert(self._unloads, fn) end
-function Library:Unload() for _,fn in ipairs(self._unloads) do pcall(fn) end self.Open=false for _,c in ipairs(self._conn) do pcall(function() c:Disconnect() end) end self._conn={} self._themed={} self._elems={} self._refreshFn={} self._unloads={} if self.ScreenGui then self.ScreenGui:Destroy() end end
+function Library:AddConnection(c) if not self._userConns then self._userConns = {} end table.insert(self._userConns, c) return c end
+function Library:AddInstance(i) if not self._userInstances then self._userInstances = {} end table.insert(self._userInstances, i) return i end
+function Library:AddDrawing(d) if not self._userDrawings then self._userDrawings = {} end table.insert(self._userDrawings, d) return d end
+
+function Library:Unload()
+    for _,fn in ipairs(self._unloads) do pcall(fn) end
+    if self._userConns then for _,c in ipairs(self._userConns) do pcall(function() c:Disconnect() end) end self._userConns = nil end
+    if self._userInstances then for _,i in ipairs(self._userInstances) do pcall(function() i:Destroy() end) end self._userInstances = nil end
+    if self._userDrawings then for _,d in ipairs(self._userDrawings) do pcall(function() d:Remove() end) end self._userDrawings = nil end
+    self.Open=false
+    for _,c in ipairs(self._conn) do pcall(function() c:Disconnect() end) end
+    self._conn={} self._themed={} self._elems={} self._refreshFn={} self._unloads={}
+    if self.ScreenGui then self.ScreenGui:Destroy() end
+end
 function Library:CreateKeybindsWindow(opts)
     opts = opts or {}
     local title = opts.Title or "KEYBINDS"
