@@ -999,10 +999,9 @@ function Library:CreateWindow(opts)
 
         local bgInpName = bgSec:CreateTextbox({Name="New Preset Name", Placeholder="Enter name..."})
 
-        local saveWrapBg = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=saveWrapBg})
+        local saveWrapBg = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
 
-        cBtn(saveWrapBg, "Create Preset", function() 
+        cBtn(saveWrapBg, "Create", function() 
             local n = bgInpName:Get()
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
@@ -1017,12 +1016,6 @@ function Library:CreateWindow(opts)
             else 
                 Library:Notify("Error", "Enter preset name") 
             end 
-        end)
-
-        cBtn(saveWrapBg, "Reset Default", function()
-            Library:SetBackground("")
-            Library._bgUrlBox:SetText("")
-            Library._bgTintTgl:Set(true)
         end)
 
         -- ABOUT TAB
