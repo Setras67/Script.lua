@@ -404,26 +404,26 @@ function Library:CreateWindow(opts)
     local pageContainer = I("Frame", {Position=UDim2.new(0, 0, 0, 46), Size=UDim2.new(1, 0, 1, -46), BackgroundTransparency=1, Parent=contentWrap, ZIndex=5})
     
     local function UpdateWm()
-        if self._wm then
-            if self.Open then self._wm.Visible = false else self._wm.Visible = self.ShowWatermark end
+        if Library._wm then
+            if Library.Open then Library._wm.Visible = false else Library._wm.Visible = Library.ShowWatermark end
         end
     end
 
     local function ToggleUI(state)
         if state then 
-            self.Open=true outerMain.Visible=true 
+            Library.Open=true outerMain.Visible=true 
             TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
             TS:Create(outerMain, TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=0}):Play()
         else 
-            self.Open=false 
+            Library.Open=false 
             TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)}):Play()
             local tw = TS:Create(outerMain, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {GroupTransparency=1})
             tw:Play()
-            tw.Completed:Connect(function() if not self.Open then outerMain.Visible=false end end)
+            tw.Completed:Connect(function() if not Library.Open then outerMain.Visible=false end end)
         end
         UpdateWm()
     end
-    Cn(UIS.InputBegan, function(inp) local typing = UIS:GetFocusedTextBox() ~= nil if inp.KeyCode==self.ToggleKey and not typing then ToggleUI(not self.Open) end end)
+    Cn(UIS.InputBegan, function(inp) local typing = UIS:GetFocusedTextBox() ~= nil if inp.KeyCode==Library.ToggleKey and not typing then ToggleUI(not Library.Open) end end)
     Cn(wmExpand.MouseButton1Click, function() ToggleUI(true) end)
     Cn(minBtn.MouseButton1Click, function() ToggleUI(false) end)
     Cn(clsBtn.MouseButton1Click, function() Library:Unload() end)
@@ -517,6 +517,15 @@ function Library:CreateWindow(opts)
             Cn(layout:GetPropertyChangedSignal("AbsoluteContentSize"), fixH) table.insert(Library._refreshFn, fixH)
             
             local SO = {_c=ctn}
+            
+            function SO:CreateLabel(opts)
+                opts = opts or {}
+                local text = type(opts) == "table" and (opts.Text or "Label") or tostring(opts)
+                local wrap = I("Frame", {Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Parent=SO._c, ZIndex=15})
+                local lbl = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=text, TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=wrap, ZIndex=16})
+                Thm(lbl, "TextColor3", "Text")
+                return lbl
+            end
             
             function SO:CreateToggle(opts) opts=opts or {} local name=opts.Name or "Toggle" local value=opts.Default or false local flag=opts.Flag local cb=opts.Callback
                 local wrap = I("Frame", {Size=UDim2.new(1,0,0,22), BackgroundTransparency=1, Parent=SO._c, ZIndex=15})
@@ -612,7 +621,7 @@ function Library:CreateWindow(opts)
                 
                 local function rebuild(nOpts) 
                     optsList=nOpts or {} 
-                    if not table.find(optsList,value) then value=optsList[1] or "" valLbl.Text=value~="" and tostring(value) or "..." end 
+                    if not value or not table.find(optsList,value) then value=optsList[1] or "" valLbl.Text=value~="" and tostring(value) or "..." end 
                     for _,c in ipairs(lF:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end 
                     for _,opt in ipairs(optsList) do 
                         local ob=I("TextButton", {Size=UDim2.new(1,0,0,22), Text=tostring(opt), TextSize=11, FontFace=F_TEXT, BackgroundTransparency=1, Parent=lF, ZIndex=lF.ZIndex+1}) Thm(ob, "TextColor3", "TextDark") Crn(ob, 4) 
@@ -632,9 +641,16 @@ function Library:CreateWindow(opts)
                 Cn(btn.MouseButton1Click, function() if isOpen then closeDrop() else openDrop() end end)
                 
                 SF(flag,value) 
-                local obj = { 
+                local obj
+                obj = { 
                     Refresh=function(_,n) rebuild(n) end, 
-                    Set=function(_,v) value=v valLbl.Text=v~="" and tostring(v) or "..." SF(flag,v) CB(cb,v) end,
+                    Set=function(self,v)
+                        local val = (self == obj) and v or self
+                        value=val
+                        valLbl.Text=val and val~="" and tostring(val) or "..."
+                        SF(flag,val)
+                        CB(cb,val)
+                    end,
                     Get=function() return value end
                 }
                 if flag then Library._elems[flag]={set=obj.Set, get=obj.Get} end return obj
