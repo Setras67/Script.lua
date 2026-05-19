@@ -628,7 +628,6 @@ function Library:CreateWindow(opts)
                 Cn(hit.MouseButton1Click, function() value=not value upd(value) SF(flag,value) CB(cb,value) end)
                 upd(value) SF(flag,value) table.insert(Library._refreshFn, function() upd(value) end)
                 if flag then Library._elems[flag]={set=function(v) value=v upd(v) SF(flag,v) end, get=function() return value end} end
-                return {Set=function(_,v) value=v upd(v) end, Get=function() return value end}
             end
             
             function SO:CreateSlider(opts) opts=opts or {} local name=opts.Name or "Slider" local mn=opts.Min or 0 local mx=opts.Max or 100 local value=opts.Default or mn local inc=opts.Increment or 1 local sfx=opts.Suffix or "" local flag=opts.Flag local cb=opts.Callback
@@ -1000,9 +999,10 @@ function Library:CreateWindow(opts)
 
         local bgInpName = bgSec:CreateTextbox({Name="New Preset Name", Placeholder="Enter name..."})
 
-        local saveWrapBg = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
+        local saveWrapBg = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=saveWrapBg})
 
-        cBtn(saveWrapBg, "Create", function() 
+        cBtn(saveWrapBg, "Create Preset", function() 
             local n = bgInpName:Get()
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
@@ -1017,6 +1017,12 @@ function Library:CreateWindow(opts)
             else 
                 Library:Notify("Error", "Enter preset name") 
             end 
+        end)
+
+        cBtn(saveWrapBg, "Reset Default", function()
+            Library:SetBackground("")
+            Library._bgUrlBox:SetText("")
+            Library._bgTintTgl:Set(true)
         end)
 
         -- ABOUT TAB
