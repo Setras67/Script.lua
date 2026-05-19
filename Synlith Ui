@@ -628,6 +628,7 @@ function Library:CreateWindow(opts)
                 Cn(hit.MouseButton1Click, function() value=not value upd(value) SF(flag,value) CB(cb,value) end)
                 upd(value) SF(flag,value) table.insert(Library._refreshFn, function() upd(value) end)
                 if flag then Library._elems[flag]={set=function(v) value=v upd(v) SF(flag,v) end, get=function() return value end} end
+                return {Set=function(_,v) value=v upd(v) end, Get=function() return value end}
             end
             
             function SO:CreateSlider(opts) opts=opts or {} local name=opts.Name or "Slider" local mn=opts.Min or 0 local mx=opts.Max or 100 local value=opts.Default or mn local inc=opts.Increment or 1 local sfx=opts.Suffix or "" local flag=opts.Flag local cb=opts.Callback
