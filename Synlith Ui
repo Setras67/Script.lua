@@ -12,8 +12,8 @@ local F_TITLE = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontW
 local F_TEXT = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
 local F_NUM = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold)
 
-local TF = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local TM = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local TF = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local TM = TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 
 local ICONS = {
     Players = "rbxassetid://139537090544689",
@@ -137,7 +137,7 @@ local function GetIcon(id)
             if not filename:match("%.%w+$") then filename = filename..".png" end
             local path = "Synlith.hub/"..filename
             return FetchAsset(id, path)
-        elseif id:sub(1,13) == "rbxassetid://" or id:sub(1,17) == "rbxgameasset://" then
+        elseif id:sub(1,13) == "rbxassetid://" or id:sub(1,17) == "rbxgameasset://" or id:match("asset://") then
             return id
         end
     end
@@ -219,10 +219,12 @@ function Library:SetBackground(url, useTint)
         end
     end)
 end
-function Library:SaveBackgroundConfig(n, url, useTint)
+function Library:SaveBackgroundConfig(n, url, useTint, silent)
     EnsureDir() local p = BDIR..n..".json"
     if isfile(p) then pcall(function() local old = Http:JSONDecode(readfile(p)) if old and old.Url ~= url then local exts = {"png", "jpg", "gif", "webp"} for _, ext in ipairs(exts) do local imgPath = BDIR..n.."_img."..ext if isfile(imgPath) then delfile(imgPath) end end end end) end
-    local data = {Url = url, UseTint = useTint} local ok, err = pcall(function() writefile(p, Http:JSONEncode(data)) end) if not ok then self:Notify("Error", "Failed to save background config") return end self:Notify("Success", "Background config saved") if self._refreshBgList then self._refreshBgList() end
+    local data = {Url = url, UseTint = useTint} local ok, err = pcall(function() writefile(p, Http:JSONEncode(data)) end) if not ok then if not silent then self:Notify("Error", "Failed to save background config") end return end 
+    if not silent then self:Notify("Success", "Background config saved") end 
+    if self._refreshBgList then self._refreshBgList() end
 end
 function Library:LoadBackgroundConfig(n, isAuto)
     EnsureDir() local p = BDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Background not found") end return end
@@ -753,47 +755,32 @@ function Library:CreateWindow(opts)
                 local ch=220 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=15})
                 local bg=I("Frame",{Size=UDim2.new(1,0,1,0),Parent=wrap,ZIndex=16}) Thm(bg,"BackgroundColor3","Element") Crn(bg,4) Stk(bg,"Border",1,0.2)
                 
-                local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(1,-16,1,-16),BackgroundTransparency=1,Parent=bg,ZIndex=17})
+                local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,96,0,120),BackgroundTransparency=1,Parent=bg,ZIndex=17})
                 
-                -- VIEWPORT FRAME ESP 3D PREVIEW
-                local vp = I("ViewportFrame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=cWrap, ZIndex=18, CurrentCamera=Instance.new("Camera")})
-                vp.CurrentCamera.Parent = vp
-                vp.CurrentCamera.CFrame = CFrame.new(0, 2, -7) * CFrame.Angles(0, math.pi, 0)
+                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=GetIcon(opts.Image), ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
                 
-                local char
-                pcall(function() char = game.Players.LocalPlayer.Character end)
-                if char then char = char:Clone() else
-                    char = Instance.new("Model")
-                    local part = Instance.new("Part", char) part.Size = Vector3.new(2, 4, 1) part.Position = Vector3.new(0,0,0)
-                end
-                pcall(function() char.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end)
-                for _,v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then v.Color = Color3.fromRGB(80,80,90) v.Material = Enum.Material.SmoothPlastic v.Anchored = true end end
-                char.Parent = vp
-                
-                local function createLine(p1, p2)
-                    local line = Instance.new("Part") line.Anchored=true line.CanCollide=false line.Material=Enum.Material.Neon line.Color=Color3.new(1,1,1) line.Size=Vector3.new(0.1, 0.1, (p1-p2).Magnitude) line.CFrame=CFrame.new(p1, p2) * CFrame.new(0,0,-line.Size.Z/2) line.Parent=char return line
+                if not opts.Image then
+                    local bodyCol = Color3.fromRGB(45,45,50)
+                    local head = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,4), Size=UDim2.new(0,26,0,26), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(head, 13)
+                    local torso = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,34), Size=UDim2.new(0,34,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torso, 6)
+                    local lArm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArm, 6)
+                    local rArm = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArm, 6)
+                    local lLeg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLeg, 6)
+                    local rLeg = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLeg, 6)
                 end
                 
-                local skelLines = {}
-                pcall(function()
-                    local hrp = char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart or char:FindFirstChild("Torso") or char:FindFirstChild("LowerTorso")
-                    if hrp then char:MoveTo(Vector3.new(0, 0, 0)) end
-                    
-                    if char:FindFirstChild("Head") and char:FindFirstChild("UpperTorso") then
-                        table.insert(skelLines, createLine(char.Head.Position, char.UpperTorso.Position))
-                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.LowerTorso.Position))
-                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.LeftUpperArm.Position))
-                        table.insert(skelLines, createLine(char.LeftUpperArm.Position, char.LeftLowerArm.Position))
-                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.RightUpperArm.Position))
-                        table.insert(skelLines, createLine(char.RightUpperArm.Position, char.RightLowerArm.Position))
-                        table.insert(skelLines, createLine(char.LowerTorso.Position, char.LeftUpperLeg.Position))
-                        table.insert(skelLines, createLine(char.LeftUpperLeg.Position, char.LeftLowerLeg.Position))
-                        table.insert(skelLines, createLine(char.LowerTorso.Position, char.RightUpperLeg.Position))
-                        table.insert(skelLines, createLine(char.RightUpperLeg.Position, char.RightLowerLeg.Position))
-                    end
-                end)
+                local skelCol = Color3.new(1,1,1)
+                local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
+                local skSpine = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,17), Size=UDim2.new(0,2,0,67), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,40), Size=UDim2.new(0,54,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-26,0,40), Size=UDim2.new(0,2,0,30), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,26,0,40), Size=UDim2.new(0,2,0,30), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skHips = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,80), Size=UDim2.new(0,20,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skLLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-10,0,80), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skRLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,10,0,80), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
+                local skelLines = {skSpine, skShoulder, skLArm, skRArm, skHips, skLLeg, skRLeg}
                 
-                local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0.5,0,0.85,0), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
+                local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,16,1,16), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
                 local boxStk = I("UIStroke", {Thickness=1, Color=Color3.new(1,1,1), Parent=box}) Thm(boxStk, "Color", "Accent")
                 
                 local hpBg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0,-6,0,0), Size=UDim2.new(0,3,1,0), BackgroundColor3=Color3.new(0,0,0), BorderSizePixel=0, Parent=box, ZIndex=26})
@@ -804,7 +791,7 @@ function Library:CreateWindow(opts)
                 local wpnLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,1,14), Size=UDim2.new(0,100,0,14), BackgroundTransparency=1, Text="Weapon", TextSize=10, FontFace=F_TEXT, TextColor3=Color3.new(0.8,0.8,0.8), Parent=box, ZIndex=26})
                 
                 local obj = {
-                    Box = box, BoxOutline = boxStk, HealthBarBg = hpBg, HealthBar = hpFill, Name = nameLbl, Distance = distLbl, Weapon = wpnLbl, Skeleton = skelLines,
+                    Box = box, BoxOutline = boxStk, HealthBarBg = hpBg, HealthBar = hpFill, Name = nameLbl, Distance = distLbl, Weapon = wpnLbl, Skeleton = skelWrap, SkelLines = skelLines,
                     Update = function(self, settings)
                         if settings.BoxVisible ~= nil then self.BoxOutline.Transparency = settings.BoxVisible and 0 or 1 end
                         if settings.BoxColor ~= nil then self.BoxOutline.Color = settings.BoxColor end
@@ -815,8 +802,8 @@ function Library:CreateWindow(opts)
                         if settings.DistanceColor ~= nil then self.Distance.TextColor3 = settings.DistanceColor end
                         if settings.WeaponVisible ~= nil then self.Weapon.Visible = settings.WeaponVisible end
                         if settings.WeaponColor ~= nil then self.Weapon.TextColor3 = settings.WeaponColor end
-                        if settings.SkeletonVisible ~= nil then for _, l in ipairs(self.Skeleton) do l.Transparency = settings.SkeletonVisible and 0 or 1 end end
-                        if settings.SkeletonColor ~= nil then for _, l in ipairs(self.Skeleton) do l.Color = settings.SkeletonColor end end
+                        if settings.SkeletonVisible ~= nil then self.Skeleton.Visible = settings.SkeletonVisible end
+                        if settings.SkeletonColor ~= nil then for _, l in ipairs(self.SkelLines) do l.BackgroundColor3 = settings.SkeletonColor end end
                     end
                 }
                 return obj
@@ -994,9 +981,10 @@ function Library:CreateWindow(opts)
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
             if url ~= "" then
-                Library:SaveBackgroundConfig("DefaultBackground", url, useTint)
+                Library:SaveBackgroundConfig("DefaultBackground", url, useTint, true)
                 Library:SetAutoBackground("DefaultBackground")
                 Library:SetBackground(url, useTint)
+                Library:Notify("Background", "Background set as default")
             else
                 Library:Notify("Error", "Enter a background URL first")
             end
