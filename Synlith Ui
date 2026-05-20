@@ -135,9 +135,13 @@ local function GetIcon(id)
                 fetchUrl = id:split("?")[1] or id
             end
             local cleanUrl = fetchUrl:split("?")[1] or fetchUrl
-            local filename = cleanUrl:match("([^/]+)$") or "temp_icon.png"
-            if not filename:match("%.%w+$") then filename = filename..".png" end
-            local path = "Synlith.hub/"..filename
+            
+            local hash = 5381
+            for i=1,#cleanUrl do hash = (hash * 33 + string.byte(cleanUrl, i)) % 4294967296 end
+            
+            local ext = cleanUrl:match("%.(%w+)$") or "png"
+            if not ext:match("^%w+$") then ext = "png" end
+            local path = "Synlith.hub/"..tostring(hash).."."..ext
             return FetchAsset(fetchUrl, path)
         elseif id:sub(1,13) == "rbxassetid://" or id:sub(1,17) == "rbxgameasset://" or id:match("asset://") then
             return id
@@ -223,7 +227,6 @@ function Library:SetBackground(url, useTint)
 end
 function Library:SaveBackgroundConfig(n, url, useTint, silent)
     EnsureDir() local p = BDIR..n..".json"
-    if isfile(p) then pcall(function() local old = Http:JSONDecode(readfile(p)) if old and old.Url ~= url then local exts = {"png", "jpg", "gif", "webp"} for _, ext in ipairs(exts) do local imgPath = BDIR..n.."_img."..ext if isfile(imgPath) then delfile(imgPath) end end end end) end
     local data = {Url = url, UseTint = useTint} local ok, err = pcall(function() writefile(p, Http:JSONEncode(data)) end) if not ok then if not silent then self:Notify("Error", "Failed to save background config") end return end 
     if not silent then self:Notify("Success", "Background config saved") end 
     if self._refreshBgList then self._refreshBgList() end
@@ -231,15 +234,14 @@ end
 function Library:LoadBackgroundConfig(n, isAuto)
     EnsureDir() local p = BDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Background not found") end return end
     local ok, data = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok or type(data) ~= "table" then self:Notify("Error", "Background config corrupted") return end
-    local url = data.Url local useTint = (data.UseTint ~= nil) and data.UseTint or true local resolvedImg = ""
-    if url ~= "" then local ext = url:split("?")[1]:match("%.(%w+)$") or "png" if not ext:match("^%w+$") then ext = "png" end local cachePath = BDIR..n.."_img."..ext resolvedImg = FetchAsset(url, cachePath) end
-    self:SetBackground(resolvedImg, useTint)
+    local url = data.Url local useTint = (data.UseTint ~= nil) and data.UseTint or true
+    self:SetBackground(url, useTint)
     if self._bgTintTgl then self._bgTintTgl:Set(useTint) end
     if self._bgUrlBox then self._bgUrlBox:SetText(url) end
     if not isAuto then self:Notify("Success", "Background '"..n.."' loaded") end
 end
 function Library:DeleteBackgroundConfig(n)
-    EnsureDir() local p = BDIR..n..".json" if isfile(p) then delfile(p) local exts = {"png", "jpg", "gif", "webp"} for _, ext in ipairs(exts) do local imgPath = BDIR..n.."_img."..ext if isfile(imgPath) then delfile(imgPath) end end self:Notify("Info", "Background config deleted") if self._refreshBgList then self._refreshBgList() end else self:Notify("Error", "Background config not found") end
+    EnsureDir() local p = BDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Info", "Background config deleted") if self._refreshBgList then self._refreshBgList() end else self:Notify("Error", "Background config not found") end
 end
 function Library:SetAutoBackground(n, silent) EnsureDir() writefile(BDIR.."_auto.txt", n) if not silent then self:Notify("Success", "Auto-background set to "..n) end if self._refreshBgList then self._refreshBgList() end end
 function Library:GetAutoBackground() local n = "" pcall(function() if isfile(BDIR.."_auto.txt") then n = readfile(BDIR.."_auto.txt"):gsub("%s+", "") end end) return n end
@@ -266,6 +268,7 @@ function Library:SetTheme(name)
         else t.inst[t.prop]=self.Theme[t.key] end
     end) else table.remove(self._themed, i) end end
     if self._activeTab then pcall(function() self._activeTab._indicator.BackgroundColor3=self.Theme.Accent for _,ch in ipairs(self._activeTab._btn:GetChildren()) do if ch:IsA("TextLabel") then ch.TextColor3=self.Theme.Text elseif ch:IsA("ImageLabel") then ch.ImageColor3=self.Theme.Icon end end end) end
+    if self.UseBackgroundTint ~= nil then self:SetBackgroundTint(self.UseBackgroundTint) end
     for _,fn in ipairs(self._refreshFn) do pcall(fn) end
 end
 
@@ -280,7 +283,7 @@ function Library:Notify(title, msg, dur)
     Thm(card,"BackgroundColor3","Panel") Crn(card,6)
     local nBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,3,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.1,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=card, ZIndex=1001, Visible=Library.ShowBackground~=false})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then nBgI.Image=bgi end end)
-    Thm(nBgI, "ImageColor3", "Accent")
+    if Library.UseBackgroundTint then nBgI.ImageColor3 = Library.Theme.Accent end
     if not Library._notifBgs then Library._notifBgs = {} end
     table.insert(Library._notifBgs, nBgI)
     MakeParticles(card, 8, 1.5, 4)
@@ -305,8 +308,17 @@ function Library:Notify(title, msg, dur)
     TS:Create(pBar, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(1,0,1,0)}):Play()
     
     task.delay(dur, function() 
-        local tw = TS:Create(card, TM, {Position=UDim2.new(1,50,0,0)})
-        tw:Play() tw.Completed:Connect(function() 
+        local tiOut = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+        TS:Create(card, tiOut, {Position=UDim2.new(1,50,0,0), BackgroundTransparency=1}):Play() 
+        TS:Create(s, tiOut, {Transparency=1}):Play()
+        TS:Create(nBgI, tiOut, {ImageTransparency=1}):Play()
+        TS:Create(icon, tiOut, {ImageTransparency=1}):Play()
+        TS:Create(tL, tiOut, {TextTransparency=1}):Play()
+        TS:Create(mL, tiOut, {TextTransparency=1}):Play()
+        TS:Create(pBg, tiOut, {BackgroundTransparency=1}):Play()
+        TS:Create(pBar, tiOut, {BackgroundTransparency=1}):Play()
+        
+        task.delay(0.4, function()
             card:Destroy() 
             for i,v in ipairs(Library._notifBgs) do if v==nBgI then table.remove(Library._notifBgs, i) break end end
         end)
@@ -340,7 +352,7 @@ function Library:CreateKeybindsWindow(opts)
     
     local kbBgI = I("ImageLabel", {Size=UDim2.new(1,0,1,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=kbWin, ZIndex=150})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then kbBgI.Image=bgi end end)
-    Thm(kbBgI, "ImageColor3", "Accent")
+    if Library.UseBackgroundTint then kbBgI.ImageColor3 = Library.Theme.Accent end
     Library._kbBgI = kbBgI
     MakeParticles(kbWin, 6, 1.5, 4)
     
@@ -385,7 +397,13 @@ function Library:CreateKeybindsWindow(opts)
             Tw(kbWin, {Size=UDim2.new(0, 210, 0, targetH)}, TF)
         end,
         SetVisible = function(self, vis)
-            kbWin.Visible = vis
+            if vis then
+                kbWin.Visible = true
+                TS:Create(kbWin, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0, 20, 0.5, -100)}):Play()
+            else
+                local tw = TS:Create(kbWin, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0, -250, 0.5, -100)})
+                tw:Play() tw.Completed:Connect(function() kbWin.Visible = false end)
+            end
         end
     }
     return obj
@@ -406,7 +424,7 @@ function Library:CreateWindow(opts)
     Thm(wm, "BackgroundColor3", "Panel") Crn(wm, 6) self._wm=wm MakeDrag(wm, wm)
     local wmBgI = I("ImageLabel", {Size=UDim2.new(1.04,0,4,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.1,0), BackgroundTransparency=1, ImageTransparency=0.7, ScaleType=Enum.ScaleType.Crop, Parent=wm, ZIndex=150})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then wmBgI.Image=bgi end end)
-    Thm(wmBgI, "ImageColor3", "Accent")
+    if self.UseBackgroundTint then wmBgI.ImageColor3 = self.Theme.Accent end
     self._wmBgI = wmBgI
     MakeParticles(wm, 6, 1.5, 4)
     local wmStk = I("UIStroke", {Thickness=2, Transparency=0, Color=Color3.new(1,1,1), Parent=wm})
@@ -446,7 +464,7 @@ function Library:CreateWindow(opts)
     local bgContainer = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=main, ZIndex=0}) Crn(bgContainer, 4)
     local bgImage = I("ImageLabel", {Size=UDim2.new(1,0,1,0), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1, ImageTransparency=0.88, ScaleType=Enum.ScaleType.Crop, Parent=bgContainer, ZIndex=0})
     pcall(function() local bgi=FetchAsset(BURL,BPATH) if bgi~="" then bgImage.Image=bgi end end)
-    Thm(bgImage, "ImageColor3", "Accent")
+    if self.UseBackgroundTint then bgImage.ImageColor3 = self.Theme.Accent end
     self._uiBgI = bgImage
     
     -- EXCLUSIVE SINGLE BORDER
@@ -491,19 +509,32 @@ function Library:CreateWindow(opts)
     
     local pageContainer = I("Frame", {Position=UDim2.new(0, 0, 0, 46), Size=UDim2.new(1, 0, 1, -46), BackgroundTransparency=1, Parent=contentWrap, ZIndex=5})
     
+    local scale = I("UIScale", {Scale=0.95, Parent=main})
     local function UpdateWm()
         if Library._wm then
-            if Library.Open then Library._wm.Visible = false else Library._wm.Visible = Library.ShowWatermark end
+            if Library.Open then 
+                TS:Create(Library._wm, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(1, 20, 0, 16)}):Play()
+                task.delay(0.4, function() if Library.Open then Library._wm.Visible=false end end)
+            else 
+                if Library.ShowWatermark then
+                    Library._wm.Visible=true
+                    TS:Create(Library._wm, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(1, -16, 0, 16)}):Play()
+                else
+                    Library._wm.Visible=false
+                end
+            end
         end
     end
 
     local function ToggleUI(state)
         if state then 
             Library.Open=true outerMain.Visible=true 
-            TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
+            TS:Create(main, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency=0.1}):Play()
+            TS:Create(scale, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Scale=1}):Play()
         else 
             Library.Open=false 
-            local tw = TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)})
+            local tw = TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 10), BackgroundTransparency=1})
+            TS:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Scale=0.95}):Play()
             tw.Completed:Connect(function() if not Library.Open then outerMain.Visible=false end end)
             tw:Play()
         end
@@ -758,12 +789,31 @@ function Library:CreateWindow(opts)
                 
                 local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,96,0,120),BackgroundTransparency=1,Parent=bg,ZIndex=17})
                 
-                local imgToUse = opts.Image and GetIcon(opts.Image) or ""
-                pcall(function() imgToUse = game.Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420) end)
-                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=imgToUse, ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
+                local vp = I("ViewportFrame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, CurrentCamera=nil, Parent=cWrap, ZIndex=18})
+                local cam = I("Camera", {FieldOfView=35, Parent=vp})
+                vp.CurrentCamera = cam
+                task.spawn(function()
+                    pcall(function()
+                        local char = LP.Character or LP.CharacterAdded:Wait()
+                        char.Archivable = true
+                        local clone = char:Clone()
+                        char.Archivable = false
+                        for _,v in ipairs(clone:GetDescendants()) do if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("Sound") then v:Destroy() end end
+                        clone.Parent = vp
+                        local hrp = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChild("Torso") or clone:FindFirstChild("UpperTorso")
+                        if hrp then
+                            local cf = CFrame.new(0, 0, 0)
+                            clone:SetPrimaryPartCFrame(cf)
+                            for _, m in ipairs(clone:GetDescendants()) do if m:IsA("Motor6D") then m.Transform = CFrame.new() end end
+                            local extents = clone:GetExtentsSize()
+                            local distance = (extents.Y / 2) / math.tan(math.rad(cam.FieldOfView / 2))
+                            cam.CFrame = CFrame.new(cf.Position + Vector3.new(0, 0, distance + 1.2), cf.Position)
+                        end
+                    end)
+                end)
                 
                 local skelCol = Color3.new(1,1,1)
-                local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
+                local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=cWrap, ZIndex=20, Visible=false})
                 local skSpine = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,17), Size=UDim2.new(0,2,0,67), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
                 local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,40), Size=UDim2.new(0,54,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
                 local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-26,0,40), Size=UDim2.new(0,2,0,30), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
@@ -812,33 +862,26 @@ function Library:CreateWindow(opts)
         local homeTab = WO:CreateTab({Name="Home", Icon="https://raw.githubusercontent.com/Unknown394852/Chess/main/HomeIcon.png"})
         homeTab._btn.LayoutOrder = -999 -- Force it to be first
         
-        local hInfoSec = homeTab:CreateSection("Hub Information", "Left")
+        local hInfoSec = homeTab:CreateSection("Status", "Left")
         local gameName = "Synlith.hub"
         pcall(function() gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end)
-        hInfoSec:CreateLabel("Game: "..gameName)
-        hInfoSec:CreateLabel("Status: Premium")
-        hInfoSec:CreateLabel("Version: 1.0")
+        
+        local fLine = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=hInfoSec._c, ZIndex=15})
+        local plLbl = I("TextLabel", {Size=UDim2.new(0,40,1,0), BackgroundTransparency=1, Text="Place :", TextSize=12, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=fLine, ZIndex=16}) Thm(plLbl, "TextColor3", "TextDark")
+        local gImg = I("ImageLabel", {Position=UDim2.new(0,42,0.5,-8), Size=UDim2.new(0,16,0,16), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=fLine, ZIndex=16}) Crn(gImg, 4)
+        pcall(function() gImg.Image = "rbxthumb://type=GameIcon&id="..tostring(game.GameId).."&w=150&h=150" end)
+        if gImg.Image == "" then pcall(function() local li = FetchAsset(LURL, LPATH) if li ~= "" then gImg.Image = li end end) end
+        local gNameLbl = I("TextLabel", {Position=UDim2.new(0,62,0,0), Size=UDim2.new(1,-62,1,0), BackgroundTransparency=1, Text=gameName, TextSize=13, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=fLine, ZIndex=16}) Thm(gNameLbl, "TextColor3", "Text")
+        
+        local sLine = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=hInfoSec._c, ZIndex=15})
+        local userLbl = I("TextLabel", {Size=UDim2.new(0.45,0,1,0), BackgroundTransparency=1, Text="User : "..tostring(LP.Name), TextSize=12, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=sLine, ZIndex=16}) Thm(userLbl, "TextColor3", "Text")
+        local fpLine = I("Frame", {Position=UDim2.new(0.45,0,0,0), Size=UDim2.new(0.55,0,1,0), BackgroundTransparency=1, Parent=sLine, ZIndex=16})
+        local fpsLbl = I("TextLabel", {Size=UDim2.new(0.5,0,1,0), BackgroundTransparency=1, Text="FPS : 0", TextSize=12, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=fpLine, ZIndex=16}) Thm(fpsLbl, "TextColor3", "Text")
+        local pingLbl = I("TextLabel", {Position=UDim2.new(0.5,0,0,0), Size=UDim2.new(0.5,0,1,0), BackgroundTransparency=1, Text="Ping : 0 ms", TextSize=12, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=fpLine, ZIndex=16}) Thm(pingLbl, "TextColor3", "Text")
+        
+        local tLine = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=hInfoSec._c, ZIndex=15})
+        local stLbl = I("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="Status : Freemium", TextSize=12, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=tLine, ZIndex=16}) Thm(stLbl, "TextColor3", "Text")
 
-        local gWrap = I("Frame", {Size=UDim2.new(1,0,0,120), BackgroundTransparency=1, Parent=hInfoSec._c, ZIndex=15})
-        local gImg = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0,100,0,100), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=gWrap, ZIndex=16})
-        Crn(gImg, 8)
-        pcall(function()
-            local thumb = "rbxthumb://type=GameIcon&id="..tostring(game.GameId).."&w=150&h=150"
-            gImg.Image = thumb
-        end)
-        if gImg.Image == "" then
-            pcall(function()
-                local li = FetchAsset(LURL, LPATH)
-                if li ~= "" then gImg.Image = li end
-            end)
-            if gImg.Image ~= "" then gImg.ImageColor3 = Color3.new(1,1,1) end
-        end
-        
-        local hStatSec = homeTab:CreateSection("Player Statistics", "Right")
-        local userLbl = hStatSec:CreateLabel("User: "..tostring(LP.Name))
-        local fpsLbl = hStatSec:CreateLabel("FPS: 0")
-        local pingLbl = hStatSec:CreateLabel("Ping: 0 ms")
-        
         local frames, lastTick = 0, tick()
         Cn(Run.RenderStepped, function()
             frames = frames + 1
@@ -849,28 +892,28 @@ function Library:CreateWindow(opts)
                 local ping = 0
                 pcall(function() ping = math.floor(LP:GetNetworkPing() * 1000) end)
                 if ping == 0 then pcall(function() ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) end) end
-                if fpsLbl and fpsLbl.Parent then fpsLbl.Text = "FPS: "..fps end
-                if pingLbl and pingLbl.Parent then pingLbl.Text = "Ping: "..ping.." ms" end
+                if fpsLbl and fpsLbl.Parent then fpsLbl.Text = "FPS : "..fps end
+                if pingLbl and pingLbl.Parent then pingLbl.Text = "Ping : "..ping.." ms" end
             end
         end)
         
-        local oSec = homeTab:CreateSection("Credits", "Left")
-        local oF = I("Frame", {Size=UDim2.new(1,0,0,36), BackgroundTransparency=1, Parent=oSec._c, ZIndex=15})
-        local oI = I("ImageLabel", {Position=UDim2.new(0.5,-70,0.5,-10), Size=UDim2.new(0,20,0,20), BackgroundTransparency=1, Image=ICONS.Crown, Parent=oF, ZIndex=16}) Thm(oI, "ImageColor3", "Accent")
-        local oT = I("TextLabel", {Position=UDim2.new(0.5,-40,0.5,-10), Size=UDim2.new(0,100,0,20), BackgroundTransparency=1, Text="OWNER | SETRAS", TextSize=14, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=oF, ZIndex=16}) Thm(oT, "TextColor3", "Text")
-        
-        local dSec = homeTab:CreateSection("Community", "Right")
-        local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
-        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
-        I("UISizeConstraint", {MaxSize=Vector2.new(205, 9999), Parent=wrap})
-        local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) 
+        local comSec = homeTab:CreateSection("Community", "Right")
+        local dF = I("Frame", {Size=UDim2.new(1,0,0,40), BackgroundTransparency=1, Parent=comSec._c, ZIndex=15})
+        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-12,1,0), BackgroundTransparency=1, Parent=dF})
+        local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-10), Size=UDim2.new(0,20,0,20), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) 
         pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) 
         dI.ImageColor3=Color3.new(1,1,1) local dGradL=I("UIGradient",{Parent=dI}) Thm(dGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if dGradL.Parent then dGradL.Offset=Vector2.new((tick()*0.5)%2-1,0) end end)
-        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
-        local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
-        local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        local dT = I("TextLabel", {Position=UDim2.new(0,28,0,0), Size=UDim2.new(1,-80,1,0), BackgroundTransparency=1, Text="Official Discord", TextSize=13, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=wrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,45,0,22), Text="COPY", TextSize=11, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
         Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
+        
+        local dDesc = I("TextLabel", {Size=UDim2.new(1,0,0,32), BackgroundTransparency=1, Text="Join our official Discord for updates, support, announcements, and community interaction.", TextSize=11, TextWrapped=true, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, Parent=comSec._c, ZIndex=15}) Thm(dDesc, "TextColor3", "TextDark")
+        
+        local oSec = homeTab:CreateSection("Credits", "Left")
+        local oF = I("Frame", {Size=UDim2.new(1,0,0,30), BackgroundTransparency=1, Parent=oSec._c, ZIndex=15})
+        local oWrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-12,1,0), BackgroundTransparency=1, Parent=oF})
+        local oT = I("TextLabel", {Size=UDim2.new(0,140,1,0), BackgroundTransparency=1, Text="Credits : Owner | Setras", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=oWrap, ZIndex=16}) Thm(oT, "TextColor3", "Text")
+        local oI = I("ImageLabel", {Position=UDim2.new(0,145,0.5,-7), Size=UDim2.new(0,14,0,14), BackgroundTransparency=1, Image=ICONS.Crown, Parent=oWrap, ZIndex=16}) Thm(oI, "ImageColor3", "Accent")
 
         local setTab = WO:CreateTab({Name="Settings", Icon=ICONS.Settings}) setTab._btn.LayoutOrder=998
         
@@ -975,7 +1018,7 @@ function Library:CreateWindow(opts)
             else Library:Notify("Error", "Enter name") end 
         end)
 
-        local bgSec = setTab:CreateSection("Background Manager", "Right")
+        local bgSec = setTab:CreateSection("Background Manager", "Left")
         local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Recommended size: 1050x550", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
 
         Library._bgTintTgl = bgSec:CreateToggle({Name="Apply Theme Color Filter", Default=true, Flag="_SynBgTint", Callback=function(v)
@@ -984,10 +1027,25 @@ function Library:CreateWindow(opts)
 
         Library._bgUrlBox = bgSec:CreateTextbox({Name="Background URL", Placeholder="Direct image link...", Flag="_bgUrlInput"})
 
-        local bgGrid = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid})
+        local bgGrid1 = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid1})
 
-        cBtn(bgGrid, "Set as Default", function() 
+        cBtn(bgGrid1, "Apply", function() 
+            local url = Library._bgUrlBox:Get()
+            if url ~= "" then
+                local icon = GetIcon(url)
+                if icon ~= "" then Library:SetBackground(url, Library._bgTintTgl:Get()) else Library:Notify("Invalid Input", "Must be a valid image URL") end
+            end
+        end)
+        cBtn(bgGrid1, "Clear", function() 
+            Library._bgUrlBox:SetText("")
+            Library:SetBackground("", Library._bgTintTgl:Get())
+        end)
+        
+        local bgGrid2 = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid2})
+
+        cBtn(bgGrid2, "Set as Default", function() 
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
             if url ~= "" then
@@ -1005,7 +1063,7 @@ function Library:CreateWindow(opts)
             end
         end)
 
-        cBtn(bgGrid, "Default", function() 
+        cBtn(bgGrid2, "Default", function() 
             Library._bgUrlBox:SetText("")
             Library:SetBackground("", Library._bgTintTgl:Get())
             pcall(function() writefile(BDIR.."_auto.txt", "") end) 
