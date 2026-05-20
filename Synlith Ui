@@ -193,8 +193,8 @@ local function MakeParticles(parent, count, minD, maxD)
     return ptcWrap
 end
 
-function Library:SaveConfig(n, msg) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end if self.Window then d["_UI_SIZE_X"]=self.Window.AbsoluteSize.X d["_UI_SIZE_Y"]=self.Window.AbsoluteSize.Y end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", msg or "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
-function Library:LoadConfig(n, isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Config not found") end return end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set, v) end end if d["_UI_SIZE_X"] and d["_UI_SIZE_Y"] and self.Window then self.Window.Size=UDim2.new(0,d["_UI_SIZE_X"],0,d["_UI_SIZE_Y"]) end self:Notify("Success", "Config loaded successfully") end
+function Library:SaveConfig(n, msg) EnsureDir() local d={} for f,v in pairs(self.Flags) do if f:sub(1,1)=="_" and f~="_bgUrlInput" and f~="_SynBgTint" then continue end if type(v)=="boolean" or type(v)=="number" or type(v)=="string" then d[f]=v elseif typeof(v)=="Color3" then d[f]={_t="C3",R=math.floor(v.R*255),G=math.floor(v.G*255),B=math.floor(v.B*255)} elseif typeof(v)=="EnumItem" then d[f]={_t="EI",E=tostring(v.EnumType),V=v.Name} end end if self.Window then d["_UI_SIZE_X"]=self.Window.AbsoluteSize.X d["_UI_SIZE_Y"]=self.Window.AbsoluteSize.Y end local ok, err = pcall(function() writefile(CDIR..n..".json", Http:JSONEncode(d)) end) if not ok then self:Notify("Error", "Failed to save config") return end self:Notify("Success", msg or "Config saved successfully") if self._refreshCfg then self._refreshCfg() end end
+function Library:LoadConfig(n, isAuto) EnsureDir() local p=CDIR..n..".json" if not isfile(p) then if not isAuto then self:Notify("Error", "Config not found") end return end local ok, d = pcall(function() return Http:JSONDecode(readfile(p)) end) if not ok then self:Notify("Error", "Config corrupted") return end for f,raw in pairs(d) do local v=raw if type(raw)=="table" then if raw._t=="C3" then v=Color3.fromRGB(raw.R,raw.G,raw.B) elseif raw._t=="EI" then pcall(function() v=Enum[tostring(raw.E):match("%.([^%.]+)$") or raw.E][raw.V] end) end end self.Flags[f]=v if self._elems[f] then pcall(self._elems[f].set, v) end end if d["_UI_SIZE_X"] and d["_UI_SIZE_Y"] and self.Window then self.Window.Size=UDim2.new(0,d["_UI_SIZE_X"],0,d["_UI_SIZE_Y"]) end if d["_bgUrlInput"] ~= nil then self:SetBackground(d["_bgUrlInput"], d["_SynBgTint"]) end self:Notify("Success", "Config loaded successfully") end
 function Library:DeleteConfig(n) EnsureDir() local p=CDIR..n..".json" if isfile(p) then delfile(p) self:Notify("Info", "Config deleted") else self:Notify("Error", "Config not found") end end
 function Library:GetConfigs() EnsureDir() local o={} pcall(function() for _,f in ipairs(listfiles(CDIR)) do if f:match("%.json$") then local n=f:match("([^/\\]+)%.json$") if n and isfile(CDIR..n..".json") then table.insert(o,n) end end end end) return o end
 function Library:SetAutoConfig(n) EnsureDir() writefile(CDIR.."_auto.txt", n) self:Notify("Success", "Autoload set to "..n) if self._refreshCfg then self._refreshCfg() end end
@@ -1019,7 +1019,6 @@ function Library:CreateWindow(opts)
         end)
 
         local bgSec = setTab:CreateSection("Background Manager", "Left")
-        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Recommended size: 1050x550", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
 
         Library._bgTintTgl = bgSec:CreateToggle({Name="Apply Theme Color Filter", Default=true, Flag="_SynBgTint", Callback=function(v)
             Library:SetBackgroundTint(v)
@@ -1040,33 +1039,6 @@ function Library:CreateWindow(opts)
         cBtn(bgGrid1, "Clear", function() 
             Library._bgUrlBox:SetText("")
             Library:SetBackground("", Library._bgTintTgl:Get())
-        end)
-        
-        local bgGrid2 = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid2})
-
-        cBtn(bgGrid2, "Set as Default", function() 
-            local url = Library._bgUrlBox:Get()
-            local useTint = Library._bgTintTgl:Get()
-            if url ~= "" then
-                local icon = GetIcon(url)
-                if icon ~= "" then
-                    Library:SaveBackgroundConfig("DefaultBackground", url, useTint, true)
-                    Library:SetAutoBackground("DefaultBackground", true)
-                    Library:SetBackground(url, useTint)
-                    Library:Notify("Background", "Background set as default")
-                else
-                    Library:Notify("Invalid Input", "Must be a direct link to a valid image URL")
-                end
-            else
-                Library:Notify("Error", "Enter a background URL first")
-            end
-        end)
-
-        cBtn(bgGrid2, "Default", function() 
-            Library._bgUrlBox:SetText("")
-            Library:SetBackground("", Library._bgTintTgl:Get())
-            pcall(function() writefile(BDIR.."_auto.txt", "") end) 
         end)
     end
     
