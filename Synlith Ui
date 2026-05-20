@@ -753,32 +753,47 @@ function Library:CreateWindow(opts)
                 local ch=220 local wrap=I("Frame",{Size=UDim2.new(1,0,0,ch),BackgroundTransparency=1,Parent=SO._c,ZIndex=15})
                 local bg=I("Frame",{Size=UDim2.new(1,0,1,0),Parent=wrap,ZIndex=16}) Thm(bg,"BackgroundColor3","Element") Crn(bg,4) Stk(bg,"Border",1,0.2)
                 
-                local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,96,0,120),BackgroundTransparency=1,Parent=bg,ZIndex=17})
+                local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(1,-16,1,-16),BackgroundTransparency=1,Parent=bg,ZIndex=17})
                 
-                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=GetIcon(opts.Image), ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
+                -- VIEWPORT FRAME ESP 3D PREVIEW
+                local vp = I("ViewportFrame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=cWrap, ZIndex=18, CurrentCamera=Instance.new("Camera")})
+                vp.CurrentCamera.Parent = vp
+                vp.CurrentCamera.CFrame = CFrame.new(0, 2, -7) * CFrame.Angles(0, math.pi, 0)
                 
-                if not opts.Image then
-                    local bodyCol = Color3.fromRGB(45,45,50)
-                    local head = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,4), Size=UDim2.new(0,26,0,26), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(head, 13)
-                    local torso = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,34), Size=UDim2.new(0,34,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torso, 6)
-                    local lArm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArm, 6)
-                    local rArm = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArm, 6)
-                    local lLeg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLeg, 6)
-                    local rLeg = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLeg, 6)
+                local char
+                pcall(function() char = game.Players.LocalPlayer.Character end)
+                if char then char = char:Clone() else
+                    char = Instance.new("Model")
+                    local part = Instance.new("Part", char) part.Size = Vector3.new(2, 4, 1) part.Position = Vector3.new(0,0,0)
+                end
+                pcall(function() char.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end)
+                for _,v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then v.Color = Color3.fromRGB(80,80,90) v.Material = Enum.Material.SmoothPlastic v.Anchored = true end end
+                char.Parent = vp
+                
+                local function createLine(p1, p2)
+                    local line = Instance.new("Part") line.Anchored=true line.CanCollide=false line.Material=Enum.Material.Neon line.Color=Color3.new(1,1,1) line.Size=Vector3.new(0.1, 0.1, (p1-p2).Magnitude) line.CFrame=CFrame.new(p1, p2) * CFrame.new(0,0,-line.Size.Z/2) line.Parent=char return line
                 end
                 
-                local skelCol = Color3.new(1,1,1)
-                local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
-                local skSpine = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,17), Size=UDim2.new(0,2,0,67), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skShoulder = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,40), Size=UDim2.new(0,54,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skLArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-26,0,40), Size=UDim2.new(0,2,0,30), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skRArm = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,26,0,40), Size=UDim2.new(0,2,0,30), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skHips = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0,80), Size=UDim2.new(0,20,0,2), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skLLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,-10,0,80), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skRLeg = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,10,0,80), Size=UDim2.new(0,2,0,40), BackgroundColor3=skelCol, BorderSizePixel=0, Parent=skelWrap})
-                local skelLines = {skSpine, skShoulder, skLArm, skRArm, skHips, skLLeg, skRLeg}
+                local skelLines = {}
+                pcall(function()
+                    local hrp = char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart or char:FindFirstChild("Torso") or char:FindFirstChild("LowerTorso")
+                    if hrp then char:MoveTo(Vector3.new(0, 0, 0)) end
+                    
+                    if char:FindFirstChild("Head") and char:FindFirstChild("UpperTorso") then
+                        table.insert(skelLines, createLine(char.Head.Position, char.UpperTorso.Position))
+                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.LowerTorso.Position))
+                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.LeftUpperArm.Position))
+                        table.insert(skelLines, createLine(char.LeftUpperArm.Position, char.LeftLowerArm.Position))
+                        table.insert(skelLines, createLine(char.UpperTorso.Position, char.RightUpperArm.Position))
+                        table.insert(skelLines, createLine(char.RightUpperArm.Position, char.RightLowerArm.Position))
+                        table.insert(skelLines, createLine(char.LowerTorso.Position, char.LeftUpperLeg.Position))
+                        table.insert(skelLines, createLine(char.LeftUpperLeg.Position, char.LeftLowerLeg.Position))
+                        table.insert(skelLines, createLine(char.LowerTorso.Position, char.RightUpperLeg.Position))
+                        table.insert(skelLines, createLine(char.RightUpperLeg.Position, char.RightLowerLeg.Position))
+                    end
+                end)
                 
-                local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,16,1,16), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
+                local box = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0.5,0,0.85,0), BackgroundTransparency=1, Parent=cWrap, ZIndex=25})
                 local boxStk = I("UIStroke", {Thickness=1, Color=Color3.new(1,1,1), Parent=box}) Thm(boxStk, "Color", "Accent")
                 
                 local hpBg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0,-6,0,0), Size=UDim2.new(0,3,1,0), BackgroundColor3=Color3.new(0,0,0), BorderSizePixel=0, Parent=box, ZIndex=26})
@@ -789,7 +804,7 @@ function Library:CreateWindow(opts)
                 local wpnLbl = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,1,14), Size=UDim2.new(0,100,0,14), BackgroundTransparency=1, Text="Weapon", TextSize=10, FontFace=F_TEXT, TextColor3=Color3.new(0.8,0.8,0.8), Parent=box, ZIndex=26})
                 
                 local obj = {
-                    Box = box, BoxOutline = boxStk, HealthBarBg = hpBg, HealthBar = hpFill, Name = nameLbl, Distance = distLbl, Weapon = wpnLbl, Skeleton = skelWrap, SkelLines = skelLines,
+                    Box = box, BoxOutline = boxStk, HealthBarBg = hpBg, HealthBar = hpFill, Name = nameLbl, Distance = distLbl, Weapon = wpnLbl, Skeleton = skelLines,
                     Update = function(self, settings)
                         if settings.BoxVisible ~= nil then self.BoxOutline.Transparency = settings.BoxVisible and 0 or 1 end
                         if settings.BoxColor ~= nil then self.BoxOutline.Color = settings.BoxColor end
@@ -800,8 +815,8 @@ function Library:CreateWindow(opts)
                         if settings.DistanceColor ~= nil then self.Distance.TextColor3 = settings.DistanceColor end
                         if settings.WeaponVisible ~= nil then self.Weapon.Visible = settings.WeaponVisible end
                         if settings.WeaponColor ~= nil then self.Weapon.TextColor3 = settings.WeaponColor end
-                        if settings.SkeletonVisible ~= nil then self.Skeleton.Visible = settings.SkeletonVisible end
-                        if settings.SkeletonColor ~= nil then for _, l in ipairs(self.SkelLines) do l.BackgroundColor3 = settings.SkeletonColor end end
+                        if settings.SkeletonVisible ~= nil then for _, l in ipairs(self.Skeleton) do l.Transparency = settings.SkeletonVisible and 0 or 1 end end
+                        if settings.SkeletonColor ~= nil then for _, l in ipairs(self.Skeleton) do l.Color = settings.SkeletonColor end end
                     end
                 }
                 return obj
@@ -813,6 +828,53 @@ function Library:CreateWindow(opts)
     end
     
     local function CreateDefaults(WO)
+        -- HOME TAB
+        local homeTab = WO:CreateTab({Name="Home", Icon=ICONS.Players})
+        homeTab._btn.LayoutOrder = -999 -- Force it to be first
+        
+        local hInfoSec = homeTab:CreateSection("Hub Information", "Left")
+        hInfoSec:CreateLabel("Name: SYNLITH.HUB")
+        hInfoSec:CreateLabel("Version: 1.0")
+        hInfoSec:CreateLabel("Status: Premium")
+        
+        local hStatSec = homeTab:CreateSection("Player Statistics", "Right")
+        local userLbl = hStatSec:CreateLabel("User: "..tostring(LP.Name))
+        local fpsLbl = hStatSec:CreateLabel("FPS: 0")
+        local pingLbl = hStatSec:CreateLabel("Ping: 0 ms")
+        
+        local frames, lastTick = 0, tick()
+        Cn(Run.RenderStepped, function()
+            frames = frames + 1
+            if tick() - lastTick >= 1 then
+                local fps = frames
+                frames = 0
+                lastTick = tick()
+                local ping = 0
+                pcall(function() ping = math.floor(LP:GetNetworkPing() * 1000) end)
+                if ping == 0 then pcall(function() ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) end) end
+                if fpsLbl and fpsLbl.Parent then fpsLbl.Text = "FPS: "..fps end
+                if pingLbl and pingLbl.Parent then pingLbl.Text = "Ping: "..ping.." ms" end
+            end
+        end)
+        
+        local oSec = homeTab:CreateSection("Credits", "Left")
+        local oF = I("Frame", {Size=UDim2.new(1,0,0,36), BackgroundTransparency=1, Parent=oSec._c, ZIndex=15})
+        local oI = I("ImageLabel", {Position=UDim2.new(0.5,-70,0.5,-10), Size=UDim2.new(0,20,0,20), BackgroundTransparency=1, Image=ICONS.Crown, Parent=oF, ZIndex=16}) Thm(oI, "ImageColor3", "Accent")
+        local oT = I("TextLabel", {Position=UDim2.new(0.5,-40,0.5,-10), Size=UDim2.new(0,100,0,20), BackgroundTransparency=1, Text="OWNER | SETRAS", TextSize=14, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=oF, ZIndex=16}) Thm(oT, "TextColor3", "Text")
+        
+        local dSec = homeTab:CreateSection("Community", "Right")
+        local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
+        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
+        I("UISizeConstraint", {MaxSize=Vector2.new(205, 9999), Parent=wrap})
+        local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) 
+        pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) 
+        dI.ImageColor3=Color3.new(1,1,1) local dGradL=I("UIGradient",{Parent=dI}) Thm(dGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if dGradL.Parent then dGradL.Offset=Vector2.new((tick()*0.5)%2-1,0) end end)
+        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
+        local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
+        local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
+        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
+        Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
+
         local setTab = WO:CreateTab({Name="Settings", Icon=ICONS.Settings}) setTab._btn.LayoutOrder=998
         
         -- BALANCED LAYOUT: Left (Themes + Custom), Right (Interface + Config)
@@ -915,74 +977,9 @@ function Library:CreateWindow(opts)
                 cInp:SetText("")
             else Library:Notify("Error", "Enter name") end 
         end)
-        -- PREMIUM BACKGROUND CONFIG MANAGER
+
         local bgSec = setTab:CreateSection("Background Manager", "Right")
-        
-        local infoLbl1 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Recommended Image Size: 512x256 / 1024x512", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl1, "TextColor3", "Accent")
-        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Must be a direct link to a raw PNG, JPG, or WEBP", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
-
-        local bgDrop = bgSec:CreateDropdown({Name="Selected Background", Options=Library:GetSavedBackgrounds(), Default=Library:GetSavedBackgrounds()[1] or ""})
-
-        local bgAutoLbl = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Autoload: None", TextSize=10, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(bgAutoLbl, "TextColor3", "TextDark")
-        local function updBgAutoLbl() local ab=Library:GetAutoBackground() bgAutoLbl.Text = "Autoload: "..(ab~="" and ab or "None") end
-        updBgAutoLbl()
-
-        local bgGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid})
-
-        Library._refreshBgList = function()
-            local list = Library:GetSavedBackgrounds()
-            bgDrop:Refresh(list)
-            updBgAutoLbl()
-        end
-
-        cBtn(bgGrid, "Autoload", function() 
-            local n = bgDrop:Get() 
-            if n~="" then 
-                Library:SetAutoBackground(n) 
-                updBgAutoLbl() 
-            else 
-                Library:Notify("Error", "Select background preset") 
-            end 
-        end)
-
-        cBtn(bgGrid, "Load", function() 
-            local n = bgDrop:Get() 
-            if n~="" then 
-                Library:LoadBackgroundConfig(n) 
-            else 
-                Library:Notify("Error", "Select background preset") 
-            end 
-        end)
-
-        cBtn(bgGrid, "Overwrite", function() 
-            local n = bgDrop:Get() 
-            if n~="" then 
-                local url = Library._bgUrlBox:Get()
-                local useTint = Library._bgTintTgl:Get()
-                Library:SaveBackgroundConfig(n, url, useTint) 
-            else 
-                Library:Notify("Error", "Select background preset") 
-            end 
-        end)
-
-        cBtn(bgGrid, "Delete", function() 
-            local n = bgDrop:Get() 
-            if n~="" then 
-                Library:DeleteBackgroundConfig(n) 
-                if Library:GetAutoBackground() == n then 
-                    pcall(function() writefile(BDIR.."_auto.txt", "") end) 
-                    updBgAutoLbl() 
-                end
-                local list = Library:GetSavedBackgrounds()
-                local clean = {} for _,c in ipairs(list) do if c~=n then table.insert(clean, c) end end
-                bgDrop:Refresh(clean)
-            else 
-                Library:Notify("Error", "Select background preset") 
-            end 
-        end)
-
-        local sepBg = I("Frame", {Size=UDim2.new(1,0,0,1), BackgroundTransparency=0.5, Parent=bgSec._c, ZIndex=15}) Thm(sepBg, "BackgroundColor3", "Border")
+        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Must be a direct link to a raw PNG/JPG", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
 
         Library._bgTintTgl = bgSec:CreateToggle({Name="Apply Theme Color Filter", Default=true, Flag="_SynBgTint", Callback=function(v)
             Library:SetBackgroundTint(v)
@@ -990,119 +987,30 @@ function Library:CreateWindow(opts)
 
         Library._bgUrlBox = bgSec:CreateTextbox({Name="Background URL", Placeholder="Direct image link...", Flag="_bgUrlInput"})
 
-        local bgInpName = bgSec:CreateTextbox({Name="New Preset Name", Placeholder="Enter name..."})
+        local bgGrid = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
+        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bgGrid})
 
-        local saveWrapBg = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=bgSec._c, ZIndex=15})
-
-        cBtn(saveWrapBg, "Create", function() 
-            local n = bgInpName:Get()
+        cBtn(bgGrid, "Set as Default", function() 
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
-            if n~="" then 
-                Library:SaveBackgroundConfig(n, url, useTint) 
-                local list = Library:GetSavedBackgrounds()
-                if not table.find(list, n) then table.insert(list, n) end
-                bgDrop:Refresh(list)
-                bgDrop:Set(n)
-                bgInpName:SetText("")
-                Library:LoadBackgroundConfig(n)
-            else 
-                Library:Notify("Error", "Enter preset name") 
-            end 
-        end)
-        
-        local uiSec = setTab:CreateSection("Interface", "Right")
-        uiSec:CreateKeybind({Name="Toggle Menu", Default=Library.ToggleKey, Flag="_SynTK", Callback=function() end})
-        Cn(UIS.InputBegan,function() local tk=Library.Flags["_SynTK"] if tk and typeof(tk)=="EnumItem" then Library.ToggleKey=tk if Library.tkLbl then Library.tkLbl.Text="Toggle UI: ["..tk.Name.."]" end end end)
-        
-        uiSec:CreateToggle({Name="Show Background Image", Default=true, Flag="_SynBgVis", Callback=function(v)
-            Library.ShowBackground = v
-            if Library._wmBgI then Library._wmBgI.Visible = v end
-            if Library._kbBgI then Library._kbBgI.Visible = v end
-            if Library._uiBgI then Library._uiBgI.Visible = v end
-            if Library._notifBgs then for _, nb in ipairs(Library._notifBgs) do nb.Visible = v end end
-        end})
-        uiSec:CreateToggle({Name="Show Particles", Default=true, Flag="_SynPtcVis", Callback=function(v)
-            Library.ShowParticles = v
-            for _, ptc in ipairs(Library._particleWraps or {}) do ptc.Visible = v end
-        end})
-        uiSec:CreateToggle({Name="Show Watermark (When UI Hidden)", Default=Library.ShowWatermark, Flag="_SynWM", Callback=function(v) Library.ShowWatermark=v if Library._wm then if Library.Open then Library._wm.Visible=false else Library._wm.Visible=v end end end})
-        uiSec:CreateButton({Name="Unload Script", Callback=function() Library:Unload() end})
-
-        -- FLAWLESS SELECTOR CONFIG SYSTEM
-        local cfgSec = setTab:CreateSection("Config Manager", "Right")
-        local cfgDrop = cfgSec:CreateDropdown({Name="Selected Config", Options=Library:GetConfigs(), Default=Library:GetConfigs()[1] or ""})
-        
-        local autoLbl = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="Autoload: None", TextSize=10, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=cfgSec._c, ZIndex=15}) Thm(autoLbl, "TextColor3", "TextDark")
-        local function updAutoLbl() local ac=Library:GetAutoConfig() autoLbl.Text = "Autoload: "..(ac~="" and ac or "None") end
-        updAutoLbl()
-        
-        local bGrid = I("Frame", {Size=UDim2.new(1,0,0,52), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
-        I("UIGridLayout", {CellSize=UDim2.new(0.5,-4,0,24), CellPadding=UDim2.new(0,8,0,4), SortOrder=Enum.SortOrder.LayoutOrder, Parent=bGrid})
-        
-        cBtn(bGrid, "Autoload", function() local n = cfgDrop:Get() if n~="" then Library:SetAutoConfig(n) updAutoLbl() else Library:Notify("Error", "Select config") end end)
-        cBtn(bGrid, "Load", function() local n = cfgDrop:Get() if n~="" then Library:LoadConfig(n) else Library:Notify("Error", "Select config") end end)
-        cBtn(bGrid, "Overwrite", function() local n = cfgDrop:Get() if n~="" then Library:SaveConfig(n, "Config overwritten") else Library:Notify("Error", "Select config") end end)
-        cBtn(bGrid, "Delete", function() 
-            local n = cfgDrop:Get() 
-            if n~="" then 
-                Library:DeleteConfig(n) 
-                if Library:GetAutoConfig() == n then pcall(function() writefile(CDIR.."_auto.txt", "") end) updAutoLbl() end
-                local cfgs = Library:GetConfigs()
-                local clean = {} for _,c in ipairs(cfgs) do if c~=n then table.insert(clean, c) end end
-                cfgDrop:Refresh(clean)
-            else Library:Notify("Error", "Select config") end 
+            if url ~= "" then
+                Library:SaveBackgroundConfig("DefaultBackground", url, useTint)
+                Library:SetAutoBackground("DefaultBackground")
+                Library:SetBackground(url, useTint)
+            else
+                Library:Notify("Error", "Enter a background URL first")
+            end
         end)
 
-        local sep = I("Frame", {Size=UDim2.new(1,0,0,1), BackgroundTransparency=0.5, Parent=cfgSec._c, ZIndex=15}) Thm(sep, "BackgroundColor3", "Border")
-
-        local cInp = cfgSec:CreateTextbox({Name="New Config Name", Placeholder="Enter name..."})
-        local saveWrap = I("Frame", {Size=UDim2.new(1,0,0,24), BackgroundTransparency=1, Parent=cfgSec._c, ZIndex=15})
-        cBtn(saveWrap, "Create", function() 
-            local n = cInp:Get() 
-            if n~="" then 
-                Library:SaveConfig(n, "Config created") 
-                local cfgs = Library:GetConfigs()
-                if not table.find(cfgs, n) then table.insert(cfgs, n) end
-                cfgDrop:Refresh(cfgs)
-                cfgDrop:Set(n)
-                cInp:SetText("")
-            else Library:Notify("Error", "Enter name") end 
+        cBtn(bgGrid, "Default", function() 
+            Library._bgUrlBox:SetText("")
+            Library:SetBackground("", Library._bgTintTgl:Get())
+            pcall(function() writefile(BDIR.."_auto.txt", "") end) 
         end)
-
-        -- ABOUT TAB
-        local abtTab = WO:CreateTab({Name="About", Icon=ICONS.About}) abtTab._btn.LayoutOrder=999
-        local aSec = abtTab:CreateSection("Synlith", "Left")
-        local lF = I("Frame", {Size=UDim2.new(1,0,0,130), BackgroundTransparency=1, Parent=aSec._c, ZIndex=15})
-        local lI = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,10), Size=UDim2.new(0,70,0,70), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=lF, ZIndex=16}) 
-        pcall(function() local li=FetchAsset(LURL,LPATH) if li~="" then lI.Image=li end end) 
-        lI.ImageColor3=Color3.new(1,1,1) local aGradL=I("UIGradient",{Parent=lI}) Thm(aGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if aGradL.Parent then aGradL.Offset=Vector2.new((tick()*0.5)%2-1,0) end end)
-        
-        local lT = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,90), Size=UDim2.new(1,0,0,20), BackgroundTransparency=1, Text="SYNLITH.HUB", TextSize=18, FontFace=F_TITLE, Parent=lF, ZIndex=16}) Thm(lT, "TextColor3", "Text")
-        local lS = I("TextLabel", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,112), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Premium Script", TextSize=12, FontFace=F_TEXT, Parent=lF, ZIndex=16}) Thm(lS, "TextColor3", "Accent")
-        
-        local oSec = abtTab:CreateSection("Credits", "Right")
-        local oF = I("Frame", {Size=UDim2.new(1,0,0,36), BackgroundTransparency=1, Parent=oSec._c, ZIndex=15})
-        local oI = I("ImageLabel", {Position=UDim2.new(0.5,-70,0.5,-10), Size=UDim2.new(0,20,0,20), BackgroundTransparency=1, Image=ICONS.Crown, Parent=oF, ZIndex=16}) Thm(oI, "ImageColor3", "Accent")
-        local oT = I("TextLabel", {Position=UDim2.new(0.5,-40,0.5,-10), Size=UDim2.new(0,100,0,20), BackgroundTransparency=1, Text="OWNER | SETRAS", TextSize=14, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, Parent=oF, ZIndex=16}) Thm(oT, "TextColor3", "Text")
-        
-        local dSec = abtTab:CreateSection("Community", "Right")
-        local dF = I("Frame", {Size=UDim2.new(1,0,0,60), BackgroundTransparency=1, Parent=dSec._c, ZIndex=15})
-        local wrap = I("Frame", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(1,-20,1,0), BackgroundTransparency=1, Parent=dF})
-        I("UISizeConstraint", {MaxSize=Vector2.new(205, 9999), Parent=wrap})
-        local dI = I("ImageLabel", {Position=UDim2.new(0,0,0.5,-12), Size=UDim2.new(0,24,0,24), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=wrap, ZIndex=16}) 
-        pcall(function() local li=FetchAsset(DURL,DPATH) if li~="" then dI.Image=li end end) 
-        dI.ImageColor3=Color3.new(1,1,1) local dGradL=I("UIGradient",{Parent=dI}) Thm(dGradL,"Color","Logo","Gradient") Cn(Run.RenderStepped,function() if dGradL.Parent then dGradL.Offset=Vector2.new((tick()*0.5)%2-1,0) end end)
-        local txtWrap = I("Frame", {Position=UDim2.new(0,36,0,0), Size=UDim2.new(1,-90,1,0), BackgroundTransparency=1, ClipsDescendants=true, Parent=wrap})
-        local dT = I("TextLabel", {Position=UDim2.new(0,0,0,12), Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="Official Discord", TextSize=12, FontFace=F_TITLE, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dT, "TextColor3", "Text")
-        local dS = I("TextLabel", {Position=UDim2.new(0,0,0,30), Size=UDim2.new(1,0,0,14), BackgroundTransparency=1, Text="Click to copy invite", TextSize=11, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd, Parent=txtWrap, ZIndex=16}) Thm(dS, "TextColor3", "TextDark")
-        local cpB = I("TextButton", {AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,0,0.5,0), Size=UDim2.new(0,50,0,20), Text="COPY", TextSize=10, FontFace=F_TITLE, Parent=wrap, ZIndex=17}) Thm(cpB, "BackgroundColor3", "Element") Thm(cpB, "TextColor3", "Text") Crn(cpB, 4) Stk(cpB, "Border", 1, 0.2)
-        Cn(cpB.MouseButton1Click, function() pcall(function() setclipboard(DINV) end) cpB.Text="COPIED" task.delay(1.5, function() cpB.Text="COPY" end) Library:Notify("Discord", "Copied to clipboard") end)
     end
     
     task.defer(function()
         CreateDefaults(WO)
-        for _, t in ipairs(WO._tabs) do if t.Name == "About" then t:Activate() return end end
         if WO._tabs[1] then WO._tabs[1]:Activate() end
     end)
     
