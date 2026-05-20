@@ -12,8 +12,8 @@ local F_TITLE = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontW
 local F_TEXT = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
 local F_NUM = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold)
 
-local TF = TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-local TM = TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local TF = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local TM = TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
 local ICONS = {
     Players = "rbxassetid://139537090544689",
@@ -115,10 +115,6 @@ local function FetchAsset(url, path)
             local isWebp = data:sub(1, 4) == "RIFF" and data:sub(9, 12) == "WEBP"
             if isPng or isJpg or isGif or isWebp then
                 writefile(path, data)
-            else
-                task.spawn(function()
-                    Library:Notify("Invalid Image", "URL must be a direct link to a raw PNG, JPG, or WEBP file.", 5)
-                end)
             end
         end
     end)
@@ -126,17 +122,23 @@ local function FetchAsset(url, path)
     pcall(function() if isfile(path) then img=getcustomasset(path) end end)
     return img
 end
+
 local function GetIcon(id)
     if not id or id == "" then return "" end
     if tonumber(id) then 
         return "rbxassetid://"..id 
     elseif type(id) == "string" then
+        id = id:gsub("^%s*(.-)%s*$", "%1") -- trim spaces
         if id:sub(1,4) == "http" then
-            local cleanUrl = id:split("?")[1] or id
+            local fetchUrl = id
+            if not (id:match("discordapp%.com") or id:match("discord%.net") or id:match("discordapp%.net")) then
+                fetchUrl = id:split("?")[1] or id
+            end
+            local cleanUrl = fetchUrl:split("?")[1] or fetchUrl
             local filename = cleanUrl:match("([^/]+)$") or "temp_icon.png"
             if not filename:match("%.%w+$") then filename = filename..".png" end
             local path = "Synlith.hub/"..filename
-            return FetchAsset(id, path)
+            return FetchAsset(fetchUrl, path)
         elseif id:sub(1,13) == "rbxassetid://" or id:sub(1,17) == "rbxgameasset://" or id:match("asset://") then
             return id
         end
@@ -162,7 +164,7 @@ local function MakeParticles(parent, count, minD, maxD)
         local endY = -0.1
         local endX = startX + (math.random()-0.5)*0.3 
         local duration = math.random(minD, maxD)
-        local tw = TS:Create(p, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Position=UDim2.new(endX, 0, endY, 0)})
+        local tw = TS:Create(p, TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(endX, 0, endY, 0)})
         tw:Play()
         TS:Create(p, TweenInfo.new(1), {BackgroundTransparency=math.random(50, 80)/100}):Play()
         task.delay(duration - 1, function() if p.Parent then TS:Create(p, TweenInfo.new(1), {BackgroundTransparency=1}):Play() end end)
@@ -179,7 +181,7 @@ local function MakeParticles(parent, count, minD, maxD)
         local endY = -0.1
         local endX = startX + (math.random()-0.5)*0.3
         local dur = (startY - endY) * math.random(minD, maxD)
-        local tw = TS:Create(p, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Position=UDim2.new(endX, 0, endY, 0)})
+        local tw = TS:Create(p, TweenInfo.new(dur, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(endX, 0, endY, 0)})
         tw:Play()
         task.delay(dur - 1, function() if p.Parent then TS:Create(p, TweenInfo.new(1), {BackgroundTransparency=1}):Play() end end)
         tw.Completed:Connect(function() p:Destroy() if ptcWrap.Parent then spawnParticle() end end)
@@ -239,7 +241,7 @@ end
 function Library:DeleteBackgroundConfig(n)
     EnsureDir() local p = BDIR..n..".json" if isfile(p) then delfile(p) local exts = {"png", "jpg", "gif", "webp"} for _, ext in ipairs(exts) do local imgPath = BDIR..n.."_img."..ext if isfile(imgPath) then delfile(imgPath) end end self:Notify("Info", "Background config deleted") if self._refreshBgList then self._refreshBgList() end else self:Notify("Error", "Background config not found") end
 end
-function Library:SetAutoBackground(n) EnsureDir() writefile(BDIR.."_auto.txt", n) self:Notify("Success", "Auto-background set to "..n) if self._refreshBgList then self._refreshBgList() end end
+function Library:SetAutoBackground(n, silent) EnsureDir() writefile(BDIR.."_auto.txt", n) if not silent then self:Notify("Success", "Auto-background set to "..n) end if self._refreshBgList then self._refreshBgList() end end
 function Library:GetAutoBackground() local n = "" pcall(function() if isfile(BDIR.."_auto.txt") then n = readfile(BDIR.."_auto.txt"):gsub("%s+", "") end end) return n end
 
 function Library:SaveCustomTheme() local cthm=self.Themes["Custom"] local d={Bg={R=cthm.Background.R,G=cthm.Background.G,B=cthm.Background.B},Acc={R=cthm.Accent.R,G=cthm.Accent.G,B=cthm.Accent.B},Txt={R=cthm.Text.R,G=cthm.Text.G,B=cthm.Text.B},Logo={R=cthm.Logo.R,G=cthm.Logo.G,B=cthm.Logo.B},Ico={R=cthm.Icon.R,G=cthm.Icon.G,B=cthm.Icon.B}} pcall(function() EnsureDir() writefile(TDIR.."_custom.json", Http:JSONEncode(d)) end) end
@@ -303,7 +305,6 @@ function Library:Notify(title, msg, dur)
     TS:Create(pBar, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(1,0,1,0)}):Play()
     
     task.delay(dur, function() 
-        TS:Create(s, TM, {Transparency=1}):Play()
         local tw = TS:Create(card, TM, {Position=UDim2.new(1,50,0,0)})
         tw:Play() tw.Completed:Connect(function() 
             card:Destroy() 
@@ -499,10 +500,10 @@ function Library:CreateWindow(opts)
     local function ToggleUI(state)
         if state then 
             Library.Open=true outerMain.Visible=true 
-            TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
+            TS:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 0)}):Play()
         else 
             Library.Open=false 
-            local tw = TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)})
+            local tw = TS:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0.5, 0, 0.5, 15)})
             tw.Completed:Connect(function() if not Library.Open then outerMain.Visible=false end end)
             tw:Play()
         end
@@ -757,17 +758,9 @@ function Library:CreateWindow(opts)
                 
                 local cWrap=I("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,96,0,120),BackgroundTransparency=1,Parent=bg,ZIndex=17})
                 
-                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=GetIcon(opts.Image), ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
-                
-                if not opts.Image then
-                    local bodyCol = Color3.fromRGB(45,45,50)
-                    local head = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,4), Size=UDim2.new(0,26,0,26), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(head, 13)
-                    local torso = I("Frame", {AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,34), Size=UDim2.new(0,34,0,46), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(torso, 6)
-                    local lArm = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lArm, 6)
-                    local rArm = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,19,0,34), Size=UDim2.new(0,14,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rArm, 6)
-                    local lLeg = I("Frame", {AnchorPoint=Vector2.new(1,0), Position=UDim2.new(0.5,-2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(lLeg, 6)
-                    local rLeg = I("Frame", {AnchorPoint=Vector2.new(0,0), Position=UDim2.new(0.5,2,0,84), Size=UDim2.new(0,15,0,40), BackgroundColor3=bodyCol, Parent=charImg, ZIndex=18}) Crn(rLeg, 6)
-                end
+                local imgToUse = opts.Image and GetIcon(opts.Image) or ""
+                pcall(function() imgToUse = game.Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.AvatarThumbnail, Enum.ThumbnailSize.Size420x420) end)
+                local charImg = I("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Image=imgToUse, ScaleType=Enum.ScaleType.Fit, Parent=cWrap, ZIndex=18})
                 
                 local skelCol = Color3.new(1,1,1)
                 local skelWrap = I("Frame", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Parent=charImg, ZIndex=20, Visible=false})
@@ -816,13 +809,30 @@ function Library:CreateWindow(opts)
     
     local function CreateDefaults(WO)
         -- HOME TAB
-        local homeTab = WO:CreateTab({Name="Home", Icon=ICONS.Players})
+        local homeTab = WO:CreateTab({Name="Home", Icon="https://raw.githubusercontent.com/Unknown394852/Chess/main/HomeIcon.png"})
         homeTab._btn.LayoutOrder = -999 -- Force it to be first
         
         local hInfoSec = homeTab:CreateSection("Hub Information", "Left")
-        hInfoSec:CreateLabel("Name: SYNLITH.HUB")
-        hInfoSec:CreateLabel("Version: 1.0")
+        local gameName = "Synlith.hub"
+        pcall(function() gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end)
+        hInfoSec:CreateLabel("Game: "..gameName)
         hInfoSec:CreateLabel("Status: Premium")
+        hInfoSec:CreateLabel("Version: 1.0")
+
+        local gWrap = I("Frame", {Size=UDim2.new(1,0,0,120), BackgroundTransparency=1, Parent=hInfoSec._c, ZIndex=15})
+        local gImg = I("ImageLabel", {AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), Size=UDim2.new(0,100,0,100), BackgroundTransparency=1, ScaleType=Enum.ScaleType.Fit, Parent=gWrap, ZIndex=16})
+        Crn(gImg, 8)
+        pcall(function()
+            local thumb = "rbxthumb://type=GameIcon&id="..tostring(game.GameId).."&w=150&h=150"
+            gImg.Image = thumb
+        end)
+        if gImg.Image == "" then
+            pcall(function()
+                local li = FetchAsset(LURL, LPATH)
+                if li ~= "" then gImg.Image = li end
+            end)
+            if gImg.Image ~= "" then gImg.ImageColor3 = Color3.new(1,1,1) end
+        end
         
         local hStatSec = homeTab:CreateSection("Player Statistics", "Right")
         local userLbl = hStatSec:CreateLabel("User: "..tostring(LP.Name))
@@ -966,7 +976,7 @@ function Library:CreateWindow(opts)
         end)
 
         local bgSec = setTab:CreateSection("Background Manager", "Right")
-        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Must be a direct link to a raw PNG/JPG", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
+        local infoLbl2 = I("TextLabel", {Size=UDim2.new(1,0,0,12), BackgroundTransparency=1, Text="• Recommended size: 1050x550", TextSize=9, FontFace=F_TEXT, TextXAlignment=Enum.TextXAlignment.Left, Parent=bgSec._c, ZIndex=15}) Thm(infoLbl2, "TextColor3", "TextDark")
 
         Library._bgTintTgl = bgSec:CreateToggle({Name="Apply Theme Color Filter", Default=true, Flag="_SynBgTint", Callback=function(v)
             Library:SetBackgroundTint(v)
@@ -981,10 +991,15 @@ function Library:CreateWindow(opts)
             local url = Library._bgUrlBox:Get()
             local useTint = Library._bgTintTgl:Get()
             if url ~= "" then
-                Library:SaveBackgroundConfig("DefaultBackground", url, useTint, true)
-                Library:SetAutoBackground("DefaultBackground")
-                Library:SetBackground(url, useTint)
-                Library:Notify("Background", "Background set as default")
+                local icon = GetIcon(url)
+                if icon ~= "" then
+                    Library:SaveBackgroundConfig("DefaultBackground", url, useTint, true)
+                    Library:SetAutoBackground("DefaultBackground", true)
+                    Library:SetBackground(url, useTint)
+                    Library:Notify("Background", "Background set as default")
+                else
+                    Library:Notify("Invalid Input", "Must be a direct link to a valid image URL")
+                end
             else
                 Library:Notify("Error", "Enter a background URL first")
             end
